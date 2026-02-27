@@ -2,21 +2,26 @@
 -- intru.in Supabase Schema (v3 — Production-Grade)
 -- Run this in Supabase SQL Editor: Dashboard > SQL Editor
 --
--- CHANGES from v2:
+-- SAFE TO RE-RUN: Uses IF NOT EXISTS / IF EXISTS everywhere
+-- Handles both fresh installs AND migrations from v2
+--
+-- v3 changes:
 -- - users.id references auth.users(id) ON DELETE CASCADE
--- - Trigger syncs auth.users → public.users on signup
+-- - Auth sync trigger: auto-create public.users on signup
 -- - CHECK constraints: price >= 0, total >= 0
--- - products.slug is UNIQUE NOT NULL (already was, now explicit)
--- - RLS: orders tied to user_id via auth.uid(), no public INSERT
--- - RLS: store_credits tied to user_id via auth.uid()
--- - Order creation MUST use service_role key (server-side only)
--- - Legal pages include Grievance Redressal for Indian compliance
--- - New product catalog (6 products with real intru.in CDN URLs)
+-- - orders.user_id + store_credits.user_id added (migration-safe)
+-- - RLS: orders/credits tied to user_id via auth.uid()
+-- - No public INSERT on orders (server-side service_role only)
+-- - Legal pages with Grievance Redressal (Indian compliance)
+-- - New 6-product catalog with intru.in CDN URLs
 -- =============================================================
 
+
+-- =============================================================
 -- 1. USERS TABLE (synced from Supabase Auth)
+-- =============================================================
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   name TEXT,
   picture TEXT,
@@ -25,6 +30,23 @@ CREATE TABLE IF NOT EXISTS users (
   last_login TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration: add FK to auth.users if not already present
+-- (Cannot use IF NOT EXISTS for constraints, so we use DO block)
+DO $$
+BEGIN
+  -- Add FK users.id -> auth.users(id) if missing
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'users_id_fkey' AND table_name = 'users'
+  ) THEN
+    BEGIN
+      ALTER TABLE users ADD CONSTRAINT users_id_fkey
+        FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
@@ -54,15 +76,18 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+
+-- =============================================================
 -- 2. PRODUCTS TABLE
+-- =============================================================
 CREATE TABLE IF NOT EXISTS products (
   id TEXT PRIMARY KEY,
   slug TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   tagline TEXT,
   description TEXT,
-  price INTEGER NOT NULL CHECK (price >= 0),
-  compare_price INTEGER CHECK (compare_price IS NULL OR compare_price >= 0),
+  price INTEGER NOT NULL DEFAULT 0,
+  compare_price INTEGER,
   currency TEXT DEFAULT 'INR',
   images JSONB DEFAULT '[]'::jsonb,
   sizes JSONB DEFAULT '[]'::jsonb,
@@ -73,24 +98,52 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Migration: add CHECK constraints if missing
+DO $$
+BEGIN
+  -- price >= 0
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.check_constraints
+    WHERE constraint_name = 'products_price_check'
+  ) THEN
+    BEGIN
+      ALTER TABLE products ADD CONSTRAINT products_price_check CHECK (price >= 0);
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+  -- compare_price >= 0 (or NULL)
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.check_constraints
+    WHERE constraint_name = 'products_compare_price_check'
+  ) THEN
+    BEGIN
+      ALTER TABLE products ADD CONSTRAINT products_compare_price_check
+        CHECK (compare_price IS NULL OR compare_price >= 0);
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 
+
+-- =============================================================
 -- 3. ORDERS TABLE
+-- =============================================================
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   razorpay_order_id TEXT UNIQUE,
   razorpay_payment_id TEXT,
   razorpay_signature TEXT,
   customer_email TEXT,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
-  subtotal INTEGER NOT NULL DEFAULT 0 CHECK (subtotal >= 0),
-  shipping INTEGER NOT NULL DEFAULT 0 CHECK (shipping >= 0),
-  total INTEGER NOT NULL DEFAULT 0 CHECK (total >= 0),
+  subtotal INTEGER NOT NULL DEFAULT 0,
+  shipping INTEGER NOT NULL DEFAULT 0,
+  total INTEGER NOT NULL DEFAULT 0,
   currency TEXT DEFAULT 'INR',
-  store_credit_used INTEGER DEFAULT 0 CHECK (store_credit_used >= 0),
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'payment_failed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')),
+  store_credit_used INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'pending',
   shipping_address JSONB,
   tracking_number TEXT,
   tracking_url TEXT,
@@ -103,35 +156,164 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Migration: add user_id column + CHECK constraints to existing orders table
+DO $$
+BEGIN
+  -- Add user_id column if missing
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'user_id'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN user_id UUID;
+  END IF;
+
+  -- Add FK orders.user_id -> auth.users(id)
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'orders_user_id_fkey' AND table_name = 'orders'
+  ) THEN
+    BEGIN
+      ALTER TABLE orders ADD CONSTRAINT orders_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+
+  -- CHECK constraints
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.check_constraints
+    WHERE constraint_name = 'orders_subtotal_check'
+  ) THEN
+    BEGIN
+      ALTER TABLE orders ADD CONSTRAINT orders_subtotal_check CHECK (subtotal >= 0);
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.check_constraints
+    WHERE constraint_name = 'orders_shipping_check'
+  ) THEN
+    BEGIN
+      ALTER TABLE orders ADD CONSTRAINT orders_shipping_check CHECK (shipping >= 0);
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.check_constraints
+    WHERE constraint_name = 'orders_total_check'
+  ) THEN
+    BEGIN
+      ALTER TABLE orders ADD CONSTRAINT orders_total_check CHECK (total >= 0);
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.check_constraints
+    WHERE constraint_name = 'orders_store_credit_check'
+  ) THEN
+    BEGIN
+      ALTER TABLE orders ADD CONSTRAINT orders_store_credit_check CHECK (store_credit_used >= 0);
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.check_constraints
+    WHERE constraint_name = 'orders_status_check'
+  ) THEN
+    BEGIN
+      ALTER TABLE orders ADD CONSTRAINT orders_status_check
+        CHECK (status IN ('pending', 'paid', 'payment_failed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'));
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_orders_razorpay_order_id ON orders(razorpay_order_id);
 CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 
+
+-- =============================================================
 -- 4. STORE CREDITS TABLE
+-- =============================================================
 CREATE TABLE IF NOT EXISTS store_credits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   email TEXT NOT NULL,
-  amount INTEGER NOT NULL CHECK (amount >= 0),
-  reason TEXT NOT NULL CHECK (reason IN ('refund', 'defect', 'wrong_item', 'goodwill', 'promotional')),
+  amount INTEGER NOT NULL DEFAULT 0,
+  reason TEXT NOT NULL,
   order_id UUID REFERENCES orders(id),
   issued_by TEXT,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Migration: add user_id column + CHECK constraints
+DO $$
+BEGIN
+  -- Add user_id column if missing
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'store_credits' AND column_name = 'user_id'
+  ) THEN
+    ALTER TABLE store_credits ADD COLUMN user_id UUID;
+  END IF;
+
+  -- Add FK store_credits.user_id -> auth.users(id)
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'store_credits_user_id_fkey' AND table_name = 'store_credits'
+  ) THEN
+    BEGIN
+      ALTER TABLE store_credits ADD CONSTRAINT store_credits_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+
+  -- CHECK amount >= 0
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.check_constraints
+    WHERE constraint_name = 'store_credits_amount_check'
+  ) THEN
+    BEGIN
+      ALTER TABLE store_credits ADD CONSTRAINT store_credits_amount_check CHECK (amount >= 0);
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+
+  -- CHECK reason enum
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.check_constraints
+    WHERE constraint_name = 'store_credits_reason_check'
+  ) THEN
+    BEGIN
+      ALTER TABLE store_credits ADD CONSTRAINT store_credits_reason_check
+        CHECK (reason IN ('refund', 'defect', 'wrong_item', 'goodwill', 'promotional'));
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_store_credits_email ON store_credits(email);
 CREATE INDEX IF NOT EXISTS idx_store_credits_user_id ON store_credits(user_id);
 
+
+-- =============================================================
 -- 5. LEGAL PAGES TABLE
+-- =============================================================
 CREATE TABLE IF NOT EXISTS legal_pages (
   slug TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
   updated_at DATE DEFAULT CURRENT_DATE
 );
+
 
 -- =============================================================
 -- ROW LEVEL SECURITY (RLS) — Production-Grade
@@ -170,7 +352,7 @@ CREATE POLICY "Legal pages are viewable by everyone"
 CREATE POLICY "Legal pages are editable by service role"
   ON legal_pages FOR ALL USING (auth.role() = 'service_role');
 
--- ORDERS: users SELECT their own rows, service-role full access
+-- ORDERS: users SELECT their own rows via auth.uid() = user_id
 -- NO public INSERT — order creation is server-side via service_role only
 CREATE POLICY "Users can view their own orders"
   ON orders FOR SELECT USING (auth.uid() = user_id);
@@ -191,6 +373,7 @@ CREATE POLICY "Users can view their own profile"
 
 CREATE POLICY "Service role has full access to users"
   ON users FOR ALL USING (auth.role() = 'service_role');
+
 
 -- =============================================================
 -- SEED DATA: Products (p1-p6) — New Catalog
@@ -244,6 +427,7 @@ ON CONFLICT (id) DO UPDATE SET
   category = EXCLUDED.category,
   in_stock = EXCLUDED.in_stock,
   featured = EXCLUDED.featured;
+
 
 -- =============================================================
 -- SEED DATA: Legal Pages (Indian E-commerce Compliant)
@@ -341,6 +525,7 @@ ON CONFLICT (slug) DO UPDATE SET
   title = EXCLUDED.title,
   content = EXCLUDED.content,
   updated_at = EXCLUDED.updated_at;
+
 
 -- =============================================================
 -- UPDATED_AT TRIGGER
