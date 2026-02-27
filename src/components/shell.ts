@@ -101,7 +101,8 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <a href="/" class="logo">INTRU<span>.in</span></a>
 <div class="nlinks">
 <a href="/#products" class="nl nls">Shop</a>
-<a href="/#story" class="nl">Story</a>
+<a href="/collections" class="nl">Collections</a>
+<a href="/about" class="nl">About</a>
 <a href="/#contact" class="nl">Contact</a>
 <button class="ncart" onclick="toggleCart()" aria-label="Cart"><i class="fas fa-shopping-bag"></i><span class="cbadge" id="cb">0</span></button>
 </div></div></nav>

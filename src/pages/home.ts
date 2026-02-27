@@ -81,12 +81,13 @@ export function homePage(opts: {
 </section>
 
 <div class="mq"><div class="mqt">
-${Array(4).fill('<span class="mqi">Limited Drops</span><span class="mqi mqd">/</span><span class="mqi">36h Exchange Only</span><span class="mqi mqd">/</span><span class="mqi">Free Shipping Over Rs.1,999</span><span class="mqi mqd">/</span><span class="mqi">Premium 240 GSM</span><span class="mqi mqd">/</span><span class="mqi">Made in India</span><span class="mqi mqd">/</span><span class="mqi">Store Credit Only</span><span class="mqi mqd">/</span>').join('')}
+${Array(4).fill('<span class="mqi">Limited Stock Only</span><span class="mqi mqd">/</span><span class="mqi">No Fake Drops</span><span class="mqi mqd">/</span><span class="mqi">Free Shipping Over Rs.1,999</span><span class="mqi mqd">/</span><span class="mqi">Made With Love</span><span class="mqi mqd">/</span><span class="mqi">Made in India</span><span class="mqi mqd">/</span><span class="mqi">Never Restocked</span><span class="mqi mqd">/</span>').join('')}
 </div></div>
 
 <section class="story" id="story">
 <p class="story-over anim">Our Story</p>
-<p class="story-txt anim d1"><strong>INTRU.IN</strong> was born from a simple belief: <strong>great clothes don't need loud logos.</strong> We craft essential wardrobe pieces with premium fabrics and intentional design. Limited drops. No restocks. When it's gone, it's gone.</p>
+<p class="story-txt anim d1">We're <strong>super picky</strong> about what we wear. We <strong>hate mass-produced, same-pattern</strong> clothes that flood every store. So two best friends decided to do something about it &mdash; we launched <strong>INTRU.IN</strong> with a promise: <strong>limited stock only, no fake drops, every piece made with love.</strong></p>
+<p class="story-txt anim d2" style="margin-top:20px">Each design is crafted over <strong>two months</strong> to feel like it was made just for YOU. When it's gone, it's <strong>never restocked</strong> &mdash; that's not a marketing tactic, that's our word.</p>
 </section>
 
 <section class="psec" id="products">
@@ -145,8 +146,8 @@ document.querySelectorAll('.anim').forEach(function(el){el.style.animationPlaySt
 </script>`;
 
   return shell(
-    'INTRU.IN — Limited Drops. No Restocks. | Premium Indian Streetwear',
-    'intru.in: premium minimalist streetwear crafted in India. Limited drops, no restocks. Oversized tees, cargo joggers, hoodies & more. Free shipping over Rs.1,999.',
+    'INTRU.IN — Exclusive Streetwear India | Limited Edition Fashion | Authentic Boutique Clothing',
+    'intru.in: exclusive streetwear India. Limited edition fashion, authentic boutique clothing by two best friends. T-shirts, shirts & more. Free shipping over Rs.1,999.',
     body,
     { url: 'https://intru.in', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages }
   );

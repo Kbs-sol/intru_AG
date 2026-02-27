@@ -10,6 +10,8 @@ import { homePage } from './pages/home'
 import { productPage } from './pages/product'
 import { legalPage } from './pages/legal'
 import { adminPage } from './pages/admin'
+import { collectionsPage } from './pages/collections'
+import { aboutPage } from './pages/about'
 
 type Bindings = Env & { [key: string]: string }
 
@@ -84,6 +86,38 @@ app.get('/admin', async (c) => {
   const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
   const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
   return c.html(adminPage({
+    razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
+    googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
+    products,
+    legalPages,
+  }))
+})
+
+// ============ COLLECTIONS PAGE (filterable product grid) ============
+
+app.get('/collections', async (c) => {
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
+  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
+  const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
+  const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
+  return c.html(collectionsPage({
+    razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
+    googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
+    products,
+    legalPages,
+  }))
+})
+
+// ============ ABOUT PAGE (SEO brand story) ============
+
+app.get('/about', async (c) => {
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
+  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
+  const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
+  const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
+  return c.html(aboutPage({
     razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
     googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
     products,

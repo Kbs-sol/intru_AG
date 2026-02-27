@@ -1,17 +1,22 @@
 -- =============================================================
--- intru.in Supabase Schema (v2)
+-- intru.in Supabase Schema (v3 — Production-Grade)
 -- Run this in Supabase SQL Editor: Dashboard > SQL Editor
--- 
--- CHANGES from v1:
--- - RLS policies fixed: products + legal_pages use TRUE for anon reads
--- - Seed data uses intru.in CDN image URLs
--- - Orders INSERT policy added for anon/authenticated
--- - Full legal page content included in seed
+--
+-- CHANGES from v2:
+-- - users.id references auth.users(id) ON DELETE CASCADE
+-- - Trigger syncs auth.users → public.users on signup
+-- - CHECK constraints: price >= 0, total >= 0
+-- - products.slug is UNIQUE NOT NULL (already was, now explicit)
+-- - RLS: orders tied to user_id via auth.uid(), no public INSERT
+-- - RLS: store_credits tied to user_id via auth.uid()
+-- - Order creation MUST use service_role key (server-side only)
+-- - Legal pages include Grievance Redressal for Indian compliance
+-- - New product catalog (6 products with real intru.in CDN URLs)
 -- =============================================================
 
--- 1. USERS TABLE
+-- 1. USERS TABLE (synced from Supabase Auth)
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE NOT NULL,
   name TEXT,
   picture TEXT,
@@ -24,6 +29,31 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
 
+-- Auth sync: auto-create public.users row when a new auth user signs up
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (id, email, name, picture)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture', '')
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    name  = COALESCE(EXCLUDED.name, users.name),
+    picture = COALESCE(EXCLUDED.picture, users.picture),
+    last_login = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 -- 2. PRODUCTS TABLE
 CREATE TABLE IF NOT EXISTS products (
   id TEXT PRIMARY KEY,
@@ -31,8 +61,8 @@ CREATE TABLE IF NOT EXISTS products (
   name TEXT NOT NULL,
   tagline TEXT,
   description TEXT,
-  price INTEGER NOT NULL,
-  compare_price INTEGER,
+  price INTEGER NOT NULL CHECK (price >= 0),
+  compare_price INTEGER CHECK (compare_price IS NULL OR compare_price >= 0),
   currency TEXT DEFAULT 'INR',
   images JSONB DEFAULT '[]'::jsonb,
   sizes JSONB DEFAULT '[]'::jsonb,
@@ -49,16 +79,17 @@ CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 -- 3. ORDERS TABLE
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   razorpay_order_id TEXT UNIQUE,
   razorpay_payment_id TEXT,
   razorpay_signature TEXT,
   customer_email TEXT,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
-  subtotal INTEGER NOT NULL DEFAULT 0,
-  shipping INTEGER NOT NULL DEFAULT 0,
-  total INTEGER NOT NULL DEFAULT 0,
+  subtotal INTEGER NOT NULL DEFAULT 0 CHECK (subtotal >= 0),
+  shipping INTEGER NOT NULL DEFAULT 0 CHECK (shipping >= 0),
+  total INTEGER NOT NULL DEFAULT 0 CHECK (total >= 0),
   currency TEXT DEFAULT 'INR',
-  store_credit_used INTEGER DEFAULT 0,
+  store_credit_used INTEGER DEFAULT 0 CHECK (store_credit_used >= 0),
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'payment_failed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')),
   shipping_address JSONB,
   tracking_number TEXT,
@@ -76,12 +107,14 @@ CREATE INDEX IF NOT EXISTS idx_orders_razorpay_order_id ON orders(razorpay_order
 CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 
 -- 4. STORE CREDITS TABLE
 CREATE TABLE IF NOT EXISTS store_credits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   email TEXT NOT NULL,
-  amount INTEGER NOT NULL,
+  amount INTEGER NOT NULL CHECK (amount >= 0),
   reason TEXT NOT NULL CHECK (reason IN ('refund', 'defect', 'wrong_item', 'goodwill', 'promotional')),
   order_id UUID REFERENCES orders(id),
   issued_by TEXT,
@@ -90,6 +123,7 @@ CREATE TABLE IF NOT EXISTS store_credits (
 );
 
 CREATE INDEX IF NOT EXISTS idx_store_credits_email ON store_credits(email);
+CREATE INDEX IF NOT EXISTS idx_store_credits_user_id ON store_credits(user_id);
 
 -- 5. LEGAL PAGES TABLE
 CREATE TABLE IF NOT EXISTS legal_pages (
@@ -100,8 +134,7 @@ CREATE TABLE IF NOT EXISTS legal_pages (
 );
 
 -- =============================================================
--- ROW LEVEL SECURITY (RLS)
--- CRITICAL FIX: Use TRUE for public tables so anon key works
+-- ROW LEVEL SECURITY (RLS) — Production-Grade
 -- =============================================================
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -110,7 +143,7 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE store_credits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE legal_pages ENABLE ROW LEVEL SECURITY;
 
--- Drop old policies if they exist (safe to re-run)
+-- Drop all old policies (safe to re-run)
 DROP POLICY IF EXISTS "Products are viewable by everyone" ON products;
 DROP POLICY IF EXISTS "Products are editable by service role" ON products;
 DROP POLICY IF EXISTS "Users can view their own orders" ON orders;
@@ -123,76 +156,84 @@ DROP POLICY IF EXISTS "Users can view their own profile" ON users;
 DROP POLICY IF EXISTS "Service role has full access to users" ON users;
 DROP POLICY IF EXISTS "Anyone can insert orders" ON orders;
 
--- Products: public SELECT (anon + authenticated), service-role full CRUD
+-- PRODUCTS: public SELECT, service-role full CRUD
 CREATE POLICY "Products are viewable by everyone"
   ON products FOR SELECT USING (true);
 
 CREATE POLICY "Products are editable by service role"
   ON products FOR ALL USING (auth.role() = 'service_role');
 
--- Legal Pages: public SELECT, service-role full CRUD
+-- LEGAL PAGES: public SELECT, service-role full CRUD
 CREATE POLICY "Legal pages are viewable by everyone"
   ON legal_pages FOR SELECT USING (true);
 
 CREATE POLICY "Legal pages are editable by service role"
   ON legal_pages FOR ALL USING (auth.role() = 'service_role');
 
--- Orders: anyone can INSERT (checkout creates orders), service-role full access
-CREATE POLICY "Anyone can insert orders"
-  ON orders FOR INSERT WITH CHECK (true);
+-- ORDERS: users SELECT their own rows, service-role full access
+-- NO public INSERT — order creation is server-side via service_role only
+CREATE POLICY "Users can view their own orders"
+  ON orders FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "Service role has full access to orders"
   ON orders FOR ALL USING (auth.role() = 'service_role');
 
--- Store Credits: service-role full access
+-- STORE CREDITS: users SELECT their own balance, service-role full access
+CREATE POLICY "Users can view their own store credits"
+  ON store_credits FOR SELECT USING (auth.uid() = user_id);
+
 CREATE POLICY "Service role has full access to store credits"
   ON store_credits FOR ALL USING (auth.role() = 'service_role');
 
--- Users: service-role full access (upsert on Google auth)
+-- USERS: users can view own profile, service-role full access
+CREATE POLICY "Users can view their own profile"
+  ON users FOR SELECT USING (auth.uid() = id);
+
 CREATE POLICY "Service role has full access to users"
   ON users FOR ALL USING (auth.role() = 'service_role');
 
 -- =============================================================
--- SEED DATA: Products (p1-p6) with intru.in CDN images
+-- SEED DATA: Products (p1-p6) — New Catalog
 -- =============================================================
 
 INSERT INTO products (id, slug, name, tagline, description, price, compare_price, currency, images, sizes, category, in_stock, featured) VALUES
-  ('p1', 'essential-oversized-tee', 'Essential Oversized Tee', 'The foundation of every outfit',
-   'Our signature oversized tee crafted from 240 GSM premium cotton. Drop shoulders, ribbed neckline, and a relaxed fit that drapes perfectly. Pre-shrunk and garment-dyed for that lived-in softness from day one.',
-   1299, 1799, 'INR',
-   '["https://intru.in/cdn/shop/files/3.png?v=1748498083&width=800","https://intru.in/cdn/shop/files/1_83d03bc1-1a42-4357-8d82-76fbd6a2b651.png?v=1748498083&width=800","https://intru.in/cdn/shop/files/2_a58345be-8c36-4db5-a9a5-f88e19e3c22d.png?v=1748498083&width=800","https://intru.in/cdn/shop/files/4_28b80a7c-be7e-4f21-bf58-f64b90c11d19.png?v=1748498083&width=800"]'::jsonb,
-   '["S","M","L","XL","XXL"]'::jsonb, 'Tops', true, true),
+  ('p1', 'doodles-t-shirt', 'Doodles T-Shirt', 'Warmth and joy',
+   'Playful doodle-art printed tee that radiates warmth. Crafted from premium cotton with puff-print detailing. Pre-shrunk, garment-dyed, and designed to feel like it was made just for you.',
+   999, 1499, 'INR',
+   '["https://intru.in/cdn/shop/files/3.png?v=1748692106&width=1946","https://intru.in/cdn/shop/files/3.png?v=1748692106&width=1000","https://intru.in/cdn/shop/files/3.png?v=1748692106&width=800","https://intru.in/cdn/shop/files/3.png?v=1748692106&width=600"]'::jsonb,
+   '["S","M","L","XL","XXL"]'::jsonb, 'T-Shirts', true, true),
 
-  ('p2', 'midnight-cargo-joggers', 'Midnight Cargo Joggers', 'Utility meets comfort',
-   'Relaxed-fit cargo joggers in washed black. Six-pocket design with snap closures, elastic waistband with drawcord, and tapered ankles with adjustable toggles. Built from heavyweight French terry.',
-   1999, 2499, 'INR',
-   '["https://intru.in/cdn/shop/files/jogger1.png?v=1748500000&width=800","https://intru.in/cdn/shop/files/jogger2.png?v=1748500000&width=800","https://intru.in/cdn/shop/files/jogger3.png?v=1748500000&width=800","https://intru.in/cdn/shop/files/jogger4.png?v=1748500000&width=800"]'::jsonb,
-   '["S","M","L","XL","XXL"]'::jsonb, 'Bottoms', true, true),
+  ('p2', 'no-risk-porsche', 'No Risk Porsche', 'Bold edge',
+   'A statement tee for those who move without hesitation. Bold graphic print, premium cotton, and a fit that commands attention. No risk, no reward.',
+   999, 1499, 'INR',
+   '["https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=1920","https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=1000","https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=800","https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=600"]'::jsonb,
+   '["S","M","L","XL","XXL"]'::jsonb, 'T-Shirts', true, true),
 
-  ('p3', 'structured-minimal-hoodie', 'Structured Minimal Hoodie', 'Clean lines, warm soul',
-   'A heavyweight 360 GSM hoodie with a structured silhouette. Kangaroo pocket, flat drawcord, and double-needle stitching throughout. The hood holds its shape without feeling stiff.',
-   2499, 3199, 'INR',
-   '["https://intru.in/cdn/shop/files/hoodie1.png?v=1748500100&width=800","https://intru.in/cdn/shop/files/hoodie2.png?v=1748500100&width=800","https://intru.in/cdn/shop/files/hoodie3.png?v=1748500100&width=800","https://intru.in/cdn/shop/files/hoodie4.png?v=1748500100&width=800"]'::jsonb,
-   '["S","M","L","XL"]'::jsonb, 'Tops', true, true),
+  ('p3', 'orange-puff-printed-t-shirt', 'Orange Puff', 'Caffeine-core',
+   'Orange puff-printed tee with a texture you can feel. Caffeine-core energy meets streetwear minimalism. Premium cotton, relaxed fit, limited run.',
+   899, 1499, 'INR',
+   '["https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=1445","https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=1000","https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=800","https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=600"]'::jsonb,
+   '["S","M","L","XL"]'::jsonb, 'T-Shirts', true, true),
 
-  ('p4', 'everyday-slim-chinos', 'Everyday Slim Chinos', 'From desk to dinner',
-   'Slim-fit chinos in stone wash. Stretch cotton twill with a soft hand-feel. Clean front, slant pockets, and a tapered leg that works with sneakers or boots. Wrinkle-resistant finish.',
-   1799, NULL, 'INR',
-   '["https://intru.in/cdn/shop/files/chinos1.png?v=1748500200&width=800","https://intru.in/cdn/shop/files/chinos2.png?v=1748500200&width=800","https://intru.in/cdn/shop/files/chinos3.png?v=1748500200&width=800","https://intru.in/cdn/shop/files/chinos4.png?v=1748500200&width=800"]'::jsonb,
-   '["28","30","32","34","36"]'::jsonb, 'Bottoms', true, false),
+  ('p4', 'romanticise-crop-tee', 'Romanticise Crop', 'Breezy ease',
+   'Cropped silhouette meets everyday comfort. Soft cotton, clean cut, and an effortless vibe. Designed over two months because we refused to rush perfection.',
+   699, 999, 'INR',
+   '["https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=1946","https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=1000","https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=800","https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=600"]'::jsonb,
+   '["XS","S","M","L"]'::jsonb, 'T-Shirts', true, true),
 
-  ('p5', 'graphic-art-tee-vol1', 'Graphic Art Tee Vol. 1', 'Wearable expression',
-   'Limited-edition graphic tee featuring original artwork by independent Indian artists. Screen-printed on our signature 240 GSM cotton base. Each print is unique.',
-   1499, NULL, 'INR',
-   '["https://intru.in/cdn/shop/files/graphic1.png?v=1748500300&width=800","https://intru.in/cdn/shop/files/graphic2.png?v=1748500300&width=800","https://intru.in/cdn/shop/files/graphic3.png?v=1748500300&width=800","https://intru.in/cdn/shop/files/graphic4.png?v=1748500300&width=800"]'::jsonb,
-   '["S","M","L","XL","XXL"]'::jsonb, 'Tops', true, true),
+  ('p5', 'stripe-18-shirt', 'Stripe 18 Shirt', 'Cool tones',
+   'Cool-toned striped shirt with a structured collar and relaxed body. Premium woven fabric, mother-of-pearl buttons, and a fit that bridges casual and smart.',
+   1099, 1699, 'INR',
+   '["https://intru.in/cdn/shop/files/99.png?v=1748173436&width=1946","https://intru.in/cdn/shop/files/99.png?v=1748173436&width=1000","https://intru.in/cdn/shop/files/99.png?v=1748173436&width=800","https://intru.in/cdn/shop/files/99.png?v=1748173436&width=600"]'::jsonb,
+   '["S","M","L","XL","XXL"]'::jsonb, 'Shirts', true, true),
 
-  ('p6', 'monochrome-zip-jacket', 'Monochrome Zip Jacket', 'Layer with intent',
-   'Lightweight zip-up jacket in matte black. Water-resistant shell with a soft mesh lining. Minimal branding, hidden pockets, and a clean stand collar. Packs into its own pocket for travel.',
-   2999, 3999, 'INR',
-   '["https://intru.in/cdn/shop/files/jacket1.png?v=1748500400&width=800","https://intru.in/cdn/shop/files/jacket2.png?v=1748500400&width=800","https://intru.in/cdn/shop/files/jacket3.png?v=1748500400&width=800","https://intru.in/cdn/shop/files/jacket4.png?v=1748500400&width=800"]'::jsonb,
-   '["S","M","L","XL"]'::jsonb, 'Outerwear', true, true)
+  ('p6', 'summer-shirt', 'Summer Shirt', 'Sunshine staple',
+   'Your go-to summer layer. Lightweight, breathable, and effortlessly styled. Made for golden-hour walks and spontaneous weekend plans.',
+   999, 1599, 'INR',
+   '["https://intru.in/cdn/shop/files/03.png?v=1756359941&width=1946","https://intru.in/cdn/shop/files/03.png?v=1756359941&width=1000","https://intru.in/cdn/shop/files/03.png?v=1756359941&width=800","https://intru.in/cdn/shop/files/03.png?v=1756359941&width=600"]'::jsonb,
+   '["S","M","L","XL"]'::jsonb, 'Shirts', true, true)
 ON CONFLICT (id) DO UPDATE SET
+  slug = EXCLUDED.slug,
   name = EXCLUDED.name,
   tagline = EXCLUDED.tagline,
   description = EXCLUDED.description,
@@ -205,25 +246,97 @@ ON CONFLICT (id) DO UPDATE SET
   featured = EXCLUDED.featured;
 
 -- =============================================================
--- SEED DATA: Legal Pages (full content)
+-- SEED DATA: Legal Pages (Indian E-commerce Compliant)
+-- Includes Grievance Redressal per Indian Consumer Protection Act
 -- =============================================================
 
 INSERT INTO legal_pages (slug, title, content, updated_at) VALUES
   ('terms', 'Terms of Service',
-   '<h2>1. Agreement to Terms</h2><p>By accessing intru.in, you agree to be bound by these Terms, including our <a href="/p/shipping">Shipping</a> and <a href="/p/returns">Store-Credit-only Refund Policy</a>.</p><h2>2. Limited Drop Model</h2><p>All sales are final. Store Credit only for approved claims.</p><h2>3. Order Processing</h2><p>Orders processed within 36 hours.</p><h2>4. Shipping Disclaimer</h2><p>intru.in is not responsible for transit delays caused by delivery partners.</p><h2>5. Pricing &amp; Payment</h2><p>Prices in INR, inclusive of taxes. Payment via Razorpay.</p><h2>6. Store Credit</h2><p>1:1 INR value. Never expires. Non-transferable.</p><h2>7. Intellectual Property</h2><p>All content is our IP.</p><h2>8. Governing Law</h2><p>Governed by Indian law. Courts in Bangalore, Karnataka.</p>',
-   '2026-02-26'),
+   '<h2>1. Agreement to Terms</h2>
+<p>By accessing, browsing, or using this website (<strong>intru.in</strong>), you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions, including our <a href="/p/shipping">Shipping</a> and <a href="/p/returns">Store-Credit-only Refund Policy</a>. If you do not agree, please discontinue use immediately.</p>
+<h2>2. Limited Drop Model</h2>
+<p>intru.in operates on a <strong>limited-drop model</strong>. Products are released in small, exclusive batches. Due to the limited nature of our drops, <strong>all sales are final</strong>. We do not offer cash refunds under any circumstances. Approved claims are issued as Store Credit only.</p>
+<h2>3. Order Processing</h2>
+<p>We strive to process and hand over all orders to our courier partners within a <strong>36-hour window</strong> from the time of order confirmation. Orders placed on weekends or public holidays will be processed on the next business day.</p>
+<h2>4. Shipping Disclaimer</h2>
+<p>Delivery timelines provided at checkout are estimates only. <strong>intru.in is not responsible for any logistical delays, damages during transit, or failures to deliver caused by the independent delivery partner.</strong></p>
+<h2>5. Pricing &amp; Payment</h2>
+<p>All product prices are listed in Indian Rupees (INR) and are inclusive of applicable taxes. Payment is processed securely through Razorpay. We accept UPI, credit/debit cards, net banking, and popular digital wallets.</p>
+<h2>6. Store Credit</h2>
+<p>Store Credit issued by intru.in is valued at a 1:1 ratio with INR. Store Credit never expires and can be applied to any future purchase. Store Credit is non-transferable and cannot be converted to cash.</p>
+<h2>7. Intellectual Property</h2>
+<p>All content on intru.in — including logos, graphics, product images, and text — is our intellectual property and may not be reproduced without prior written consent.</p>
+<h2>8. Limitation of Liability</h2>
+<p>intru.in shall not be liable for any indirect, incidental, special, consequential, or punitive damages. Our total liability shall not exceed the amount paid for the specific product in question.</p>
+<h2>9. Governing Law &amp; Jurisdiction</h2>
+<p>These terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in Bangalore, Karnataka.</p>
+<h2>10. Grievance Redressal</h2>
+<p>In accordance with the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> and the Information Technology Act, 2000, our designated Grievance Officer / Nodal Officer is:</p>
+<p><strong>Nodal Officer:</strong> intru.in Grievance Desk<br><strong>Email:</strong> <a href="mailto:hello@intru.in">hello@intru.in</a><br><strong>Response Time:</strong> All grievances will be acknowledged within 48 hours and resolved within 30 days of receipt.</p>
+<h2>11. Changes to Terms</h2>
+<p>We reserve the right to update these Terms at any time. Continued use constitutes acceptance of the new Terms.</p>',
+   '2026-02-27'),
 
   ('returns', 'Returns, Exchanges & Refunds',
-   '<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin-bottom:32px;font-size:14px;line-height:1.7"><strong>Important:</strong> All sales are final. Store Credit only for approved claims.</div><h2>1. Limited Drop Policy</h2><p>All sales are final.</p><h2>2. Store Credit Only</h2><p>1:1 INR value. Never expires.</p><h2>3. 36-Hour Claim Window</h2><p>Email returns@intru.in within 36 hours with order number and photos.</p><h2>4. Eligible Claims</h2><p>Manufacturing defects, wrong item, or significant damage only.</p><h2>5. Contact</h2><p><a href="mailto:returns@intru.in">returns@intru.in</a></p>',
-   '2026-02-26'),
+   '<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin-bottom:32px;font-size:14px;line-height:1.7">
+<strong>Important:</strong> intru.in operates on a limited-drop model. All sales are final. We do not offer cash refunds. Approved claims receive <strong>Store Credit only</strong>.
+</div>
+<h2>1. Limited Drop Policy</h2>
+<p>Due to the exclusive and limited nature of intru.in products, <strong>all sales are final</strong>. Once a drop sells out, it is never restocked.</p>
+<h2>2. Store Credit Only — No Cash Refunds</h2>
+<p>Approved returns receive <strong>Store Credit at 1:1 value with INR</strong>. Store Credit can be used for any future drop, never expires, and is non-transferable. Cash refunds are not available under any circumstances.</p>
+<h2>3. 36-Hour Defect Claim Window</h2>
+<p>Customers must raise a claim within <strong>36 hours of receiving the order</strong>. To file a claim, email <a href="mailto:returns@intru.in">returns@intru.in</a> with:</p>
+<ul><li>Your order number</li><li>Clear photographs of the defect or issue</li><li>A brief description of the problem</li></ul>
+<h2>4. Eligible Claims</h2>
+<p><strong>Store Credit approved for:</strong> Manufacturing defects, wrong item received, significantly damaged product during transit.</p>
+<p><strong>NOT eligible:</strong> Change of mind, wrong size ordered, minor color variations between screen and product, claims submitted after the 36-hour window.</p>
+<h2>5. Exchange Process</h2>
+<p>For size exchanges on eligible items, email us within 36 hours. If approved and replacement size is in stock, we ship at no additional cost. If out of stock, Store Credit is issued.</p>
+<h2>6. Grievance Redressal</h2>
+<p>If you are unsatisfied with the resolution of your claim, you may escalate to our Nodal Officer at <a href="mailto:hello@intru.in">hello@intru.in</a>. All escalations are acknowledged within 48 hours and resolved within 30 days.</p>
+<h2>7. Contact</h2>
+<p>For all return queries: <a href="mailto:returns@intru.in">returns@intru.in</a></p>',
+   '2026-02-27'),
 
   ('privacy', 'Privacy Policy',
-   '<h2>1. Information We Collect</h2><p>Name, email, phone, shipping address, payment details, and browsing data.</p><h2>2. How We Use Your Data</h2><p>Order processing, communication, Store Credit management. We do not sell your data.</p><h2>3. Data Security</h2><p>SSL/TLS encryption. Razorpay is PCI-DSS compliant.</p><h2>4. Third-Party Services</h2><p>Supabase, Razorpay, Google.</p><h2>5. Your Rights</h2><p>Contact hello@intru.in for data access, correction, or deletion.</p>',
-   '2026-02-26'),
+   '<h2>1. Information We Collect</h2>
+<p>We collect information you provide directly: name, email address, phone number, shipping address, and payment details. We also collect browsing data through cookies and analytics tools.</p>
+<h2>2. How We Use Your Data</h2>
+<p>Your data is used to: process orders, send order updates and tracking, manage Store Credit balances, improve our services, and communicate about new drops (with your consent). <strong>We do not sell or rent your personal information to any third party.</strong></p>
+<h2>3. Data Security</h2>
+<p>We implement SSL/TLS encryption across the entire site. Payment processing is handled by Razorpay, a PCI-DSS Level 1 compliant payment gateway. We never store full card details on our servers.</p>
+<h2>4. Cookies</h2>
+<p>We use essential cookies for cart management and session authentication. Optional analytics cookies help us understand traffic and improve the shopping experience. You may disable non-essential cookies in your browser settings.</p>
+<h2>5. Third-Party Services</h2>
+<p>We use the following third-party services, each governed by their own privacy policies: Supabase (database), Razorpay (payments), Google (authentication), and our delivery partners (shipping).</p>
+<h2>6. Data Retention</h2>
+<p>We retain your personal data for as long as your account is active or as needed to provide services. Order records are retained for 7 years as required by Indian tax regulations.</p>
+<h2>7. Your Rights</h2>
+<p>You have the right to request access, correction, or deletion of your personal data at any time. Contact us at <a href="mailto:hello@intru.in">hello@intru.in</a>.</p>
+<h2>8. Grievance Redressal</h2>
+<p>For privacy-related grievances, contact our Nodal Officer at <a href="mailto:hello@intru.in">hello@intru.in</a>. Grievances will be acknowledged within 48 hours and resolved within 30 days.</p>
+<h2>9. Updates</h2>
+<p>This policy may be updated periodically. Significant changes will be communicated via email to registered users.</p>',
+   '2026-02-27'),
 
   ('shipping', 'Shipping Policy',
-   '<h2>1. Processing Time</h2><p>Orders processed within 36 hours (excluding weekends/holidays).</p><h2>2. Delivery Coverage</h2><p>India only. No international shipping.</p><h2>3. Estimated Delivery</h2><ul><li><strong>Metro:</strong> 3-5 days</li><li><strong>Tier 2:</strong> 5-7 days</li><li><strong>Remote:</strong> 7-10 days</li></ul><h2>4. Shipping Costs</h2><ul><li>Free over Rs.1,999</li><li>Rs.99 flat fee under Rs.1,999</li></ul><h2>5. Delivery Liability</h2><p>intru.in is not responsible for carrier delays after handover.</p>',
-   '2026-02-26')
+   '<h2>1. Processing Time</h2>
+<p>All orders are processed within a <strong>36-hour window</strong> from order confirmation (excluding weekends and public holidays).</p>
+<h2>2. Delivery Coverage</h2>
+<p>We ship across India via trusted courier partners. International shipping is not available at this time.</p>
+<h2>3. Estimated Delivery</h2>
+<ul><li><strong>Metro cities (Delhi, Mumbai, Bangalore, etc.):</strong> 3–5 business days</li><li><strong>Tier 2 cities:</strong> 5–7 business days</li><li><strong>Remote / rural areas:</strong> 7–10 business days</li></ul>
+<p>These are estimates and may vary based on courier partner capacity and external factors.</p>
+<h2>4. Shipping Costs</h2>
+<ul><li><strong>Free shipping</strong> on orders above Rs.1,999</li><li>Flat <strong>Rs.99</strong> for orders below Rs.1,999</li></ul>
+<h2>5. Order Tracking</h2>
+<p>A tracking link will be sent to your registered email and phone number once your order ships. You can also check order status by emailing <a href="mailto:hello@intru.in">hello@intru.in</a>.</p>
+<h2>6. Delivery Liability</h2>
+<p><strong>Once the order is handed over to our courier partner, intru.in is not responsible for transit delays, theft, or carrier-caused damage.</strong> We will, however, assist you in filing a claim with the courier and provide necessary documentation.</p>
+<h2>7. Undeliverable Orders</h2>
+<p>If an order is returned to us due to an incorrect address or failed delivery attempts, we will contact you to arrange re-shipment. Additional shipping charges may apply.</p>',
+   '2026-02-27')
 ON CONFLICT (slug) DO UPDATE SET
   title = EXCLUDED.title,
   content = EXCLUDED.content,

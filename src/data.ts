@@ -29,7 +29,7 @@ export interface Env {
 export const STORE_CONFIG = {
   name: "intru.in",
   tagline: "Limited Drops. No Restocks.",
-  description: "Born from a shared love for minimalism and everyday style. We craft essential wardrobe pieces that speak through quality, not logos. Limited drops only.",
+  description: "Two best friends who were super picky about what they wore — tired of the same mass-produced patterns everywhere. So we launched intru.in: limited stock only, no fake drops, every piece made with love. When it's gone, it's gone.",
   currency: "INR",
   currencySymbol: "Rs.",
   freeShippingThreshold: 1999,
@@ -45,93 +45,93 @@ export const STORE_CONFIG = {
 // ============ SEED PRODUCTS — inserted when Supabase products table is empty ============
 export const SEED_PRODUCTS: Product[] = [
   {
-    id: "p1", slug: "essential-oversized-tee", name: "Essential Oversized Tee",
-    tagline: "The foundation of every outfit",
-    description: "Our signature oversized tee crafted from 240 GSM premium cotton. Drop shoulders, ribbed neckline, and a relaxed fit that drapes perfectly. Pre-shrunk and garment-dyed for that lived-in softness from day one.",
-    price: 1299, comparePrice: 1799, currency: "INR",
+    id: "p1", slug: "doodles-t-shirt", name: "Doodles T-Shirt",
+    tagline: "Warmth and joy",
+    description: "Playful doodle-art printed tee that radiates warmth. Crafted from premium cotton with puff-print detailing. Pre-shrunk, garment-dyed, and designed to feel like it was made just for you.",
+    price: 999, comparePrice: 1499, currency: "INR",
     images: [
-      "https://intru.in/cdn/shop/files/3.png?v=1748498083&width=800",
-      "https://intru.in/cdn/shop/files/1_83d03bc1-1a42-4357-8d82-76fbd6a2b651.png?v=1748498083&width=800",
-      "https://intru.in/cdn/shop/files/2_a58345be-8c36-4db5-a9a5-f88e19e3c22d.png?v=1748498083&width=800",
-      "https://intru.in/cdn/shop/files/4_28b80a7c-be7e-4f21-bf58-f64b90c11d19.png?v=1748498083&width=800"
+      "https://intru.in/cdn/shop/files/3.png?v=1748692106&width=1946",
+      "https://intru.in/cdn/shop/files/3.png?v=1748692106&width=1000",
+      "https://intru.in/cdn/shop/files/3.png?v=1748692106&width=800",
+      "https://intru.in/cdn/shop/files/3.png?v=1748692106&width=600"
     ],
-    sizes: ["S", "M", "L", "XL", "XXL"], category: "Tops", inStock: true, featured: true
+    sizes: ["S", "M", "L", "XL", "XXL"], category: "T-Shirts", inStock: true, featured: true
   },
   {
-    id: "p2", slug: "midnight-cargo-joggers", name: "Midnight Cargo Joggers",
-    tagline: "Utility meets comfort",
-    description: "Relaxed-fit cargo joggers in washed black. Six-pocket design with snap closures, elastic waistband with drawcord, and tapered ankles with adjustable toggles. Built from heavyweight French terry.",
-    price: 1999, comparePrice: 2499, currency: "INR",
+    id: "p2", slug: "no-risk-porsche", name: "No Risk Porsche",
+    tagline: "Bold edge",
+    description: "A statement tee for those who move without hesitation. Bold graphic print, premium cotton, and a fit that commands attention. No risk, no reward.",
+    price: 999, comparePrice: 1499, currency: "INR",
     images: [
-      "https://intru.in/cdn/shop/files/jogger1.png?v=1748500000&width=800",
-      "https://intru.in/cdn/shop/files/jogger2.png?v=1748500000&width=800",
-      "https://intru.in/cdn/shop/files/jogger3.png?v=1748500000&width=800",
-      "https://intru.in/cdn/shop/files/jogger4.png?v=1748500000&width=800"
+      "https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=1920",
+      "https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=1000",
+      "https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=800",
+      "https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=600"
     ],
-    sizes: ["S", "M", "L", "XL", "XXL"], category: "Bottoms", inStock: true, featured: true
+    sizes: ["S", "M", "L", "XL", "XXL"], category: "T-Shirts", inStock: true, featured: true
   },
   {
-    id: "p3", slug: "structured-minimal-hoodie", name: "Structured Minimal Hoodie",
-    tagline: "Clean lines, warm soul",
-    description: "A heavyweight 360 GSM hoodie with a structured silhouette. Kangaroo pocket, flat drawcord, and double-needle stitching throughout. The hood holds its shape without feeling stiff.",
-    price: 2499, comparePrice: 3199, currency: "INR",
+    id: "p3", slug: "orange-puff-printed-t-shirt", name: "Orange Puff",
+    tagline: "Caffeine-core",
+    description: "Orange puff-printed tee with a texture you can feel. Caffeine-core energy meets streetwear minimalism. Premium cotton, relaxed fit, limited run.",
+    price: 899, comparePrice: 1499, currency: "INR",
     images: [
-      "https://intru.in/cdn/shop/files/hoodie1.png?v=1748500100&width=800",
-      "https://intru.in/cdn/shop/files/hoodie2.png?v=1748500100&width=800",
-      "https://intru.in/cdn/shop/files/hoodie3.png?v=1748500100&width=800",
-      "https://intru.in/cdn/shop/files/hoodie4.png?v=1748500100&width=800"
+      "https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=1445",
+      "https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=1000",
+      "https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=800",
+      "https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=600"
     ],
-    sizes: ["S", "M", "L", "XL"], category: "Tops", inStock: true, featured: true
+    sizes: ["S", "M", "L", "XL"], category: "T-Shirts", inStock: true, featured: true
   },
   {
-    id: "p4", slug: "everyday-slim-chinos", name: "Everyday Slim Chinos",
-    tagline: "From desk to dinner",
-    description: "Slim-fit chinos in stone wash. Stretch cotton twill with a soft hand-feel. Clean front, slant pockets, and a tapered leg that works with sneakers or boots. Wrinkle-resistant finish.",
-    price: 1799, currency: "INR",
+    id: "p4", slug: "romanticise-crop-tee", name: "Romanticise Crop",
+    tagline: "Breezy ease",
+    description: "Cropped silhouette meets everyday comfort. Soft cotton, clean cut, and an effortless vibe. Designed over two months because we refused to rush perfection.",
+    price: 699, comparePrice: 999, currency: "INR",
     images: [
-      "https://intru.in/cdn/shop/files/chinos1.png?v=1748500200&width=800",
-      "https://intru.in/cdn/shop/files/chinos2.png?v=1748500200&width=800",
-      "https://intru.in/cdn/shop/files/chinos3.png?v=1748500200&width=800",
-      "https://intru.in/cdn/shop/files/chinos4.png?v=1748500200&width=800"
+      "https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=1946",
+      "https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=1000",
+      "https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=800",
+      "https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=600"
     ],
-    sizes: ["28", "30", "32", "34", "36"], category: "Bottoms", inStock: true, featured: false
+    sizes: ["XS", "S", "M", "L"], category: "T-Shirts", inStock: true, featured: true
   },
   {
-    id: "p5", slug: "graphic-art-tee-vol1", name: "Graphic Art Tee Vol. 1",
-    tagline: "Wearable expression",
-    description: "Limited-edition graphic tee featuring original artwork by independent Indian artists. Screen-printed on our signature 240 GSM cotton base. Each print is unique.",
-    price: 1499, currency: "INR",
+    id: "p5", slug: "stripe-18-shirt", name: "Stripe 18 Shirt",
+    tagline: "Cool tones",
+    description: "Cool-toned striped shirt with a structured collar and relaxed body. Premium woven fabric, mother-of-pearl buttons, and a fit that bridges casual and smart.",
+    price: 1099, comparePrice: 1699, currency: "INR",
     images: [
-      "https://intru.in/cdn/shop/files/graphic1.png?v=1748500300&width=800",
-      "https://intru.in/cdn/shop/files/graphic2.png?v=1748500300&width=800",
-      "https://intru.in/cdn/shop/files/graphic3.png?v=1748500300&width=800",
-      "https://intru.in/cdn/shop/files/graphic4.png?v=1748500300&width=800"
+      "https://intru.in/cdn/shop/files/99.png?v=1748173436&width=1946",
+      "https://intru.in/cdn/shop/files/99.png?v=1748173436&width=1000",
+      "https://intru.in/cdn/shop/files/99.png?v=1748173436&width=800",
+      "https://intru.in/cdn/shop/files/99.png?v=1748173436&width=600"
     ],
-    sizes: ["S", "M", "L", "XL", "XXL"], category: "Tops", inStock: true, featured: true
+    sizes: ["S", "M", "L", "XL", "XXL"], category: "Shirts", inStock: true, featured: true
   },
   {
-    id: "p6", slug: "monochrome-zip-jacket", name: "Monochrome Zip Jacket",
-    tagline: "Layer with intent",
-    description: "Lightweight zip-up jacket in matte black. Water-resistant shell with a soft mesh lining. Minimal branding, hidden pockets, and a clean stand collar. Packs into its own pocket for travel.",
-    price: 2999, comparePrice: 3999, currency: "INR",
+    id: "p6", slug: "summer-shirt", name: "Summer Shirt",
+    tagline: "Sunshine staple",
+    description: "Your go-to summer layer. Lightweight, breathable, and effortlessly styled. Made for golden-hour walks and spontaneous weekend plans.",
+    price: 999, comparePrice: 1599, currency: "INR",
     images: [
-      "https://intru.in/cdn/shop/files/jacket1.png?v=1748500400&width=800",
-      "https://intru.in/cdn/shop/files/jacket2.png?v=1748500400&width=800",
-      "https://intru.in/cdn/shop/files/jacket3.png?v=1748500400&width=800",
-      "https://intru.in/cdn/shop/files/jacket4.png?v=1748500400&width=800"
+      "https://intru.in/cdn/shop/files/03.png?v=1756359941&width=1946",
+      "https://intru.in/cdn/shop/files/03.png?v=1756359941&width=1000",
+      "https://intru.in/cdn/shop/files/03.png?v=1756359941&width=800",
+      "https://intru.in/cdn/shop/files/03.png?v=1756359941&width=600"
     ],
-    sizes: ["S", "M", "L", "XL"], category: "Outerwear", inStock: true, featured: true
+    sizes: ["S", "M", "L", "XL"], category: "Shirts", inStock: true, featured: true
   },
 ];
 
-// ============ SEED LEGAL PAGES ============
+// ============ SEED LEGAL PAGES (Indian E-Commerce Compliant) ============
 export const SEED_LEGAL_PAGES: LegalPage[] = [
   {
     slug: "terms", title: "Terms of Service",
     content: `<h2>1. Agreement to Terms</h2>
-<p>By accessing, browsing, or using this website (intru.in), you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions, including our <a href="/p/shipping">Shipping</a> and <a href="/p/returns">Store-Credit-only Refund Policy</a>.</p>
+<p>By accessing, browsing, or using this website (<strong>intru.in</strong>), you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions, including our <a href="/p/shipping">Shipping</a> and <a href="/p/returns">Store-Credit-only Refund Policy</a>. If you do not agree, please discontinue use immediately.</p>
 <h2>2. Limited Drop Model</h2>
-<p>intru.in operates on a limited-drop model. Products are released in small, exclusive batches. Due to the limited nature of our drops, <strong>all sales are final</strong>. We do not offer cash refunds under any circumstances. Approved claims are issued as Store Credit only.</p>
+<p>intru.in operates on a <strong>limited-drop model</strong>. Products are released in small, exclusive batches. Due to the limited nature of our drops, <strong>all sales are final</strong>. We do not offer cash refunds under any circumstances. Approved claims are issued as Store Credit only.</p>
 <h2>3. Order Processing</h2>
 <p>We strive to process and hand over all orders to our courier partners within a <strong>36-hour window</strong> from the time of order confirmation. Orders placed on weekends or public holidays will be processed on the next business day.</p>
 <h2>4. Shipping Disclaimer</h2>
@@ -141,67 +141,81 @@ export const SEED_LEGAL_PAGES: LegalPage[] = [
 <h2>6. Store Credit</h2>
 <p>Store Credit issued by intru.in is valued at a 1:1 ratio with INR. Store Credit never expires and can be applied to any future purchase. Store Credit is non-transferable and cannot be converted to cash.</p>
 <h2>7. Intellectual Property</h2>
-<p>All content on intru.in is our intellectual property and may not be reproduced without prior written consent.</p>
+<p>All content on intru.in — including logos, graphics, product images, and text — is our intellectual property and may not be reproduced without prior written consent.</p>
 <h2>8. Limitation of Liability</h2>
 <p>intru.in shall not be liable for any indirect, incidental, special, consequential, or punitive damages. Our total liability shall not exceed the amount paid for the specific product in question.</p>
-<h2>9. Governing Law</h2>
+<h2>9. Governing Law &amp; Jurisdiction</h2>
 <p>These terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in Bangalore, Karnataka.</p>
-<h2>10. Changes to Terms</h2>
+<h2>10. Grievance Redressal</h2>
+<p>In accordance with the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> and the Information Technology Act, 2000, our designated Grievance Officer / Nodal Officer is:</p>
+<p><strong>Nodal Officer:</strong> intru.in Grievance Desk<br><strong>Email:</strong> <a href="mailto:hello@intru.in">hello@intru.in</a><br><strong>Response Time:</strong> All grievances will be acknowledged within 48 hours and resolved within 30 days of receipt.</p>
+<h2>11. Changes to Terms</h2>
 <p>We reserve the right to update these Terms at any time. Continued use constitutes acceptance of the new Terms.</p>`,
-    updatedAt: "2026-02-26"
+    updatedAt: "2026-02-27"
   },
   {
     slug: "returns", title: "Returns, Exchanges & Refunds",
     content: `<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin-bottom:32px;font-size:14px;line-height:1.7">
-<strong>Important:</strong> intru.in operates on a limited-drop model. All sales are final. We do not offer cash refunds. Approved claims receive Store Credit only.
+<strong>Important:</strong> intru.in operates on a limited-drop model. All sales are final. We do not offer cash refunds. Approved claims receive <strong>Store Credit only</strong>.
 </div>
 <h2>1. Limited Drop Policy</h2>
-<p>Due to the exclusive and limited nature of intru.in products, <strong>all sales are final</strong>.</p>
-<h2>2. Store Credit Only</h2>
-<p>Approved returns receive <strong>Store Credit at 1:1 value with INR</strong>. Store Credit can be used for any future drop, never expires, and is non-transferable.</p>
-<h2>3. 36-Hour Claim Window</h2>
-<p>Customers must raise a request within <strong>36 hours of receiving the order</strong>. Email <a href="mailto:returns@intru.in">returns@intru.in</a> with your order number, photos, and description.</p>
+<p>Due to the exclusive and limited nature of intru.in products, <strong>all sales are final</strong>. Once a drop sells out, it is never restocked.</p>
+<h2>2. Store Credit Only — No Cash Refunds</h2>
+<p>Approved returns receive <strong>Store Credit at 1:1 value with INR</strong>. Store Credit can be used for any future drop, never expires, and is non-transferable. Cash refunds are not available under any circumstances.</p>
+<h2>3. 36-Hour Defect Claim Window</h2>
+<p>Customers must raise a claim within <strong>36 hours of receiving the order</strong>. To file a claim, email <a href="mailto:returns@intru.in">returns@intru.in</a> with:</p>
+<ul><li>Your order number</li><li>Clear photographs of the defect or issue</li><li>A brief description of the problem</li></ul>
 <h2>4. Eligible Claims</h2>
-<p>Store Credit approved for: manufacturing defects, wrong item received, significantly damaged product. NOT approved for: change of mind, wrong size, minor color variations, claims after 36h.</p>
+<p><strong>Store Credit approved for:</strong> Manufacturing defects, wrong item received, significantly damaged product during transit.</p>
+<p><strong>NOT eligible:</strong> Change of mind, wrong size ordered, minor color variations between screen and product, claims submitted after the 36-hour window.</p>
 <h2>5. Exchange Process</h2>
-<p>For size exchanges on eligible items, email us within 36 hours. If approved and replacement is in stock, we ship at no additional cost.</p>
-<h2>6. Contact</h2>
+<p>For size exchanges on eligible items, email us within 36 hours. If approved and replacement size is in stock, we ship at no additional cost. If out of stock, Store Credit is issued.</p>
+<h2>6. Grievance Redressal</h2>
+<p>If you are unsatisfied with the resolution of your claim, you may escalate to our Nodal Officer at <a href="mailto:hello@intru.in">hello@intru.in</a>. All escalations are acknowledged within 48 hours and resolved within 30 days.</p>
+<h2>7. Contact</h2>
 <p>For all return queries: <a href="mailto:returns@intru.in">returns@intru.in</a></p>`,
-    updatedAt: "2026-02-26"
+    updatedAt: "2026-02-27"
   },
   {
     slug: "privacy", title: "Privacy Policy",
     content: `<h2>1. Information We Collect</h2>
-<p>We collect information you provide directly: name, email, phone, shipping address, and payment details. We also collect browsing data through cookies.</p>
+<p>We collect information you provide directly: name, email address, phone number, shipping address, and payment details. We also collect browsing data through cookies and analytics tools.</p>
 <h2>2. How We Use Your Data</h2>
-<p>Your data is used to process orders, send updates, manage Store Credit, and improve our services. We do not sell your personal information.</p>
+<p>Your data is used to: process orders, send order updates and tracking, manage Store Credit balances, improve our services, and communicate about new drops (with your consent). <strong>We do not sell or rent your personal information to any third party.</strong></p>
 <h2>3. Data Security</h2>
-<p>We implement SSL/TLS encryption. Payment is handled by Razorpay (PCI-DSS compliant). We never store full card details.</p>
+<p>We implement SSL/TLS encryption across the entire site. Payment processing is handled by Razorpay, a PCI-DSS Level 1 compliant payment gateway. We never store full card details on our servers.</p>
 <h2>4. Cookies</h2>
-<p>We use essential cookies for cart and sessions. Optional analytics cookies help us understand traffic.</p>
+<p>We use essential cookies for cart management and session authentication. Optional analytics cookies help us understand traffic and improve the shopping experience. You may disable non-essential cookies in your browser settings.</p>
 <h2>5. Third-Party Services</h2>
-<p>We use Supabase, Razorpay, and Google, each under their own privacy policies.</p>
-<h2>6. Your Rights</h2>
-<p>Request access, correction, or deletion of your data at <a href="mailto:hello@intru.in">hello@intru.in</a>.</p>
-<h2>7. Updates</h2>
-<p>This policy may be updated periodically. Significant changes will be communicated via email.</p>`,
-    updatedAt: "2026-02-26"
+<p>We use the following third-party services, each governed by their own privacy policies: Supabase (database), Razorpay (payments), Google (authentication), and our delivery partners (shipping).</p>
+<h2>6. Data Retention</h2>
+<p>We retain your personal data for as long as your account is active or as needed to provide services. Order records are retained for 7 years as required by Indian tax regulations.</p>
+<h2>7. Your Rights</h2>
+<p>You have the right to request access, correction, or deletion of your personal data at any time. Contact us at <a href="mailto:hello@intru.in">hello@intru.in</a>.</p>
+<h2>8. Grievance Redressal</h2>
+<p>For privacy-related grievances, contact our Nodal Officer at <a href="mailto:hello@intru.in">hello@intru.in</a>. Grievances will be acknowledged within 48 hours and resolved within 30 days.</p>
+<h2>9. Updates</h2>
+<p>This policy may be updated periodically. Significant changes will be communicated via email to registered users.</p>`,
+    updatedAt: "2026-02-27"
   },
   {
     slug: "shipping", title: "Shipping Policy",
     content: `<h2>1. Processing Time</h2>
-<p>All orders processed within a <strong>36-hour window</strong> (excluding weekends and holidays).</p>
+<p>All orders are processed within a <strong>36-hour window</strong> from order confirmation (excluding weekends and public holidays).</p>
 <h2>2. Delivery Coverage</h2>
-<p>We ship across India. International shipping is not available at this time.</p>
+<p>We ship across India via trusted courier partners. International shipping is not available at this time.</p>
 <h2>3. Estimated Delivery</h2>
-<ul><li><strong>Metro cities:</strong> 3-5 business days</li><li><strong>Tier 2:</strong> 5-7 business days</li><li><strong>Remote:</strong> 7-10 business days</li></ul>
+<ul><li><strong>Metro cities (Delhi, Mumbai, Bangalore, etc.):</strong> 3–5 business days</li><li><strong>Tier 2 cities:</strong> 5–7 business days</li><li><strong>Remote / rural areas:</strong> 7–10 business days</li></ul>
+<p>These are estimates and may vary based on courier partner capacity and external factors.</p>
 <h2>4. Shipping Costs</h2>
-<ul><li>Free shipping on orders above Rs.1,999</li><li>Flat Rs.99 for orders below Rs.1,999</li></ul>
-<h2>5. Delivery Liability</h2>
-<p><strong>Once handed to our courier partner, intru.in is not responsible for transit delays or carrier-caused damage.</strong> We will assist with tracking.</p>
-<h2>6. Order Tracking</h2>
-<p>A tracking link will be sent to your email and phone once your order ships.</p>`,
-    updatedAt: "2026-02-26"
+<ul><li><strong>Free shipping</strong> on orders above Rs.1,999</li><li>Flat <strong>Rs.99</strong> for orders below Rs.1,999</li></ul>
+<h2>5. Order Tracking</h2>
+<p>A tracking link will be sent to your registered email and phone number once your order ships. You can also check order status by emailing <a href="mailto:hello@intru.in">hello@intru.in</a>.</p>
+<h2>6. Delivery Liability</h2>
+<p><strong>Once the order is handed over to our courier partner, intru.in is not responsible for transit delays, theft, or carrier-caused damage.</strong> We will, however, assist you in filing a claim with the courier and provide necessary documentation.</p>
+<h2>7. Undeliverable Orders</h2>
+<p>If an order is returned to us due to an incorrect address or failed delivery attempts, we will contact you to arrange re-shipment. Additional shipping charges may apply.</p>`,
+    updatedAt: "2026-02-27"
   },
 ];
 
