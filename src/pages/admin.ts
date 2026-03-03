@@ -124,8 +124,12 @@ export function adminPage(opts: {
 <p>Upload a photo directly to Supabase. It will auto-fill the first empty image slot in the product cards below.</p>
 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
 <input type="file" id="imageUploaderProd" accept="image/*" style="font-size:12px">
-<button class="asave" id="uploadBtnProd" onclick="handleAdminUpload('imageUploaderProd','products','uploadStatusProd','uploadBtnProd')">Upload to Products</button>
+<button class="asave" id="uploadBtnProd" onclick="handleAdminUpload('imageUploaderProd','products','uploadStatusProd','uploadBtnProd', 'lastUrlProd', 'lastUploadProd')">Upload to Products</button>
 <span id="uploadStatusProd" style="font-size:11px;color:var(--g400)"></span>
+</div>
+<div id="lastUploadProd" style="margin-top:12px;display:none">
+<label style="font-size:11px;color:var(--g400)">Last Uploaded URL (Auto-filled + Selectable to copy):</label>
+<input type="text" id="lastUrlProd" readonly style="width:100%;font-size:11px;padding:6px;background:var(--w);border:1px solid var(--g100);margin-top:4px" onclick="this.select()">
 </div>
 </div>
 <div style="display:flex;align-items:center;margin-bottom:16px">
@@ -161,8 +165,12 @@ export function adminPage(opts: {
 <p>Upload a photo for the Instagram feed. It will auto-fill the first empty "Image URL" field below.</p>
 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
 <input type="file" id="imageUploaderIg" accept="image/*" style="font-size:12px">
-<button class="asave" id="uploadBtnIg" onclick="handleAdminUpload('imageUploaderIg','instagram_feed','uploadStatusIg','uploadBtnIg')">Upload to Feed</button>
+<button class="asave" id="uploadBtnIg" onclick="handleAdminUpload('imageUploaderIg','instagram_feed','uploadStatusIg','uploadBtnIg', 'lastUrlIg', 'lastUploadIg')">Upload to Feed</button>
 <span id="uploadStatusIg" style="font-size:11px;color:var(--g400)"></span>
+</div>
+<div id="lastUploadIg" style="margin-top:12px;display:none">
+<label style="font-size:11px;color:var(--g400)">Last Uploaded URL (Auto-filled + Selectable to copy):</label>
+<input type="text" id="lastUrlIg" readonly style="width:100%;font-size:11px;padding:6px;background:var(--w);border:1px solid var(--g100);margin-top:4px" onclick="this.select()">
 </div>
 </div>
 <div class="sett-card" style="margin-bottom:20px">

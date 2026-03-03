@@ -540,10 +540,13 @@ var _kseq=[38,38,40,40,37,39,37,39,66,65],_kidx=0;
 document.addEventListener('keydown',function(e){if(e.keyCode===_kseq[_kidx]){_kidx++;if(_kidx===_kseq.length){_kidx=0;window.location.href='/admin'}}else{_kidx=0}});
 
 /* ====== ADMIN IMAGE UPLOAD ====== */
-function handleAdminUpload(inputId, bucket, statusId, btnId) {
+function handleAdminUpload(inputId, bucket, statusId, btnId, lastUrlId, lastDivId) {
   var fileInput = document.getElementById(inputId);
   var status = document.getElementById(statusId);
   var btn = document.getElementById(btnId);
+  var lastUrl = document.getElementById(lastUrlId);
+  var lastDiv = document.getElementById(lastDivId);
+
   if (!fileInput || !fileInput.files || !fileInput.files[0]) {
     alert('Please select a file first');
     return;
@@ -563,6 +566,10 @@ function handleAdminUpload(inputId, bucket, statusId, btnId) {
         if (status) status.textContent = 'Upload Successful!';
         toast('Image uploaded and synced!', 'ok-green');
         
+        /* Show and fill the "Last Uploaded" link for manual copying */
+        if (lastUrl) lastUrl.value = data.url;
+        if (lastDiv) lastDiv.style.display = 'block';
+
         /* Find first empty URL input on the current page to auto-fill */
         var inputs = document.querySelectorAll('input:not([type="file"]):not([type="checkbox"]):not([type="password"])');
         for (var i = 0; i < inputs.length; i++) {
