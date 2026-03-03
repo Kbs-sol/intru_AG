@@ -16,37 +16,55 @@
 - Guests can browse, add to cart, and reach checkout freely
 - At checkout, a "Identify Yourself" overlay asks for email OR Google sign-in
 - New users are silently created in `public.users`; existing users are linked
-- Google One-Tap auto-prompt appears on all pages (when `GOOGLE_CLIENT_ID` is set)
+- Google One-Tap with `data-itp_support="true"`, `data-auto_select="false"`, and redirect fallback
 - No `/login` or `/register` routes — identity is captured only when needed
 
-### Hybrid Checkout (Admin-Toggleable)
+### Unified Checkout Flow (v6)
+**Both "Buy Now" and "Checkout from Bag" open the same Hybrid Payment Selection UI:**
+- "Buy Now" adds item to a temporary session cart and opens the cart drawer
+- Cart drawer shows the Prepaid/COD payment mode selector
+- User selects payment method, then clicks "Checkout"
+
 **Option A — Manual COD Mode (default, `USE_MAGIC_CHECKOUT = false`):**
-- **Prepaid**: Green badge "⚡ SAVE ₹99 / FREE SHIPPING" → Razorpay standard checkout
-- **COD**: Gray badge "Standard Delivery" + ₹99 convenience fee → inline address form
+- **Prepaid**: Bright green badge "⚡ SAVE Rs.99 / FREE SHIPPING" → Razorpay standard checkout
+- **COD**: Gray badge "Rs.99 Convenience Fee added" + ₹99 fee → inline address form
 - Payment mode selector visible in cart drawer
 
 **Option B — Razorpay Magic Mode (`USE_MAGIC_CHECKOUT = true`):**
 - Single "Checkout" button → Razorpay Magic Checkout handles everything
 - Payment mode selector hidden; Razorpay manages address/COD/1-click
 
-### Resend Email Notifications
-- **Prepaid success** → "Drop Secured" email to customer
-- **COD success** → "COD Received" email to customer (mentions verification call)
-- **COD success** → "NEW COD ALERT" email to manager (name, phone, full address, items, total)
-- Emails triggered server-side; requires `RESEND_API_KEY` in Cloudflare secrets
+**Psychological Nudges:**
+- Prepaid always shows bright green "⚡ SAVE Rs.99 / FREE SHIPPING"
+- COD always shows gray "Rs.99 Convenience Fee added"
+- Only one toast notification fires per order (prevents duplicate alerts)
 
-## Supabase Schema (v5)
+### Resend Email Notifications
+- **Prepaid success** → "Drop Secured!" email to customer
+- **COD success** → "Action Required: Confirm your intru.in COD Order #[ID]" email to customer
+- **COD success** → "NEW COD ORDER - Action Required — [name] — Rs.[total]" email to manager
+- Emails triggered server-side; requires `RESEND_API_KEY` in Cloudflare secrets
+- Only sent when orderId exists (prevents empty email sends)
+
+### Google Auth (Popup-Block Fix)
+- `data-itp_support="true"` for ITP-aware browsers
+- `data-auto_select="false"` prevents auto-selection popup
+- `doGoogleRedirect()` fallback: if Google One-Tap popup is blocked, redirects to Google OAuth consent screen
+- High-contrast "Sign in with Google" button in Identity overlay
+- All auth prompts reference `shop@intru.in`
+
+## Supabase Schema (v6)
 
 | Table | Purpose |
 |-------|---------|
 | `users` | Synced from Supabase Auth; stores email, name, picture, auth_provider |
 | `products` | Product catalog (id, slug, name, price, images, sizes, category) |
-| `orders` | Full order data including structured COD address fields, payment_method, cod_fee |
+| `orders` | Full order data: customer_phone, customer_email, items JSON, shipping_address JSON, payment_method, cod_fee, status |
 | `store_credits` | Store credit ledger |
 | `legal_pages` | Dynamic legal content (terms, returns, privacy, shipping) |
 | `size_chart` | Size measurements (XS-XXL, chest/length in inches) |
 | `subscribers` | "Notify Me" email signups |
-| `store_settings` | Admin toggles (USE_MAGIC_CHECKOUT, MANAGER_EMAIL, COD_FEE) |
+| `store_settings` | Admin toggles (USE_MAGIC_CHECKOUT, MANAGER_EMAIL, COD_FEE, INSTAGRAM_FEED_ENABLED) |
 | `instagram_feed` | Admin-managed Instagram feed images |
 
 **Run `supabase/schema.sql` in Supabase SQL Editor** to create/migrate all tables.
@@ -59,8 +77,8 @@
 | **Products** | Image URL editor (4 slots), price/compare-price, in-stock toggle |
 | **Legal** | HTML editor with live preview for all legal pages |
 | **Size Chart** | Full CRUD for chest/length measurements |
-| **IG Feed** | Add/edit/delete Instagram feed images |
-| **Settings** | Payment mode toggle (Manual COD ↔ Razorpay Magic), manager email, COD fee |
+| **IG Feed** | ON/OFF toggle (hides homepage section when OFF), add/edit/delete images, instant UI updates |
+| **Settings** | Payment mode toggle (Manual COD ↔ Razorpay Magic), manager notification email, COD fee |
 
 ## Environment Variables (Cloudflare Secrets)
 
@@ -107,9 +125,9 @@ npx wrangler pages secret put RAZORPAY_WEBHOOK_SECRET --project-name intru-in
 | GET | `/api/products` | List all products |
 | GET | `/api/products/:id` | Single product |
 | GET | `/api/size-chart` | Size chart data |
-| GET | `/api/instagram-feed` | Instagram feed images |
+| GET | `/api/instagram-feed` | Instagram feed images (respects INSTAGRAM_FEED_ENABLED toggle) |
 | POST | `/api/checkout` | Create prepaid/magic checkout order |
-| POST | `/api/checkout/cod` | Create COD order with address |
+| POST | `/api/checkout/cod` | Create COD order with full address, phone, items JSON |
 | POST | `/api/payment/verify` | Verify Razorpay payment signature |
 | POST | `/api/webhooks/razorpay` | Razorpay webhook handler |
 | POST | `/api/auth/identify` | Silent Identity — upsert user by email |
@@ -126,7 +144,13 @@ npx wrangler pages secret put RAZORPAY_WEBHOOK_SECRET --project-name intru-in
 - **Typography**: Archivo Black (headings), Space Grotesk (body)
 - **Colors**: High-contrast B&W (#0a0a0a / #fafafa)
 - **Logo**: SVG inline "INTRU.in"
-- **Footer**: Registered office Bangalore, KA; Grievance officer shop@intru.in
+- **Footer**: Registered office Hyderabad, Telangana, India; Grievance officer shop@intru.in
+
+## Compliance
+- All support emails: `shop@intru.in`
+- Grievance Officer: `shop@intru.in`
+- Legal jurisdiction: Hyderabad, Telangana
+- Consumer Protection (E-Commerce) Rules, 2020 compliant
 
 ## Deployment
 - **Platform**: Cloudflare Pages
