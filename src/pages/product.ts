@@ -126,11 +126,27 @@ ${disc>0?'<span class="psave">'+disc+'% OFF</span>':''}
 <div class="dispatch-badge"><i class="fas fa-rocket"></i> Fast Dispatch: Orders processed within 36 hours</div>
 <p class="pdesc">${product.description}</p>
 <hr class="pdiv">
-<label class="plbl">Select Size <span style="color:var(--red)">*</span></label>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+<label class="plbl" style="margin-bottom:0">Select Size <span style="color:var(--red)">*</span></label>
+<button onclick="openSizeGuide()" style="background:none;border:none;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--g400);padding:4px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;font-family:inherit;transition:color .2s" onmouseover="this.style.color='var(--bk)'" onmouseout="this.style.color='var(--g400)'"><i class="fas fa-ruler" style="margin-right:4px"></i>Size Guide</button>
+</div>
 <div class="szopt" id="szopt">
 ${product.sizes.map(s=>'<button class="szbtn" data-sz="'+s+'" onclick="selSz(this)">'+s+'</button>').join('')}
 </div>
 <p class="sz-hint" id="szHint"><i class="fas fa-exclamation-circle" style="margin-right:4px"></i>Please select a size to continue</p>
+
+<!-- Size Guide Modal -->
+<div id="sgModal" style="position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeSizeGuide()">
+<div style="background:var(--wh);max-width:520px;width:100%;max-height:80vh;overflow-y:auto;padding:32px;position:relative;animation:scaleIn .3s var(--eo)">
+<button onclick="closeSizeGuide()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;color:var(--g400);cursor:pointer;padding:4px"><i class="fas fa-times"></i></button>
+<h3 style="font-family:var(--head);font-size:18px;text-transform:uppercase;letter-spacing:-.02em;margin-bottom:4px">Size Guide</h3>
+<p style="font-size:12px;color:var(--g400);margin-bottom:20px">All measurements in inches (chest &amp; length)</p>
+<div id="sgBody" style="font-size:13px">
+<div style="text-align:center;padding:24px;color:var(--g400)"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+</div>
+<p style="font-size:11px;color:var(--g400);margin-top:16px;line-height:1.6"><i class="fas fa-info-circle" style="margin-right:4px"></i>Measured flat. Chest = pit to pit. Length = top of shoulder to hem. If between sizes, go with your usual.</p>
+</div>
+</div>
 <div class="pactions">
 <button class="atc-btn" id="atcBtn" onclick="handleATC()"><i class="fas fa-shopping-bag" style="margin-right:8px"></i>Add to Bag</button>
 <button class="bn-btn" id="bnBtn" onclick="handleBuyNow()"><i class="fas fa-bolt" style="margin-right:8px"></i>Buy Now</button>
@@ -230,6 +246,32 @@ document.addEventListener('keydown',function(e){
 });
 
 function togDet(b){b.classList.toggle('opn');b.nextElementSibling.classList.toggle('opn')}
+
+function openSizeGuide(){
+  var m=document.getElementById('sgModal');
+  m.style.display='flex';document.body.style.overflow='hidden';
+  fetch('/api/size-chart').then(function(r){return r.json()}).then(function(d){
+    var sizes=d.sizes||[];
+    if(!sizes.length){document.getElementById('sgBody').innerHTML='<p style="color:var(--g400);text-align:center">No size data available.</p>';return}
+    var h='<table style="width:100%;border-collapse:collapse">';
+    h+='<thead><tr style="border-bottom:2px solid var(--g100)">';
+    h+='<th style="text-align:left;padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--g400)">Size</th>';
+    h+='<th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--g400)">Chest (in)</th>';
+    h+='<th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--g400)">Length (in)</th>';
+    h+='</tr></thead><tbody>';
+    sizes.forEach(function(s){
+      var isCur=P.sz.indexOf(s.size_label)!==-1;
+      h+='<tr style="border-bottom:1px solid var(--g100);'+(isCur?'font-weight:700':'color:var(--g400)')+'">';
+      h+='<td style="padding:10px 12px;font-size:13px">'+s.size_label+(isCur?' <span style="font-size:9px;background:var(--bk);color:var(--wh);padding:2px 6px;border-radius:2px;margin-left:4px;vertical-align:middle">AVAILABLE</span>':'')+'</td>';
+      h+='<td style="text-align:center;padding:10px 12px">'+s.chest+'"</td>';
+      h+='<td style="text-align:center;padding:10px 12px">'+s.length+'"</td>';
+      h+='</tr>';
+    });
+    h+='</tbody></table>';
+    document.getElementById('sgBody').innerHTML=h;
+  }).catch(function(){document.getElementById('sgBody').innerHTML='<p style="color:var(--red);text-align:center">Failed to load size chart.</p>'});
+}
+function closeSizeGuide(){document.getElementById('sgModal').style.display='none';document.body.style.overflow=''}
 </script>`;
 
   return shell(

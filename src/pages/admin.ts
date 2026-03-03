@@ -84,6 +84,7 @@ export function adminPage(opts: {
 <button class="atab act" onclick="showTab(this,'tord')">Orders</button>
 <button class="atab" onclick="showTab(this,'tprod')">Products</button>
 <button class="atab" onclick="showTab(this,'tleg')">Legal</button>
+<button class="atab" onclick="showTab(this,'tsize')">Size Chart</button>
 </div>
 
 <!-- Orders Tab -->
@@ -93,8 +94,8 @@ export function adminPage(opts: {
 <button class="arefresh" onclick="loadOrders()"><i class="fas fa-sync-alt" style="margin-right:4px"></i>Refresh</button>
 </div>
 <table class="otbl">
-<thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
-<tbody id="otbody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--g400)">Loading orders...</td></tr></tbody>
+<thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead>
+<tbody id="otbody"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--g400)">Loading orders...</td></tr></tbody>
 </table>
 </div>
 
@@ -113,6 +114,19 @@ export function adminPage(opts: {
 <textarea class="alta" id="alta" oninput="prevLegal()"></textarea>
 <div class="alprev" id="alprev"></div>
 <button class="asave" style="margin-top:16px" onclick="saveLegal()">Save to Supabase</button>
+</div>
+
+<!-- Size Chart Tab -->
+<div class="apan" id="tsize">
+<div style="display:flex;align-items:center;margin-bottom:16px">
+<span class="asrc" id="sizeSrc"></span>
+<button class="arefresh" onclick="loadSizeChart()"><i class="fas fa-sync-alt" style="margin-right:4px"></i>Refresh</button>
+<button class="asave" style="margin-left:8px" onclick="addSizeRow()"><i class="fas fa-plus" style="margin-right:4px"></i>Add Size</button>
+</div>
+<table class="otbl">
+<thead><tr><th>Size</th><th>Chest (in)</th><th>Length (in)</th><th>Order</th><th>Action</th></tr></thead>
+<tbody id="sizetbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:var(--g400)">Loading...</td></tr></tbody>
+</table>
 </div>
 </div></div>
 
@@ -168,11 +182,12 @@ function initAdmin(){
   loadOrders();
   loadProducts();
   initLegal();
+  loadSizeChart();
 }
 
 /* ====== ORDERS (live from API) ====== */
 function loadOrders(){
-  document.getElementById('otbody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--g400)">Loading...</td></tr>';
+  document.getElementById('otbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--g400)">Loading...</td></tr>';
   fetch('/api/admin/orders')
   .then(function(r){return r.json()})
   .then(function(d){
@@ -181,18 +196,26 @@ function loadOrders(){
     src.className='asrc '+(d.source==='supabase'?'asrc-db':'asrc-static');
     var orders=d.orders||[];
     if(!orders.length){
-      document.getElementById('otbody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--g400)">No orders yet.</td></tr>';
+      document.getElementById('otbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--g400)">No orders yet.</td></tr>';
       return;
     }
     var h='';
     orders.forEach(function(o){
       var items=(o.items||[]).map(function(it){return(it.name||it.productId)+(it.size?' ('+it.size+')':'')+(it.quantity?' x'+it.quantity:'')}).join(', ');
       var st=o.status||'pending';
+      var pm=o.payment_method||'—';
+      var addr=o.shipping_address||{};
+      var addrStr=[addr.name||'',addr.line1||'',addr.line2||'',addr.city||'',addr.state||'',addr.zipcode||addr.zip||'',addr.country||''].filter(function(x){return x}).join(', ');
+      var custName=addr.name||(o.customer_email?o.customer_email.split('@')[0]:'—');
+      var custPhone=o.customer_phone||addr.contact||'—';
       h+='<tr>'
         +'<td style="font-weight:700;font-size:11px">#'+(o.razorpay_order_id||o.id||'').slice(-8).toUpperCase()+'</td>'
-        +'<td>'+(o.customer_email||'—')+'</td>'
+        +'<td><div style="font-size:12px">'+(o.customer_email||'—')+'</div><div style="font-size:10px;color:var(--g400)">'+(o.customer_phone||'')+'</div></td>'
         +'<td style="font-size:12px;max-width:200px">'+items+'</td>'
         +'<td style="font-weight:700">Rs.'+(o.total||0).toLocaleString('en-IN')+'</td>'
+        +'<td><span style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:3px;'+(pm==='cod'?'background:#fef3c7;color:#92400e':'background:#dbeafe;color:#1e40af')+'">'+pm+'</span>'
+        +(o.rto_risk_level&&o.rto_risk_level!=='unknown'?'<br><span style="font-size:9px;color:var(--g400)">RTO: '+o.rto_risk_level+'</span>':'')
+        +'</td>'
         +'<td><span class="ostatus ost-'+st+'">'+st+'</span></td>'
         +'<td><select class="oselect" onchange="updateOrder(\\x27'+o.id+'\\x27,this.value)">'
         +'<option value="">Change...</option>'
@@ -201,12 +224,24 @@ function loadOrders(){
         +'<option value="shipped">Shipped</option>'
         +'<option value="delivered">Delivered</option>'
         +'<option value="cancelled">Cancelled</option>'
-        +'</select></td></tr>';
+        +'</select>'
+        +'<button onclick="copyShiprocket(\\x27'+custName.replace(/'/g,'\\x27')+'\\x27,\\x27'+custPhone+'\\x27,\\x27'+addrStr.replace(/'/g,'\\x27')+'\\x27)" style="margin-top:4px;display:block;background:none;border:1px solid var(--g200);padding:4px 8px;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border-radius:3px;font-family:inherit;transition:all .2s" onmouseover="this.style.background=\\x27var(--bk)\\x27;this.style.color=\\x27var(--wh)\\x27" onmouseout="this.style.background=\\x27none\\x27;this.style.color=\\x27var(--bk)\\x27"><i class="fas fa-copy" style="margin-right:3px"></i>Shiprocket</button>'
+        +'</td></tr>';
     });
     document.getElementById('otbody').innerHTML=h;
   }).catch(function(e){
-    document.getElementById('otbody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--red)">Error: '+e.message+'</td></tr>';
+    document.getElementById('otbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--red)">Error: '+e.message+'</td></tr>';
   });
+}
+
+function copyShiprocket(name,phone,addr){
+  var txt='Name: '+name+'\\nPhone: '+phone+'\\nAddress: '+addr;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(function(){toast('Copied for Shiprocket!','ok-green')}).catch(function(){fallbackCopy(txt)});
+  } else { fallbackCopy(txt); }
+}
+function fallbackCopy(txt){
+  var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('Copied for Shiprocket!','ok-green');
 }
 
 function updateOrder(orderId,newStatus){
@@ -328,6 +363,81 @@ function saveLegal(){
     } else {
       toast(d.error||'Save failed — is Supabase configured?','err');
     }
+  }).catch(function(e){toast('Error: '+e.message,'err')});
+}
+
+/* ====== SIZE CHART CRUD ====== */
+var sizeData=[];
+
+function loadSizeChart(){
+  document.getElementById('sizetbody').innerHTML='<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--g400)">Loading...</td></tr>';
+  fetch('/api/size-chart')
+  .then(function(r){return r.json()})
+  .then(function(d){
+    var src=document.getElementById('sizeSrc');
+    src.textContent=d.source==='supabase'?'Live Database':'Static Fallback';
+    src.className='asrc '+(d.source==='supabase'?'asrc-db':'asrc-static');
+    sizeData=d.sizes||[];
+    renderSizeChart();
+  }).catch(function(e){
+    document.getElementById('sizetbody').innerHTML='<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--red)">Error: '+e.message+'</td></tr>';
+  });
+}
+
+function renderSizeChart(){
+  if(!sizeData.length){
+    document.getElementById('sizetbody').innerHTML='<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--g400)">No sizes configured.</td></tr>';
+    return;
+  }
+  var h='';
+  sizeData.forEach(function(s,idx){
+    h+='<tr>'
+      +'<td><input type="text" value="'+s.size_label+'" id="szl_'+idx+'" style="padding:6px 10px;border:1px solid var(--g200);font-size:13px;font-weight:700;width:60px;font-family:inherit;border-radius:3px" '+(s.size_label?'readonly':'')+'></td>'
+      +'<td><input type="number" value="'+s.chest+'" id="szc_'+idx+'" style="padding:6px 10px;border:1px solid var(--g200);font-size:13px;width:70px;font-family:inherit;border-radius:3px;text-align:center"></td>'
+      +'<td><input type="number" value="'+s.length+'" id="szlen_'+idx+'" style="padding:6px 10px;border:1px solid var(--g200);font-size:13px;width:70px;font-family:inherit;border-radius:3px;text-align:center"></td>'
+      +'<td><input type="number" value="'+(s.sort_order||idx+1)+'" id="szo_'+idx+'" style="padding:6px 10px;border:1px solid var(--g200);font-size:13px;width:50px;font-family:inherit;border-radius:3px;text-align:center"></td>'
+      +'<td style="display:flex;gap:6px">'
+      +'<button class="asave" style="padding:6px 12px" onclick="saveSize('+idx+')">Save</button>'
+      +'<button style="padding:6px 12px;background:none;border:1.5px solid var(--red);color:var(--red);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:3px;cursor:pointer;font-family:inherit" onclick="deleteSize('+idx+')">Delete</button>'
+      +'</td></tr>';
+  });
+  document.getElementById('sizetbody').innerHTML=h;
+}
+
+function addSizeRow(){
+  sizeData.push({size_label:'',chest:0,length:0,sort_order:sizeData.length+1});
+  renderSizeChart();
+  var lastIdx=sizeData.length-1;
+  var el=document.getElementById('szl_'+lastIdx);
+  if(el){el.removeAttribute('readonly');el.focus()}
+}
+
+function saveSize(idx){
+  var label=document.getElementById('szl_'+idx).value.trim().toUpperCase();
+  var chest=parseFloat(document.getElementById('szc_'+idx).value)||0;
+  var length=parseFloat(document.getElementById('szlen_'+idx).value)||0;
+  var order=parseInt(document.getElementById('szo_'+idx).value)||idx+1;
+  if(!label){toast('Size label is required','err');return}
+  fetch('/api/admin/size-chart/'+encodeURIComponent(label),{
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({chest:chest,length:length,sort_order:order})
+  }).then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success){toast('Size "'+label+'" saved','ok-green');sizeData[idx].size_label=label;sizeData[idx].chest=chest;sizeData[idx].length=length;sizeData[idx].sort_order=order;loadSizeChart()}
+    else{toast(d.error||'Save failed','err')}
+  }).catch(function(e){toast('Error: '+e.message,'err')});
+}
+
+function deleteSize(idx){
+  var label=sizeData[idx].size_label;
+  if(!label){sizeData.splice(idx,1);renderSizeChart();return}
+  if(!confirm('Delete size "'+label+'"?'))return;
+  fetch('/api/admin/size-chart/'+encodeURIComponent(label),{method:'DELETE'})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success){toast('Size "'+label+'" deleted','ok-green');loadSizeChart()}
+    else{toast(d.error||'Delete failed','err')}
   }).catch(function(e){toast('Error: '+e.message,'err')});
 }
 </script>`;

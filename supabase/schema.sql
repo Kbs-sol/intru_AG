@@ -1,19 +1,16 @@
 -- =============================================================
--- intru.in Supabase Schema (v3 — Production-Grade)
+-- intru.in Supabase Schema (v4 — Full Feature)
 -- Run this in Supabase SQL Editor: Dashboard > SQL Editor
 --
 -- SAFE TO RE-RUN: Uses IF NOT EXISTS / IF EXISTS everywhere
--- Handles both fresh installs AND migrations from v2
+-- Handles both fresh installs AND migrations from v3
 --
--- v3 changes:
--- - users.id references auth.users(id) ON DELETE CASCADE
--- - Auth sync trigger: auto-create public.users on signup
--- - CHECK constraints: price >= 0, total >= 0
--- - orders.user_id + store_credits.user_id added (migration-safe)
--- - RLS: orders/credits tied to user_id via auth.uid()
--- - No public INSERT on orders (server-side service_role only)
--- - Legal pages with Grievance Redressal (Indian compliance)
--- - New 6-product catalog with intru.in CDN URLs
+-- v4 changes:
+-- - size_chart table with PK size_label, chest/length columns, seed XS-XXL
+-- - customer_phone (text) added to orders
+-- - auth_provider (text) added to users
+-- - handle_new_user() updated to map Google/Spotify metadata + auth_provider
+-- - subscribers table for "Notify Me" emails
 -- =============================================================
 
 
@@ -27,15 +24,25 @@ CREATE TABLE IF NOT EXISTS users (
   picture TEXT,
   google_id TEXT UNIQUE,
   phone TEXT,
+  auth_provider TEXT DEFAULT 'email',
   last_login TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Migration: add FK to auth.users if not already present
--- (Cannot use IF NOT EXISTS for constraints, so we use DO block)
+-- Migration: add auth_provider column if missing
 DO $$
 BEGIN
-  -- Add FK users.id -> auth.users(id) if missing
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'auth_provider'
+  ) THEN
+    ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT 'email';
+  END IF;
+END $$;
+
+-- Migration: add FK to auth.users if not already present
+DO $$
+BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.table_constraints
     WHERE constraint_name = 'users_id_fkey' AND table_name = 'users'
@@ -52,20 +59,57 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
 
 -- Auth sync: auto-create public.users row when a new auth user signs up
+-- Handles Google, Spotify, Email (magic link) providers
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  _provider TEXT;
+  _name TEXT;
+  _picture TEXT;
+  _phone TEXT;
 BEGIN
-  INSERT INTO public.users (id, email, name, picture)
+  -- Determine auth provider
+  _provider := COALESCE(NEW.raw_app_meta_data->>'provider', 'email');
+
+  -- Map name from various metadata fields (Google, Spotify, etc.)
+  _name := COALESCE(
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.raw_user_meta_data->>'name',
+    NEW.raw_user_meta_data->>'display_name',
+    NEW.raw_user_meta_data->>'preferred_username',
+    ''
+  );
+
+  -- Map picture/avatar from various metadata fields
+  _picture := COALESCE(
+    NEW.raw_user_meta_data->>'avatar_url',
+    NEW.raw_user_meta_data->>'picture',
+    NEW.raw_user_meta_data->>'image_url',
+    ''
+  );
+
+  -- Map phone
+  _phone := COALESCE(
+    NEW.phone,
+    NEW.raw_user_meta_data->>'phone',
+    ''
+  );
+
+  INSERT INTO public.users (id, email, name, picture, phone, auth_provider)
   VALUES (
     NEW.id,
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture', '')
+    _name,
+    _picture,
+    _phone,
+    _provider
   )
   ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
-    name  = COALESCE(EXCLUDED.name, users.name),
-    picture = COALESCE(EXCLUDED.picture, users.picture),
+    name  = COALESCE(NULLIF(EXCLUDED.name, ''), users.name),
+    picture = COALESCE(NULLIF(EXCLUDED.picture, ''), users.picture),
+    phone = COALESCE(NULLIF(EXCLUDED.phone, ''), users.phone),
+    auth_provider = EXCLUDED.auth_provider,
     last_login = NOW();
   RETURN NEW;
 END;
@@ -101,7 +145,6 @@ CREATE TABLE IF NOT EXISTS products (
 -- Migration: add CHECK constraints if missing
 DO $$
 BEGIN
-  -- price >= 0
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.check_constraints
     WHERE constraint_name = 'products_price_check'
@@ -111,7 +154,6 @@ BEGIN
     EXCEPTION WHEN duplicate_object THEN NULL;
     END;
   END IF;
-  -- compare_price >= 0 (or NULL)
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.check_constraints
     WHERE constraint_name = 'products_compare_price_check'
@@ -137,6 +179,7 @@ CREATE TABLE IF NOT EXISTS orders (
   razorpay_payment_id TEXT,
   razorpay_signature TEXT,
   customer_email TEXT,
+  customer_phone TEXT,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
   subtotal INTEGER NOT NULL DEFAULT 0,
   shipping INTEGER NOT NULL DEFAULT 0,
@@ -144,6 +187,9 @@ CREATE TABLE IF NOT EXISTS orders (
   currency TEXT DEFAULT 'INR',
   store_credit_used INTEGER DEFAULT 0,
   status TEXT DEFAULT 'pending',
+  payment_method TEXT DEFAULT 'pending',
+  cod_fee INTEGER DEFAULT 0,
+  rto_risk_level TEXT DEFAULT 'unknown',
   shipping_address JSONB,
   tracking_number TEXT,
   tracking_url TEXT,
@@ -156,7 +202,7 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Migration: add user_id column + Magic Checkout columns + CHECK constraints to existing orders table
+-- Migration: add columns to existing orders table
 DO $$
 BEGIN
   -- Add user_id column if missing
@@ -167,7 +213,15 @@ BEGIN
     ALTER TABLE orders ADD COLUMN user_id UUID;
   END IF;
 
-  -- Add payment_method column (Magic Checkout: 'prepaid', 'cod', 'upi', 'card', etc.)
+  -- Add customer_phone column if missing
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'customer_phone'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN customer_phone TEXT;
+  END IF;
+
+  -- Add payment_method column
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'payment_method'
@@ -175,7 +229,7 @@ BEGIN
     ALTER TABLE orders ADD COLUMN payment_method TEXT DEFAULT 'pending';
   END IF;
 
-  -- Add cod_fee column (COD fee in paise from Magic Checkout)
+  -- Add cod_fee column
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'cod_fee'
@@ -183,7 +237,7 @@ BEGIN
     ALTER TABLE orders ADD COLUMN cod_fee INTEGER DEFAULT 0;
   END IF;
 
-  -- Add rto_risk_level column (Magic Checkout COD Intelligence)
+  -- Add rto_risk_level column
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'rto_risk_level'
@@ -280,7 +334,6 @@ CREATE TABLE IF NOT EXISTS store_credits (
 -- Migration: add user_id column + CHECK constraints
 DO $$
 BEGIN
-  -- Add user_id column if missing
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'store_credits' AND column_name = 'user_id'
@@ -288,7 +341,6 @@ BEGIN
     ALTER TABLE store_credits ADD COLUMN user_id UUID;
   END IF;
 
-  -- Add FK store_credits.user_id -> auth.users(id)
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.table_constraints
     WHERE constraint_name = 'store_credits_user_id_fkey' AND table_name = 'store_credits'
@@ -300,7 +352,6 @@ BEGIN
     END;
   END IF;
 
-  -- CHECK amount >= 0
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.check_constraints
     WHERE constraint_name = 'store_credits_amount_check'
@@ -311,7 +362,6 @@ BEGIN
     END;
   END IF;
 
-  -- CHECK reason enum
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.check_constraints
     WHERE constraint_name = 'store_credits_reason_check'
@@ -340,6 +390,44 @@ CREATE TABLE IF NOT EXISTS legal_pages (
 
 
 -- =============================================================
+-- 6. SIZE CHART TABLE (NEW in v4)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS size_chart (
+  size_label TEXT PRIMARY KEY,
+  chest NUMERIC NOT NULL,
+  length NUMERIC NOT NULL,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Migration: add sort_order if missing
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'size_chart' AND column_name = 'sort_order'
+  ) THEN
+    ALTER TABLE size_chart ADD COLUMN sort_order INTEGER DEFAULT 0;
+  END IF;
+END $$;
+
+
+-- =============================================================
+-- 7. SUBSCRIBERS TABLE (NEW in v4 — "Notify Me" emails)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS subscribers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  source TEXT DEFAULT 'notify_me',
+  subscribed_at TIMESTAMPTZ DEFAULT NOW(),
+  unsubscribed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers(email);
+
+
+-- =============================================================
 -- ROW LEVEL SECURITY (RLS) — Production-Grade
 -- =============================================================
 
@@ -348,6 +436,8 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE store_credits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE legal_pages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE size_chart ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscribers ENABLE ROW LEVEL SECURITY;
 
 -- Drop all old policies (safe to re-run)
 DROP POLICY IF EXISTS "Products are viewable by everyone" ON products;
@@ -361,6 +451,9 @@ DROP POLICY IF EXISTS "Legal pages are editable by service role" ON legal_pages;
 DROP POLICY IF EXISTS "Users can view their own profile" ON users;
 DROP POLICY IF EXISTS "Service role has full access to users" ON users;
 DROP POLICY IF EXISTS "Anyone can insert orders" ON orders;
+DROP POLICY IF EXISTS "Size chart is viewable by everyone" ON size_chart;
+DROP POLICY IF EXISTS "Size chart is editable by service role" ON size_chart;
+DROP POLICY IF EXISTS "Service role has full access to subscribers" ON subscribers;
 
 -- PRODUCTS: public SELECT, service-role full CRUD
 CREATE POLICY "Products are viewable by everyone"
@@ -376,8 +469,14 @@ CREATE POLICY "Legal pages are viewable by everyone"
 CREATE POLICY "Legal pages are editable by service role"
   ON legal_pages FOR ALL USING (auth.role() = 'service_role');
 
+-- SIZE CHART: public SELECT, service-role full CRUD
+CREATE POLICY "Size chart is viewable by everyone"
+  ON size_chart FOR SELECT USING (true);
+
+CREATE POLICY "Size chart is editable by service role"
+  ON size_chart FOR ALL USING (auth.role() = 'service_role');
+
 -- ORDERS: users SELECT their own rows via auth.uid() = user_id
--- NO public INSERT — order creation is server-side via service_role only
 CREATE POLICY "Users can view their own orders"
   ON orders FOR SELECT USING (auth.uid() = user_id);
 
@@ -397,6 +496,26 @@ CREATE POLICY "Users can view their own profile"
 
 CREATE POLICY "Service role has full access to users"
   ON users FOR ALL USING (auth.role() = 'service_role');
+
+-- SUBSCRIBERS: service-role full access
+CREATE POLICY "Service role has full access to subscribers"
+  ON subscribers FOR ALL USING (auth.role() = 'service_role');
+
+
+-- =============================================================
+-- SEED DATA: Size Chart (XS–XXL)
+-- =============================================================
+INSERT INTO size_chart (size_label, chest, length, sort_order) VALUES
+  ('XS', 36, 26, 1),
+  ('S',  38, 27, 2),
+  ('M',  40, 28, 3),
+  ('L',  42, 29, 4),
+  ('XL', 44, 30, 5),
+  ('XXL', 46, 31, 6)
+ON CONFLICT (size_label) DO UPDATE SET
+  chest = EXCLUDED.chest,
+  length = EXCLUDED.length,
+  sort_order = EXCLUDED.sort_order;
 
 
 -- =============================================================
@@ -455,7 +574,6 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- =============================================================
 -- SEED DATA: Legal Pages (Indian E-commerce Compliant)
--- Includes Grievance Redressal per Indian Consumer Protection Act
 -- =============================================================
 
 INSERT INTO legal_pages (slug, title, content, updated_at) VALUES
@@ -480,10 +598,10 @@ INSERT INTO legal_pages (slug, title, content, updated_at) VALUES
 <p>These terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in Bangalore, Karnataka.</p>
 <h2>10. Grievance Redressal</h2>
 <p>In accordance with the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> and the Information Technology Act, 2000, our designated Grievance Officer / Nodal Officer is:</p>
-<p><strong>Nodal Officer:</strong> intru.in Grievance Desk<br><strong>Email:</strong> <a href="mailto:hello@intru.in">hello@intru.in</a><br><strong>Response Time:</strong> All grievances will be acknowledged within 48 hours and resolved within 30 days of receipt.</p>
+<p><strong>Nodal Officer:</strong> intru.in Grievance Desk<br><strong>Email:</strong> <a href="mailto:shop@intru.in">shop@intru.in</a><br><strong>Response Time:</strong> All grievances will be acknowledged within 48 hours and resolved within 30 days of receipt.</p>
 <h2>11. Changes to Terms</h2>
 <p>We reserve the right to update these Terms at any time. Continued use constitutes acceptance of the new Terms.</p>',
-   '2026-02-27'),
+   '2026-03-03'),
 
   ('returns', 'Returns, Exchanges & Refunds',
    '<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin-bottom:32px;font-size:14px;line-height:1.7">
@@ -494,7 +612,7 @@ INSERT INTO legal_pages (slug, title, content, updated_at) VALUES
 <h2>2. Store Credit Only — No Cash Refunds</h2>
 <p>Approved returns receive <strong>Store Credit at 1:1 value with INR</strong>. Store Credit can be used for any future drop, never expires, and is non-transferable. Cash refunds are not available under any circumstances.</p>
 <h2>3. 36-Hour Defect Claim Window</h2>
-<p>Customers must raise a claim within <strong>36 hours of receiving the order</strong>. To file a claim, email <a href="mailto:returns@intru.in">returns@intru.in</a> with:</p>
+<p>Customers must raise a claim within <strong>36 hours of receiving the order</strong>. To file a claim, email <a href="mailto:shop@intru.in">shop@intru.in</a> with:</p>
 <ul><li>Your order number</li><li>Clear photographs of the defect or issue</li><li>A brief description of the problem</li></ul>
 <h2>4. Eligible Claims</h2>
 <p><strong>Store Credit approved for:</strong> Manufacturing defects, wrong item received, significantly damaged product during transit.</p>
@@ -502,10 +620,10 @@ INSERT INTO legal_pages (slug, title, content, updated_at) VALUES
 <h2>5. Exchange Process</h2>
 <p>For size exchanges on eligible items, email us within 36 hours. If approved and replacement size is in stock, we ship at no additional cost. If out of stock, Store Credit is issued.</p>
 <h2>6. Grievance Redressal</h2>
-<p>If you are unsatisfied with the resolution of your claim, you may escalate to our Nodal Officer at <a href="mailto:hello@intru.in">hello@intru.in</a>. All escalations are acknowledged within 48 hours and resolved within 30 days.</p>
+<p>If you are unsatisfied with the resolution of your claim, you may escalate to our Nodal Officer at <a href="mailto:shop@intru.in">shop@intru.in</a>. All escalations are acknowledged within 48 hours and resolved within 30 days.</p>
 <h2>7. Contact</h2>
-<p>For all return queries: <a href="mailto:returns@intru.in">returns@intru.in</a></p>',
-   '2026-02-27'),
+<p>For all return queries: <a href="mailto:shop@intru.in">shop@intru.in</a></p>',
+   '2026-03-03'),
 
   ('privacy', 'Privacy Policy',
    '<h2>1. Information We Collect</h2>
@@ -521,12 +639,12 @@ INSERT INTO legal_pages (slug, title, content, updated_at) VALUES
 <h2>6. Data Retention</h2>
 <p>We retain your personal data for as long as your account is active or as needed to provide services. Order records are retained for 7 years as required by Indian tax regulations.</p>
 <h2>7. Your Rights</h2>
-<p>You have the right to request access, correction, or deletion of your personal data at any time. Contact us at <a href="mailto:hello@intru.in">hello@intru.in</a>.</p>
+<p>You have the right to request access, correction, or deletion of your personal data at any time. Contact us at <a href="mailto:shop@intru.in">shop@intru.in</a>.</p>
 <h2>8. Grievance Redressal</h2>
-<p>For privacy-related grievances, contact our Nodal Officer at <a href="mailto:hello@intru.in">hello@intru.in</a>. Grievances will be acknowledged within 48 hours and resolved within 30 days.</p>
+<p>For privacy-related grievances, contact our Nodal Officer at <a href="mailto:shop@intru.in">shop@intru.in</a>. Grievances will be acknowledged within 48 hours and resolved within 30 days.</p>
 <h2>9. Updates</h2>
 <p>This policy may be updated periodically. Significant changes will be communicated via email to registered users.</p>',
-   '2026-02-27'),
+   '2026-03-03'),
 
   ('shipping', 'Shipping Policy',
    '<h2>1. Processing Time</h2>
@@ -534,17 +652,17 @@ INSERT INTO legal_pages (slug, title, content, updated_at) VALUES
 <h2>2. Delivery Coverage</h2>
 <p>We ship across India via trusted courier partners. International shipping is not available at this time.</p>
 <h2>3. Estimated Delivery</h2>
-<ul><li><strong>Metro cities (Delhi, Mumbai, Bangalore, etc.):</strong> 3–5 business days</li><li><strong>Tier 2 cities:</strong> 5–7 business days</li><li><strong>Remote / rural areas:</strong> 7–10 business days</li></ul>
+<ul><li><strong>Metro cities (Delhi, Mumbai, Bangalore, etc.):</strong> 3-5 business days</li><li><strong>Tier 2 cities:</strong> 5-7 business days</li><li><strong>Remote / rural areas:</strong> 7-10 business days</li></ul>
 <p>These are estimates and may vary based on courier partner capacity and external factors.</p>
 <h2>4. Shipping Costs</h2>
 <ul><li><strong>Free shipping</strong> on orders above Rs.1,999</li><li>Flat <strong>Rs.99</strong> for orders below Rs.1,999</li></ul>
 <h2>5. Order Tracking</h2>
-<p>A tracking link will be sent to your registered email and phone number once your order ships. You can also check order status by emailing <a href="mailto:hello@intru.in">hello@intru.in</a>.</p>
+<p>A tracking link will be sent to your registered email and phone number once your order ships. You can also check order status by emailing <a href="mailto:shop@intru.in">shop@intru.in</a>.</p>
 <h2>6. Delivery Liability</h2>
 <p><strong>Once the order is handed over to our courier partner, intru.in is not responsible for transit delays, theft, or carrier-caused damage.</strong> We will, however, assist you in filing a claim with the courier and provide necessary documentation.</p>
 <h2>7. Undeliverable Orders</h2>
 <p>If an order is returned to us due to an incorrect address or failed delivery attempts, we will contact you to arrange re-shipment. Additional shipping charges may apply.</p>',
-   '2026-02-27')
+   '2026-03-03')
 ON CONFLICT (slug) DO UPDATE SET
   title = EXCLUDED.title,
   content = EXCLUDED.content,
@@ -571,4 +689,9 @@ CREATE TRIGGER set_products_updated_at
 DROP TRIGGER IF EXISTS set_orders_updated_at ON orders;
 CREATE TRIGGER set_orders_updated_at
   BEFORE UPDATE ON orders
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS set_size_chart_updated_at ON size_chart;
+CREATE TRIGGER set_size_chart_updated_at
+  BEFORE UPDATE ON size_chart
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -13,6 +13,8 @@ import { legalPage } from './pages/legal'
 import { adminPage } from './pages/admin'
 import { collectionsPage } from './pages/collections'
 import { aboutPage } from './pages/about'
+import { loginPage } from './pages/login'
+import { registerPage } from './pages/register'
 
 type Bindings = Env & { [key: string]: string }
 
@@ -107,6 +109,40 @@ app.get('/collections', async (c) => {
     googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
     products,
     legalPages,
+  }))
+})
+
+// ============ AUTH PAGES ============
+
+app.get('/login', async (c) => {
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
+  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
+  const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
+  const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
+  return c.html(loginPage({
+    razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
+    googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
+    products,
+    legalPages,
+    supabaseUrl: sbUrl,
+    supabaseAnonKey: sbAnon,
+  }))
+})
+
+app.get('/register', async (c) => {
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
+  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
+  const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
+  const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
+  return c.html(registerPage({
+    razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
+    googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
+    products,
+    legalPages,
+    supabaseUrl: sbUrl,
+    supabaseAnonKey: sbAnon,
   }))
 })
 
@@ -264,6 +300,7 @@ app.post('/api/checkout', async (c) => {
                 items: validatedItems,
                 subtotal, shipping, total,
                 customer_email: userEmail,
+                customer_phone: userPhone,
                 status: 'pending',
                 payment_method: 'pending', // will be updated by webhook (prepaid / cod)
                 created_at: new Date().toISOString(),
@@ -389,6 +426,7 @@ app.post('/api/payment/verify', async (c) => {
         };
         if (shippingAddress) updatePayload.shipping_address = shippingAddress;
         if (customerEmail) updatePayload.customer_email = customerEmail;
+        if (customerPhone) updatePayload.customer_phone = customerPhone;
 
         await supabaseFetch(sbUrl, sbKey, `orders?razorpay_order_id=eq.${razorpay_order_id}`, {
           method: 'PATCH',
@@ -479,6 +517,7 @@ app.post('/api/webhooks/razorpay', async (c) => {
                 rto_risk_level: rtoRiskLevel,
                 shipping_address: shippingAddress,
                 customer_email: customerDetails?.email || '',
+                customer_phone: customerDetails?.contact || '',
               }),
             });
           } else {
@@ -497,6 +536,7 @@ app.post('/api/webhooks/razorpay', async (c) => {
                 rto_risk_level: rtoRiskLevel,
                 shipping_address: shippingAddress,
                 customer_email: customerDetails?.email || '',
+                customer_phone: customerDetails?.contact || '',
                 created_at: new Date().toISOString(),
               }),
             });
@@ -710,6 +750,96 @@ app.patch('/api/admin/legal/:slug', async (c) => {
     return c.json({ error: 'Update failed: ' + errText }, 500);
   }
   return c.json({ error: 'Supabase not configured' }, 500);
+})
+
+// ============ SIZE CHART API ============
+
+app.get('/api/size-chart', async (c) => {
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+  if (sbUrl && sbKey) {
+    try {
+      const res = await supabaseFetch(sbUrl, sbKey, 'size_chart?select=*&order=sort_order.asc');
+      if (res.ok) {
+        const sizes = await res.json();
+        return c.json({ sizes, source: 'supabase' });
+      }
+    } catch (e) { console.error('Size chart fetch error:', e); }
+  }
+  // Fallback static data
+  return c.json({
+    sizes: [
+      { size_label: 'XS', chest: 36, length: 26, sort_order: 1 },
+      { size_label: 'S',  chest: 38, length: 27, sort_order: 2 },
+      { size_label: 'M',  chest: 40, length: 28, sort_order: 3 },
+      { size_label: 'L',  chest: 42, length: 29, sort_order: 4 },
+      { size_label: 'XL', chest: 44, length: 30, sort_order: 5 },
+      { size_label: 'XXL', chest: 46, length: 31, sort_order: 6 },
+    ],
+    source: 'static'
+  });
+})
+
+// Admin: CRUD size chart
+app.put('/api/admin/size-chart/:label', async (c) => {
+  const label = c.req.param('label');
+  const body = await c.req.json();
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+  if (sbUrl && sbKey) {
+    const res = await supabaseFetch(sbUrl, sbKey, 'size_chart', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates' } as any,
+      body: JSON.stringify({
+        size_label: label,
+        chest: body.chest,
+        length: body.length,
+        sort_order: body.sort_order || 0,
+      }),
+    });
+    if (res.ok) return c.json({ success: true });
+    const errText = await res.text();
+    return c.json({ error: 'Update failed: ' + errText }, 500);
+  }
+  return c.json({ error: 'Supabase not configured' }, 500);
+})
+
+app.delete('/api/admin/size-chart/:label', async (c) => {
+  const label = c.req.param('label');
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+  if (sbUrl && sbKey) {
+    const res = await supabaseFetch(sbUrl, sbKey, `size_chart?size_label=eq.${encodeURIComponent(label)}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) return c.json({ success: true });
+    return c.json({ error: 'Delete failed' }, 500);
+  }
+  return c.json({ error: 'Supabase not configured' }, 500);
+})
+
+// ============ SUBSCRIBERS API ("Notify Me") ============
+
+app.post('/api/subscribe', async (c) => {
+  try {
+    const { email } = await c.req.json();
+    if (!email || !email.includes('@')) return c.json({ error: 'Valid email required' }, 400);
+    const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+    const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+    if (sbUrl && sbKey) {
+      const res = await supabaseFetch(sbUrl, sbKey, 'subscribers', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates' } as any,
+        body: JSON.stringify({ email, source: 'notify_me', subscribed_at: new Date().toISOString() }),
+      });
+      if (res.ok) return c.json({ success: true, message: 'You\'re on the list!' });
+      const errText = await res.text();
+      return c.json({ error: 'Failed to subscribe: ' + errText }, 500);
+    }
+    return c.json({ success: true, message: 'You\'re on the list! (Supabase not configured yet)' });
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
 })
 
 // Store credit

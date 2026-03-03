@@ -98,12 +98,12 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 </style></head>
 <body class="${opt?.cls || ''}">
 <nav class="nav" id="nb"><div class="navi">
-<a href="/" class="logo">INTRU<span>.in</span></a>
+<a href="/" class="logo"><svg viewBox="0 0 110 32" width="110" height="32" xmlns="http://www.w3.org/2000/svg" aria-label="intru.in"><text x="0" y="25" font-family="'Archivo Black',sans-serif" font-size="28" font-weight="900" fill="#0a0a0a" letter-spacing="-1">INTRU</text><text x="88" y="25" font-family="'Space Grotesk',sans-serif" font-size="16" font-weight="400" fill="#0a0a0a" opacity=".4">.in</text></svg></a>
 <div class="nlinks">
 <a href="/#products" class="nl nls">Shop</a>
 <a href="/collections" class="nl">Collections</a>
 <a href="/about" class="nl">About</a>
-<a href="/#contact" class="nl">Contact</a>
+<a href="/login" class="nl">Account</a>
 <button class="ncart" onclick="toggleCart()" aria-label="Cart"><i class="fas fa-shopping-bag"></i><span class="cbadge" id="cb">0</span></button>
 </div></div></nav>
 <div class="covl" id="co" onclick="toggleCart()"></div>
@@ -119,12 +119,15 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 </div></div>
 <main style="padding-top:64px">${body}</main>
 <footer class="ftr" id="contact"><div class="ftri">
-<div class="ftrb"><h3>INTRU.IN</h3><p>${STORE_CONFIG.description}</p></div>
-<div class="ftrc"><h4>Shop</h4><a href="/#products">All Drops</a><a href="/#products">Latest Drop</a></div>
-<div class="ftrc"><h4>Help</h4><a href="/p/shipping">Shipping</a><a href="/p/returns">Returns &amp; Credit</a><a href="mailto:${STORE_CONFIG.email}">Contact</a></div>
+<div class="ftrb"><h3>INTRU.IN</h3><p>${STORE_CONFIG.description}</p>
+<p style="margin-top:16px;font-size:11px;color:var(--g400);line-height:1.7"><strong style="color:var(--g300)">Registered Office:</strong><br>Bangalore, Karnataka, India</p>
+<p style="margin-top:8px;font-size:11px;color:var(--g400);line-height:1.7"><strong style="color:var(--g300)">Grievance Officer:</strong><br><a href="mailto:shop@intru.in" style="color:var(--g300)">shop@intru.in</a><br><span style="font-size:10px">Per Consumer Protection (E-Commerce) Rules, 2020</span></p>
+</div>
+<div class="ftrc"><h4>Shop</h4><a href="/#products">All Drops</a><a href="/collections">Collections</a><a href="/about">About</a></div>
+<div class="ftrc"><h4>Help</h4><a href="/p/shipping">Shipping</a><a href="/p/returns">Returns &amp; Credit</a><a href="mailto:shop@intru.in">Contact</a></div>
 <div class="ftrc"><h4>Legal</h4>${legalPages.map(p => '<a href="/p/' + p.slug + '">' + p.title + '</a>').join('')}</div>
 </div><div class="ftrbt"><span>&copy; 2026 intru.in &mdash; All sales final. Store credit only.</span>
-<div class="fsoc"><a href="https://instagram.com/${STORE_CONFIG.instagram}" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a><a href="#"><i class="fab fa-twitter"></i></a></div>
+<div class="fsoc"><a href="https://instagram.com/${STORE_CONFIG.instagram}" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a></div>
 </div></footer>
 <div class="tc" id="tc"></div>
 ${gKey !== 'YOUR_GOOGLE_CLIENT_ID' ? '<script src="https://accounts.google.com/gsi/client" async defer></script><div id="g_id_onload" data-client_id="' + gKey + '" data-context="signin" data-ux_mode="popup" data-callback="handleGoogleAuth" data-auto_prompt="true"></div>' : '<!-- Google One-Tap: Set GOOGLE_CLIENT_ID env var to enable -->'}
@@ -370,5 +373,11 @@ window.addEventListener('scroll',function(){document.getElementById('nb').classL
 
 /* ====== INIT ====== */
 renderCart();
+
+/* ====== KONAMI CODE -> /admin ====== */
+var _kseq=[38,38,40,40,37,39,37,39,66,65],_kidx=0;
+document.addEventListener('keydown',function(e){
+  if(e.keyCode===_kseq[_kidx]){_kidx++;if(_kidx===_kseq.length){_kidx=0;window.location.href='/admin';}}else{_kidx=0;}
+});
 </script></body></html>`;
 }

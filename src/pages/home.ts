@@ -135,14 +135,37 @@ ${products.slice(0,5).map((p,i)=>'<a href="https://instagram.com/'+STORE_CONFIG.
 <section class="nlsec" id="newsletter">
 <h3>Get Notified of the Next Drop</h3>
 <p>Be the first to know when we release new products. No spam, ever.</p>
-<form class="nlform" onsubmit="event.preventDefault();toast('You\\'re on the list.');this.reset()">
-<input class="nlinp" type="email" placeholder="Your email" required>
-<button class="nlbtn" type="submit">Notify Me</button>
+<form class="nlform" onsubmit="event.preventDefault();subscribeEmail(this)">
+<input class="nlinp" type="email" placeholder="Your email" required id="nlEmail">
+<button class="nlbtn" type="submit" id="nlBtn">Notify Me</button>
 </form></section>
 
 <script>
 var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.style.animationPlayState='running';obs.unobserve(e.target)}})},{threshold:.1});
 document.querySelectorAll('.anim').forEach(function(el){el.style.animationPlayState='paused';obs.observe(el)});
+
+function subscribeEmail(form){
+  var email=document.getElementById('nlEmail').value.trim();
+  if(!email)return;
+  var btn=document.getElementById('nlBtn');
+  btn.disabled=true;btn.textContent='SUBSCRIBING...';
+  fetch('/api/subscribe',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({email:email})
+  })
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success||d.message){
+      toast(d.message||"You're on the list!",'ok-green');
+      form.reset();
+    } else {
+      toast(d.error||'Failed to subscribe','err');
+    }
+  })
+  .catch(function(e){toast('Error: '+e.message,'err')})
+  .finally(function(){btn.disabled=false;btn.textContent='NOTIFY ME'});
+}
 </script>`;
 
   return shell(

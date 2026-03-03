@@ -34,7 +34,7 @@ export const STORE_CONFIG = {
   currencySymbol: "Rs.",
   freeShippingThreshold: 1999,
   shippingCost: 99,
-  email: "hello@intru.in",
+  email: "shop@intru.in",
   instagram: "intru.in",
   // Defaults — overridden by env vars in production
   adminPassword: "intru2026admin",
@@ -148,7 +148,7 @@ export const SEED_LEGAL_PAGES: LegalPage[] = [
 <p>These terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in Bangalore, Karnataka.</p>
 <h2>10. Grievance Redressal</h2>
 <p>In accordance with the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> and the Information Technology Act, 2000, our designated Grievance Officer / Nodal Officer is:</p>
-<p><strong>Nodal Officer:</strong> intru.in Grievance Desk<br><strong>Email:</strong> <a href="mailto:hello@intru.in">hello@intru.in</a><br><strong>Response Time:</strong> All grievances will be acknowledged within 48 hours and resolved within 30 days of receipt.</p>
+<p><strong>Nodal Officer:</strong> intru.in Grievance Desk<br><strong>Email:</strong> <a href="mailto:shop@intru.in">shop@intru.in</a><br><strong>Response Time:</strong> All grievances will be acknowledged within 48 hours and resolved within 30 days of receipt.</p>
 <h2>11. Changes to Terms</h2>
 <p>We reserve the right to update these Terms at any time. Continued use constitutes acceptance of the new Terms.</p>`,
     updatedAt: "2026-02-27"
@@ -171,7 +171,7 @@ export const SEED_LEGAL_PAGES: LegalPage[] = [
 <h2>5. Exchange Process</h2>
 <p>For size exchanges on eligible items, email us within 36 hours. If approved and replacement size is in stock, we ship at no additional cost. If out of stock, Store Credit is issued.</p>
 <h2>6. Grievance Redressal</h2>
-<p>If you are unsatisfied with the resolution of your claim, you may escalate to our Nodal Officer at <a href="mailto:hello@intru.in">hello@intru.in</a>. All escalations are acknowledged within 48 hours and resolved within 30 days.</p>
+<p>If you are unsatisfied with the resolution of your claim, you may escalate to our Nodal Officer at <a href="mailto:shop@intru.in">shop@intru.in</a>. All escalations are acknowledged within 48 hours and resolved within 30 days.</p>
 <h2>7. Contact</h2>
 <p>For all return queries: <a href="mailto:returns@intru.in">returns@intru.in</a></p>`,
     updatedAt: "2026-02-27"
@@ -191,9 +191,9 @@ export const SEED_LEGAL_PAGES: LegalPage[] = [
 <h2>6. Data Retention</h2>
 <p>We retain your personal data for as long as your account is active or as needed to provide services. Order records are retained for 7 years as required by Indian tax regulations.</p>
 <h2>7. Your Rights</h2>
-<p>You have the right to request access, correction, or deletion of your personal data at any time. Contact us at <a href="mailto:hello@intru.in">hello@intru.in</a>.</p>
+<p>You have the right to request access, correction, or deletion of your personal data at any time. Contact us at <a href="mailto:shop@intru.in">shop@intru.in</a>.</p>
 <h2>8. Grievance Redressal</h2>
-<p>For privacy-related grievances, contact our Nodal Officer at <a href="mailto:hello@intru.in">hello@intru.in</a>. Grievances will be acknowledged within 48 hours and resolved within 30 days.</p>
+<p>For privacy-related grievances, contact our Nodal Officer at <a href="mailto:shop@intru.in">shop@intru.in</a>. Grievances will be acknowledged within 48 hours and resolved within 30 days.</p>
 <h2>9. Updates</h2>
 <p>This policy may be updated periodically. Significant changes will be communicated via email to registered users.</p>`,
     updatedAt: "2026-02-27"
@@ -210,7 +210,7 @@ export const SEED_LEGAL_PAGES: LegalPage[] = [
 <h2>4. Shipping Costs</h2>
 <ul><li><strong>Free shipping</strong> on orders above Rs.1,999</li><li>Flat <strong>Rs.99</strong> for orders below Rs.1,999</li></ul>
 <h2>5. Order Tracking</h2>
-<p>A tracking link will be sent to your registered email and phone number once your order ships. You can also check order status by emailing <a href="mailto:hello@intru.in">hello@intru.in</a>.</p>
+<p>A tracking link will be sent to your registered email and phone number once your order ships. You can also check order status by emailing <a href="mailto:shop@intru.in">shop@intru.in</a>.</p>
 <h2>6. Delivery Liability</h2>
 <p><strong>Once the order is handed over to our courier partner, intru.in is not responsible for transit delays, theft, or carrier-caused damage.</strong> We will, however, assist you in filing a claim with the courier and provide necessary documentation.</p>
 <h2>7. Undeliverable Orders</h2>
