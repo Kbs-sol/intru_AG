@@ -883,7 +883,37 @@ app.put('/api/admin/settings/:key', async (c) => {
   }
   return c.json({ error: 'Supabase not configured' }, 500);
 })
+app.post('/api/webhooks/razorpay', async (c) => {
+  const signature = c.req.header('x-razorpay-signature');
+  const secret = c.env.RAZORPAY_WEBHOOK_SECRET;
+  const body = await c.req.text();
 
+  // 1. Verify Signature
+  if (signature && secret) {
+    const isValid = verifyRazorpaySignature(body, signature, secret);
+    if (!isValid) return c.json({ status: 'invalid_signature' }, 400);
+  }
+
+  const payload = JSON.parse(body);
+  const event = payload.event;
+
+  // 2. Handle Payment Captured
+  if (event === 'payment.captured') {
+    const payment = payload.payload.payment.entity;
+    
+    // Update DB (Existing logic)
+    if (payment.order_id) {
+       await updateOrderStatus(c.env, payment.order_id, 'paid', payment.id);
+    }
+
+    // NEW: Send alert to your specific email
+    if (c.env.RESEND_API_KEY) {
+      await emailAdminPaymentAlert(c.env.RESEND_API_KEY, payment);
+    }
+  }
+
+  return c.json({ status: 'ok' });
+});
 // ============ INSTAGRAM FEED API ============
 
 app.get('/api/instagram-feed', async (c) => {
