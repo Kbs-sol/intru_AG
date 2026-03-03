@@ -666,7 +666,7 @@ export async function uploadToSupabase(env: Env, bucket: string, file: File): Pr
   const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_').toLowerCase();
   const fileName = `${timestamp}_${safeName}`;
 
-  const url = `${env.SUPABASE_URL}/storage/v1/object/${bucket}/${fileName}`;
+  const url = `${env.SUPABASE_URL}/storage/v1/${bucket}/${fileName}`;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -679,8 +679,8 @@ export async function uploadToSupabase(env: Env, bucket: string, file: File): Pr
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Upload failed: ${err}`);
+    const errorText = await res.text();
+    throw new Error(`Upload failed: ${errorText}`);
   }
 
   // Return the public URL
