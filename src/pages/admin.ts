@@ -147,6 +147,15 @@ export function adminPage(opts: {
 
 <!-- Instagram Feed Tab -->
 <div class="apan" id="tig">
+<div class="sett-card" style="margin-bottom:20px">
+<h4>Instagram Feed Visibility</h4>
+<p>Toggle the Instagram feed section ON/OFF on the homepage.</p>
+<div class="sett-toggle">
+<label>OFF</label>
+<label class="switch"><input type="checkbox" id="settIgFeed" checked onchange="saveSetting('INSTAGRAM_FEED_ENABLED',this.checked?'true':'false')"><span class="slider"></span></label>
+<label>ON (visible on homepage)</label>
+</div>
+</div>
 <div style="display:flex;align-items:center;margin-bottom:16px">
 <button class="asave" onclick="addIgItem()"><i class="fas fa-plus" style="margin-right:4px"></i>Add Image</button>
 <button class="arefresh" onclick="loadIgFeed()"><i class="fas fa-sync-alt" style="margin-right:4px"></i>Refresh</button>
@@ -362,6 +371,7 @@ function loadSettings(){
     document.getElementById('settMagic').checked=s.USE_MAGIC_CHECKOUT==='true';
     document.getElementById('settManager').value=s.MANAGER_EMAIL||'shop@intru.in';
     document.getElementById('settCodFee').value=s.COD_FEE||'99';
+    document.getElementById('settIgFeed').checked=s.INSTAGRAM_FEED_ENABLED!=='false';
   }).catch(function(){});
 }
 function saveSetting(key,val){

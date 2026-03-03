@@ -146,7 +146,7 @@ export const SEED_LEGAL_PAGES: LegalPage[] = [
 <h2>8. Limitation of Liability</h2>
 <p>intru.in shall not be liable for any indirect, incidental, special, consequential, or punitive damages. Our total liability shall not exceed the amount paid for the specific product in question.</p>
 <h2>9. Governing Law &amp; Jurisdiction</h2>
-<p>These terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in Bangalore, Karnataka.</p>
+<p>These terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in Hyderabad, Telangana.</p>
 <h2>10. Grievance Redressal</h2>
 <p>In accordance with the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> and the Information Technology Act, 2000, our designated Grievance Officer / Nodal Officer is:</p>
 <p><strong>Nodal Officer:</strong> intru.in Grievance Desk<br><strong>Email:</strong> <a href="mailto:shop@intru.in">shop@intru.in</a><br><strong>Response Time:</strong> All grievances will be acknowledged within 48 hours and resolved within 30 days of receipt.</p>

@@ -282,16 +282,17 @@ app.post('/api/checkout/cod', async (c) => {
 
     // Send Resend emails for COD
     const resendKey = getEnv(c.env, 'RESEND_API_KEY');
-    if (resendKey) {
-      // Email to customer
+    if (resendKey && orderId) {
+      // Email to customer: "Action Required: Confirm your intru.in COD Order #[Order ID]"
       try {
+        const shortId = orderId.slice(-8).toUpperCase();
         await sendResendEmail(resendKey, userEmail,
-          'COD Order Received — intru.in',
+          `Action Required: Confirm your intru.in COD Order #${shortId}`,
           emailCodReceived(orderId, userName, validatedItems, total)
         );
       } catch (e) { console.error('Resend customer email error:', e); }
 
-      // Email to manager
+      // Email to manager: "NEW COD ORDER - Action Required"
       try {
         const managerEmail = await fetchStoreSetting(
           getEnv(c.env, 'SUPABASE_URL'),
@@ -300,7 +301,7 @@ app.post('/api/checkout/cod', async (c) => {
         ) || 'shop@intru.in';
         const addrStr = [address.line1, address.line2, address.city, address.state, address.pincode].filter(Boolean).join(', ');
         await sendResendEmail(resendKey, managerEmail,
-          'NEW COD ALERT — ' + userName + ' — Rs.' + total,
+          `NEW COD ORDER - Action Required — ${userName} — Rs.${total}`,
           emailCodManagerAlert(orderId, userName, userPhone, addrStr, validatedItems, total)
         );
       } catch (e) { console.error('Resend manager email error:', e); }
@@ -788,11 +789,15 @@ app.get('/api/instagram-feed', async (c) => {
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
   if (sbUrl && sbKey) {
     try {
+      // Check if IG feed is enabled in store_settings
+      const igEnabled = await fetchStoreSetting(sbUrl, sbKey, 'INSTAGRAM_FEED_ENABLED');
+      if (igEnabled === 'false') return c.json({ feed: [], enabled: false, source: 'supabase' });
+
       const res = await supabaseFetch(sbUrl, sbKey, 'instagram_feed?select=*&active=eq.true&order=sort_order.asc');
-      if (res.ok) return c.json({ feed: await res.json(), source: 'supabase' });
+      if (res.ok) return c.json({ feed: await res.json(), enabled: true, source: 'supabase' });
     } catch (e) { console.error('IG feed error:', e); }
   }
-  return c.json({ feed: [], source: 'static' });
+  return c.json({ feed: [], enabled: true, source: 'static' });
 })
 
 app.post('/api/admin/instagram-feed', async (c) => {

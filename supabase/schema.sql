@@ -1,16 +1,15 @@
 -- =============================================================
--- intru.in Supabase Schema (v5 — Silent Identity + Hybrid Checkout)
+-- intru.in Supabase Schema (v6 — Unified Checkout + IG Toggle)
 -- Run this in Supabase SQL Editor: Dashboard > SQL Editor
 --
 -- SAFE TO RE-RUN: Uses IF NOT EXISTS / IF EXISTS everywhere
--- Handles both fresh installs AND migrations from v4
+-- Handles both fresh installs AND migrations from v4/v5
 --
--- v5 changes:
--- - store_settings table (admin toggle for USE_MAGIC_CHECKOUT, etc.)
--- - instagram_feed table for admin-managed feed images
--- - orders: added customer_name, shipping_address_line1/line2,
---   shipping_city/state/pincode/country, latitude/longitude
--- - orders: cod_fee default 99 for COD orders
+-- v6 changes:
+-- - INSTAGRAM_FEED_ENABLED store_setting for homepage toggle
+-- - COD email subjects updated to "Action Required" format
+-- - Footer/legal jurisdiction: Hyderabad, Telangana
+-- - Unified checkout: Buy Now → Hybrid Payment Selection UI
 -- =============================================================
 
 
@@ -490,7 +489,8 @@ ON CONFLICT (size_label) DO UPDATE SET
 INSERT INTO store_settings (key, value) VALUES
   ('USE_MAGIC_CHECKOUT', 'false'),
   ('MANAGER_EMAIL', 'shop@intru.in'),
-  ('COD_FEE', '99')
+  ('COD_FEE', '99'),
+  ('INSTAGRAM_FEED_ENABLED', 'true')
 ON CONFLICT (key) DO NOTHING;
 
 

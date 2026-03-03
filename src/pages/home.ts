@@ -126,10 +126,10 @@ ${d>0?'<span class="sv">'+d+'% OFF</span>':''}
 <p class="tauth anim d2">&mdash; Verified Customer</p>
 </section>
 
-<section class="igsec">
+<section class="igsec" id="igSection">
 <p class="sover">Follow Us</p>
 <h3 style="font-family:var(--head);font-size:24px;text-transform:uppercase;letter-spacing:-.02em;margin-bottom:28px">@${STORE_CONFIG.instagram}</h3>
-<div class="iggrid">
+<div class="iggrid" id="igHomeGrid">
 ${products.slice(0,5).map((p,i)=>'<a href="https://instagram.com/'+STORE_CONFIG.instagram+'" target="_blank" rel="noopener" class="igit"><img src="'+p.images[i % p.images.length]+'" alt="intru.in Instagram" loading="lazy" width="300" height="300"></a>').join('')}
 </div></section>
 
@@ -144,6 +144,16 @@ ${products.slice(0,5).map((p,i)=>'<a href="https://instagram.com/'+STORE_CONFIG.
 <script>
 var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.style.animationPlayState='running';obs.unobserve(e.target)}})},{threshold:.1});
 document.querySelectorAll('.anim').forEach(function(el){el.style.animationPlayState='paused';obs.observe(el)});
+
+/* ====== IG Feed: hide if disabled ====== */
+fetch('/api/instagram-feed').then(function(r){return r.json()}).then(function(d){
+  if(d.enabled===false){var sec=document.getElementById('igSection');if(sec)sec.style.display='none';return}
+  if(d.feed&&d.feed.length>0){
+    var grid=document.getElementById('igHomeGrid');var h='';
+    d.feed.forEach(function(item){h+='<a href="'+(item.link_url||'https://instagram.com/${STORE_CONFIG.instagram}')+'" target="_blank" rel="noopener" class="igit"><img src="'+item.image_url+'" alt="'+(item.caption||'intru.in Instagram')+'" loading="lazy" width="300" height="300"></a>'});
+    if(h)grid.innerHTML=h;
+  }
+}).catch(function(){});
 
 function subscribeEmail(form){
   var email=document.getElementById('nlEmail').value.trim();

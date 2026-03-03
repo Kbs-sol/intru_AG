@@ -1,10 +1,13 @@
 import { STORE_CONFIG, type Product, type LegalPage, SEED_LEGAL_PAGES } from '../data'
 
 /**
- * Shell v5: Silent Identity + Hybrid Checkout (Prepaid/COD)
- * - No login/register pages — identity captured at checkout via overlay
- * - Admin toggle USE_MAGIC_CHECKOUT: ON = Razorpay Magic, OFF = custom dual-mode
- * - Konami code → /admin
+ * Shell v6: Unified Checkout + Psychological Nudges + Google Auth Fix
+ * - Buy Now & Checkout both open Hybrid Payment Selection UI
+ * - Prepaid = bright green nudge "⚡ SAVE ₹99 / FREE SHIPPING"
+ * - COD = gray nudge "₹99 Convenience Fee added"
+ * - Google One-Tap: data-itp_support=true, data-auto_select=false, redirect fallback
+ * - Only one toast per order
+ * - Footer: Hyderabad, Telangana, India; all emails shop@intru.in
  */
 export function shell(
   title: string,
@@ -146,14 +149,14 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <!-- Payment Mode Selector (only when NOT magic checkout) -->
 <div class="cmode" id="cmode" style="display:none;margin-top:14px">
 <div class="cmode-opt prepaid act" onclick="setPayMode('prepaid')" id="cm_prepaid">
-<span class="cmode-badge">&#9889; SAVE Rs.99</span>
+<span class="cmode-badge" style="background:#dcfce7;color:#166534">&#9889; SAVE Rs.99 / FREE SHIPPING</span>
 <span class="cmode-label">Prepaid</span>
-<span class="cmode-price">FREE Shipping</span>
+<span class="cmode-price" style="color:var(--green);font-weight:700">FREE Shipping</span>
 </div>
 <div class="cmode-opt cod" onclick="setPayMode('cod')" id="cm_cod">
-<span class="cmode-badge">Standard Delivery</span>
+<span class="cmode-badge" style="background:var(--g100);color:var(--g500)">Rs.99 Convenience Fee added</span>
 <span class="cmode-label">Cash on Delivery</span>
-<span class="cmode-price">+Rs.99 convenience</span>
+<span class="cmode-price">+Rs.99 COD fee</span>
 </div>
 </div>
 <!-- COD Address Form -->
@@ -184,14 +187,14 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
 Continue with Google
 </button>
-<p style="font-size:10px;color:var(--g400);text-align:center;margin-top:14px;line-height:1.5">No account needed. We just need your email for order updates.</p>
+<p style="font-size:10px;color:var(--g400);text-align:center;margin-top:14px;line-height:1.5">No account needed. We just need your email for order updates.<br>Support: <a href="mailto:shop@intru.in" style="text-decoration:underline">shop@intru.in</a></p>
 </div>
 </div>
 
 <main style="padding-top:64px">${body}</main>
 <footer class="ftr" id="contact"><div class="ftri">
 <div class="ftrb"><h3>INTRU.IN</h3><p>${STORE_CONFIG.description}</p>
-<p style="margin-top:16px;font-size:11px;color:var(--g400);line-height:1.7"><strong style="color:var(--g300)">Registered Office:</strong><br>Bangalore, Karnataka, India</p>
+<p style="margin-top:16px;font-size:11px;color:var(--g400);line-height:1.7"><strong style="color:var(--g300)">Registered Office:</strong><br>Hyderabad, Telangana, India</p>
 <p style="margin-top:8px;font-size:11px;color:var(--g400);line-height:1.7"><strong style="color:var(--g300)">Grievance Officer:</strong><br><a href="mailto:shop@intru.in" style="color:var(--g300)">shop@intru.in</a><br><span style="font-size:10px">Per Consumer Protection (E-Commerce) Rules, 2020</span></p>
 </div>
 <div class="ftrc"><h4>Shop</h4><a href="/#products">All Drops</a><a href="/collections">Collections</a><a href="/about">About</a></div>
@@ -201,7 +204,7 @@ Continue with Google
 <div class="fsoc"><a href="https://instagram.com/${STORE_CONFIG.instagram}" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a></div>
 </div></footer>
 <div class="tc" id="tc"></div>
-${gKey !== 'YOUR_GOOGLE_CLIENT_ID' ? '<script src="https://accounts.google.com/gsi/client" async defer></script><div id="g_id_onload" data-client_id="' + gKey + '" data-context="signin" data-ux_mode="popup" data-callback="handleGoogleAuth" data-auto_prompt="true"></div>' : '<!-- Google One-Tap: Set GOOGLE_CLIENT_ID env var to enable -->'}
+${gKey !== 'YOUR_GOOGLE_CLIENT_ID' ? '<script src="https://accounts.google.com/gsi/client" async defer></script><div id="g_id_onload" data-client_id="' + gKey + '" data-context="signin" data-ux_mode="popup" data-callback="handleGoogleAuth" data-itp_support="true" data-auto_select="false" data-auto_prompt="false"></div>' : '<!-- Google One-Tap: Set GOOGLE_CLIENT_ID env var to enable -->'}
 <script>
 /* ====== CONFIG ====== */
 var S=${sj};
@@ -210,6 +213,7 @@ var payMode='prepaid';
 var identifiedEmail=localStorage.getItem('intru_user_email')||'';
 var identifiedName=localStorage.getItem('intru_user_name')||'';
 var pendingCheckout=false;
+var orderToastFired=false;
 
 /* ====== GOOGLE AUTH (Silent Identity) ====== */
 function handleGoogleAuth(r){
@@ -233,9 +237,23 @@ function handleGoogleAuth(r){
 function triggerGoogleIdentify(){
   if(typeof google!=='undefined'&&google.accounts&&google.accounts.id){
     google.accounts.id.prompt(function(n){
-      if(n.isNotDisplayed()||n.isSkippedMoment()){toast('Google popup blocked. Try email.','err')}
+      if(n.isNotDisplayed()||n.isSkippedMoment()){
+        /* Fallback: redirect-based Google sign-in */
+        doGoogleRedirect();
+      }
     });
-  }else{toast('Google sign-in not loaded. Use email.','err')}
+  }else{
+    doGoogleRedirect();
+  }
+}
+
+function doGoogleRedirect(){
+  var cid=S.rk?'':'';/* clientId from config */
+  var gcid=document.querySelector('#g_id_onload');
+  var clientId=gcid?gcid.getAttribute('data-client_id'):'';
+  if(!clientId||clientId==='YOUR_GOOGLE_CLIENT_ID'){toast('Google sign-in not configured. Use email.','err');return}
+  var redirect=encodeURIComponent(window.location.origin+'/api/auth/google-redirect');
+  window.location.href='https://accounts.google.com/o/oauth2/v2/auth?client_id='+clientId+'&redirect_uri='+redirect+'&response_type=token&scope=email%20profile&prompt=select_account';
 }
 
 /* ====== SILENT IDENTITY OVERLAY ====== */
@@ -337,11 +355,12 @@ function renderCart(){
 function toggleCart(){document.getElementById('co').classList.toggle('open');document.getElementById('cd').classList.toggle('open');document.body.style.overflow=document.getElementById('cd').classList.contains('open')?'hidden':''}
 function openCartDrawer(){document.getElementById('co').classList.add('open');document.getElementById('cd').classList.add('open');document.body.style.overflow='hidden'}
 
-/* ====== BUY NOW ====== */
+/* ====== BUY NOW (unified: adds to temp cart + opens drawer with payment selection) ====== */
 function buyNow(productId,size){
   if(!size){toast('Please select a size first','err');return}
   var p=PM[productId];if(!p){toast('Product not found','err');return}
-  cart=[{p:productId,s:size,q:1}];saveCart();checkout();
+  /* Replace cart with single item and open drawer (shows payment selection UI) */
+  cart=[{p:productId,s:size,q:1}];saveCart();openCartDrawer();
 }
 
 /* ====== CHECKOUT ====== */
@@ -351,6 +370,7 @@ function checkout(){
   if(!identifiedEmail){pendingCheckout=true;openIdentify();return}
   var btn=document.getElementById('checkoutBtn');
   if(btn){btn.disabled=true;btn.textContent='CREATING ORDER...';}
+  orderToastFired=false;
 
   /* If Magic Checkout is ON, always use Razorpay Magic flow */
   if(S.magic){doMagicCheckout();return}
@@ -381,7 +401,7 @@ function doPrepaidCheckout(){
         fetch('/api/payment/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
           razorpay_order_id:response.razorpay_order_id,razorpay_payment_id:response.razorpay_payment_id,razorpay_signature:response.razorpay_signature
         })}).then(function(r){return r.json()}).then(function(vd){
-          if(vd.success){cart=[];saveCart();toggleCart();toast('Drop secured! Check email.','ok-green');setTimeout(function(){toast('Order: '+vd.orderId,'ok')},1500)}
+          if(vd.success){cart=[];saveCart();toggleCart();if(!orderToastFired){orderToastFired=true;toast('Drop secured! Order: '+(vd.orderId||'').slice(-8).toUpperCase()+'. Check email.','ok-green')}}
           else{toast('Verification failed: '+(vd.error||''),'err')}
         }).catch(function(e){toast('Error: '+e.message,'err')}).finally(function(){resetBtn()});
       }
@@ -410,7 +430,7 @@ function doCodCheckout(){
   })})
   .then(function(r){return r.json()})
   .then(function(d){
-    if(d.success){cart=[];saveCart();toggleCart();toast('COD order placed! Check email.','ok-green');setTimeout(function(){toast('Order: '+(d.orderId||''),'ok')},1500)}
+    if(d.success){cart=[];saveCart();toggleCart();if(!orderToastFired){orderToastFired=true;toast('COD order placed! Order: '+(d.orderId||'').slice(-8).toUpperCase()+'. Check email.','ok-green')}}
     else{toast(d.error||'COD failed','err')}
   }).catch(function(e){toast('Error: '+e.message,'err')})
   .finally(function(){resetBtn()});
@@ -435,7 +455,7 @@ function doMagicCheckout(){
         fetch('/api/payment/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
           razorpay_order_id:response.razorpay_order_id,razorpay_payment_id:response.razorpay_payment_id,razorpay_signature:response.razorpay_signature
         })}).then(function(r){return r.json()}).then(function(vd){
-          if(vd.success){cart=[];saveCart();toggleCart();toast('Drop secured!','ok-green')}
+          if(vd.success){cart=[];saveCart();toggleCart();if(!orderToastFired){orderToastFired=true;toast('Drop secured!','ok-green')}}
           else{toast('Verification failed','err')}
         }).catch(function(e){toast('Error: '+e.message,'err')}).finally(function(){resetBtn()});
       }
