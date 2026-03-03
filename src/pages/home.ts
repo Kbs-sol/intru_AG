@@ -74,7 +74,7 @@ export function homePage(opts: {
 </style>
 
 <section class="hero">
-<p class="hero-over anim">Est. 2026 &mdash; India</p>
+<p class="hero-over anim">Est. 2025 &mdash; India</p>
 <h1 class="hero-title anim d1">LIMITED DROPS.<br>NO RESTOCKS.</h1>
 <p class="hero-sub anim d2">${STORE_CONFIG.description}</p>
 <a href="#products" class="hero-cta anim d3">Shop the Drop <i class="fas fa-arrow-right"></i></a>
