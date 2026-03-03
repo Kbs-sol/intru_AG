@@ -7,7 +7,7 @@ import {
   buildMagicLineItems, hmacSHA256, supabaseFetch,
   fetchProducts, fetchProductBySlug, fetchProductById, fetchLegalPages,
   sendResendEmail, emailDropSecured, emailCodReceived, emailCodManagerAlert,
-  fetchStoreSetting,
+  fetchStoreSetting, uploadToSupabase,
 } from './data'
 import { homePage } from './pages/home'
 import { productPage } from './pages/product'
@@ -739,6 +739,21 @@ app.post('/api/admin/auth', async (c) => {
   } catch { return c.json({ error: 'Auth failed' }, 500); }
 })
 
+app.post('/api/admin/upload', async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const file = body['file'] as File;
+    const bucket = (body['bucket'] as string) || 'products';
+
+    if (!file) return c.json({ error: 'No file provided' }, 400);
+
+    const url = await uploadToSupabase(c.env, bucket, file);
+    return c.json({ success: true, url });
+  } catch (e: any) {
+    return c.json({ error: e.message || 'Upload failed' }, 500);
+  }
+})
+
 // ============ ADMIN API ============
 
 app.get('/api/admin/orders', async (c) => {
@@ -900,10 +915,10 @@ app.post('/api/webhooks/razorpay', async (c) => {
   // 2. Handle Payment Captured
   if (event === 'payment.captured') {
     const payment = payload.payload.payment.entity;
-    
+
     // Update DB (Existing logic)
     if (payment.order_id) {
-       await updateOrderStatus(c.env, payment.order_id, 'paid', payment.id);
+      await updateOrderStatus(c.env, payment.order_id, 'paid', payment.id);
     }
 
     // NEW: Send alert to your specific email

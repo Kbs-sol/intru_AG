@@ -1,5 +1,5 @@
 # INTRU.IN — Full System Literacy & Architecture Reference
-**Version**: v8 | **Date**: 2026-03-03 | **Production**: https://intru-genz.pages.dev (staging for intru.in)
+**Version**: v9 | **Date**: 2026-03-04 | **Production**: https://intru-genz.pages.dev (staging for intru.in) [AG]
 
 > This document is designed to be read by humans AND used as a context prompt for AI assistants. It contains everything needed to understand, debug, fix, or extend the intru.in codebase.
 
@@ -30,8 +30,8 @@
 webapp/
 ├── src/
 │   ├── index.tsx          # Main Hono app: ALL API routes + page routes
-│   ├── data.ts            # Data layer: types, Supabase helpers, Razorpay helpers, 
-│   │                      #   email templates, seed data, store config
+│   ├── data.ts            # Data layer: types, Supabase helpers (inc. uploadToSupabase [AG]), 
+│   │                      #   Razorpay helpers, email templates, seed data, store config
 │   ├── components/
 │   │   └── shell.ts       # HTML shell: nav, cart drawer, checkout JS, footer,
 │   │                      #   Google auth, identity overlay, payment mode selector
@@ -273,6 +273,7 @@ ALTER TABLE orders ADD CONSTRAINT orders_status_check
 | POST | `/api/admin/instagram-feed` | Add IG feed item |
 | PATCH | `/api/admin/instagram-feed/:id` | Update IG feed item |
 | DELETE | `/api/admin/instagram-feed/:id` | Delete IG feed item |
+| POST | `/api/admin/upload` | Upload image directly to Supabase Storage [AG] |
 
 ### Page Routes:
 
@@ -428,6 +429,7 @@ RESEND_API_KEY=re_xxx
 4. **Size Chart**: Add/edit/delete size measurements (XS-XXL)
 5. **IG Feed**: Toggle feed on/off, manage images with sort order
 6. **Settings**: Toggle Magic Checkout, set manager email, set COD fee
+7. **Image Upload [AG]**: Direct upload to Supabase `Products` bucket with filename sanitization and auto-fill for empty image slots.
 
 ---
 
@@ -452,6 +454,10 @@ RESEND_API_KEY=re_xxx
 ### Issue: Duplicate /api/auth/google-redirect handlers
 **Root Cause**: Old handler was overriding the new redirect.
 **Fix**: Removed duplicate handler.
+
+### Issue: TypeScript Lint Errors & Web APIs [AG]
+**Root Cause**: `tsconfig.json` was missing `DOM` and `DOM.Iterable` in the `lib` section, causing errors for `fetch`, `console`, `File`, etc.
+**Fix**: Added `DOM` and `DOM.Iterable` to `tsconfig.json` libs.
 
 ---
 

@@ -649,3 +649,40 @@ export async function fetchStoreSetting(sbUrl: string, sbKey: string, key: strin
     return rows.length > 0 ? rows[0].value : null;
   } catch { return null; }
 }
+
+// ============ Image Upload helper ============
+
+/**
+ * Upload a file directly to Supabase Storage.
+ * Returns the full Public URL.
+ */
+export async function uploadToSupabase(env: Env, bucket: string, file: File): Promise<string> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
+    throw new Error('Supabase configuration missing (URL or Service Key)');
+  }
+
+  // Sanitize filename: timestamp + alphanumeric only
+  const timestamp = Date.now();
+  const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_').toLowerCase();
+  const fileName = `${timestamp}_${safeName}`;
+
+  const url = `${env.SUPABASE_URL}/storage/v1/object/${bucket}/${fileName}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+      'x-upsert': 'true',
+      'Content-Type': file.type,
+    },
+    body: file,
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Upload failed: ${err}`);
+  }
+
+  // Return the public URL
+  return `${env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${fileName}`;
+}

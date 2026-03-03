@@ -4,7 +4,7 @@
 - **Name**: intru.in
 - **Goal**: High-conversion streetwear e-commerce with frictionless checkout
 - **Stack**: Hono + TypeScript + Cloudflare Pages + Supabase + Razorpay + Resend
-- **Version**: v8
+- **Version**: v9 [AG]
 
 ## URLs
 - **Production**: https://intru-genz.pages.dev (staging) → https://intru.in (custom domain pending)
@@ -83,6 +83,7 @@
 | **Size Chart** | Full CRUD for chest/length measurements |
 | **IG Feed** | ON/OFF toggle (hides homepage section when OFF), add/edit/delete images, instant UI updates |
 | **Settings** | Payment mode toggle (Manual COD ↔ Razorpay Magic), manager notification email, COD fee |
+| **Upload [AG]** | Direct image upload to Supabase with auto-fill logic for product/IG inputs |
 
 ## Environment Variables (Cloudflare Secrets)
 
@@ -145,6 +146,7 @@ npx wrangler pages secret put RAZORPAY_WEBHOOK_SECRET --project-name intru-in
 | PATCH | `/api/admin/products/:id` | Update product |
 | GET/PUT | `/api/admin/settings/:key` | Store settings CRUD |
 | POST/PATCH/DELETE | `/api/admin/instagram-feed` | IG feed CRUD |
+| POST | `/api/admin/upload` | Direct image upload to Supabase Storage [AG] |
 
 ## Design
 - **Typography**: Archivo Black (headings), Space Grotesk (body)

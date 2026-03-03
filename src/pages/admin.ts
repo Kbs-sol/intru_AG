@@ -119,6 +119,15 @@ export function adminPage(opts: {
 
 <!-- Products Tab -->
 <div class="apan" id="tprod">
+<div class="sett-card" style="margin-bottom:20px;background:var(--g50)">
+<h4>Quick Upload</h4>
+<p>Upload a photo directly to Supabase. It will auto-fill the first empty image slot in the product cards below.</p>
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+<input type="file" id="imageUploaderProd" accept="image/*" style="font-size:12px">
+<button class="asave" id="uploadBtnProd" onclick="handleAdminUpload('imageUploaderProd','products','uploadStatusProd','uploadBtnProd')">Upload to Products</button>
+<span id="uploadStatusProd" style="font-size:11px;color:var(--g400)"></span>
+</div>
+</div>
 <div style="display:flex;align-items:center;margin-bottom:16px">
 <span class="asrc" id="prodSrc"></span>
 <button class="arefresh" onclick="loadProducts()"><i class="fas fa-sync-alt" style="margin-right:4px"></i>Refresh</button>
@@ -147,6 +156,15 @@ export function adminPage(opts: {
 
 <!-- Instagram Feed Tab -->
 <div class="apan" id="tig">
+<div class="sett-card" style="margin-bottom:20px;background:var(--g50)">
+<h4>Feed Upload</h4>
+<p>Upload a photo for the Instagram feed. It will auto-fill the first empty "Image URL" field below.</p>
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+<input type="file" id="imageUploaderIg" accept="image/*" style="font-size:12px">
+<button class="asave" id="uploadBtnIg" onclick="handleAdminUpload('imageUploaderIg','instagram_feed','uploadStatusIg','uploadBtnIg')">Upload to Feed</button>
+<span id="uploadStatusIg" style="font-size:11px;color:var(--g400)"></span>
+</div>
+</div>
 <div class="sett-card" style="margin-bottom:20px">
 <h4>Instagram Feed Visibility</h4>
 <p>Toggle the Instagram feed section ON/OFF on the homepage.</p>

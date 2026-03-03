@@ -538,5 +538,54 @@ if(identifiedEmail){
 /* ====== KONAMI CODE -> /admin ====== */
 var _kseq=[38,38,40,40,37,39,37,39,66,65],_kidx=0;
 document.addEventListener('keydown',function(e){if(e.keyCode===_kseq[_kidx]){_kidx++;if(_kidx===_kseq.length){_kidx=0;window.location.href='/admin'}}else{_kidx=0}});
+
+/* ====== ADMIN IMAGE UPLOAD ====== */
+function handleAdminUpload(inputId, bucket, statusId, btnId) {
+  var fileInput = document.getElementById(inputId);
+  var status = document.getElementById(statusId);
+  var btn = document.getElementById(btnId);
+  if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+    alert('Please select a file first');
+    return;
+  }
+  var file = fileInput.files[0];
+  var fd = new FormData();
+  fd.append('file', file);
+  fd.append('bucket', bucket || 'products');
+
+  if (status) status.textContent = 'Uploading...';
+  if (btn) btn.disabled = true;
+
+  fetch('/api/admin/upload', { method: 'POST', body: fd })
+    .then(function(r) { return r.json() })
+    .then(function(data) {
+      if (data.success && data.url) {
+        if (status) status.textContent = 'Upload Successful!';
+        toast('Image uploaded and synced!', 'ok-green');
+        
+        /* Find first empty URL input on the current page to auto-fill */
+        var inputs = document.querySelectorAll('input:not([type="file"]):not([type="checkbox"]):not([type="password"])');
+        for (var i = 0; i < inputs.length; i++) {
+          if ((inputs[i].placeholder.toLowerCase().indexOf('image') !== -1 || inputs[i].placeholder.toLowerCase().indexOf('url') !== -1) && !inputs[i].value.trim()) {
+            inputs[i].value = data.url;
+            /* Trigger change event if needed for reactive logic */
+            inputs[i].dispatchEvent(new Event('change'));
+            break;
+          }
+        }
+      } else {
+        if (status) status.textContent = 'Upload failed';
+        alert('Upload failed: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(function(err) {
+      if (status) status.textContent = 'Error';
+      alert('Upload error: ' + err.message);
+    })
+    .finally(function() {
+      if (btn) btn.disabled = false;
+      fileInput.value = '';
+    });
+}
 </script></body></html>`;
 }
