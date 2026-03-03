@@ -83,6 +83,85 @@ app.get('/about', async (c) => {
   return c.html(aboutPage(opts));
 })
 
+// ============ AUTH: Google OAuth Redirect Callback ============
+// This page receives the id_token from Google OAuth redirect flow,
+// sends it to our backend API, saves user data, then redirects to homepage.
+app.get('/auth/google/callback', (c) => {
+  return c.html(`<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Signing in — intru.in</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a0a;color:#fafafa;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Space Grotesk',sans-serif;text-align:center;padding:24px}
+.wrap{max-width:360px}.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.15);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 20px}
+@keyframes spin{to{transform:rotate(360deg)}}h1{font-size:18px;font-weight:700;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase}p{font-size:13px;color:#a3a3a3;line-height:1.6}
+.err{color:#e53e3e;display:none;margin-top:16px;font-size:13px}a{color:#fafafa;font-weight:700;text-decoration:underline;text-underline-offset:3px}</style>
+</head><body>
+<div class="wrap">
+<div class="spinner" id="spinner"></div>
+<h1 id="title">Securing your session</h1>
+<p id="msg">Verifying your Google account...</p>
+<p class="err" id="err"></p>
+</div>
+<script>
+(function(){
+  /* Google sends id_token in the URL fragment (#id_token=...) */
+  var hash=window.location.hash.substring(1);
+  var params=new URLSearchParams(hash);
+  var idToken=params.get('id_token');
+  
+  if(!idToken){
+    /* Also check for access_token (legacy fallback) — but we can't use it directly */
+    var accessToken=params.get('access_token');
+    if(accessToken){
+      /* Use Google userinfo API to get user data, then create a pseudo-credential */
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{'Authorization':'Bearer '+accessToken}})
+      .then(function(r){return r.json()})
+      .then(function(u){
+        if(u.email){
+          /* Save user directly */
+          var user={email:u.email,name:u.name||'',picture:u.picture||''};
+          localStorage.setItem('intru_user',JSON.stringify(user));
+          localStorage.setItem('intru_user_email',u.email);
+          localStorage.setItem('intru_user_name',u.name||'');
+          /* Also upsert to backend */
+          fetch('/api/auth/google-userinfo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(user)})
+          .then(function(){sessionStorage.setItem('intru_auth_success','1');window.location.href='/'})
+          .catch(function(){sessionStorage.setItem('intru_auth_success','1');window.location.href='/'});
+        }else{showError('Could not retrieve your account info. <a href="/">Back to Store</a>')}
+      }).catch(function(e){showError('Auth error: '+e.message+'. <a href="/">Back to Store</a>')});
+      return;
+    }
+    showError('No authentication token received. <a href="/">Back to Store</a>');
+    return;
+  }
+  
+  /* We have an id_token (JWT) — send it to our backend */
+  fetch('/api/auth/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:idToken})})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success&&d.user){
+      localStorage.setItem('intru_user',JSON.stringify(d.user));
+      localStorage.setItem('intru_user_email',d.user.email||'');
+      localStorage.setItem('intru_user_name',d.user.name||'');
+      sessionStorage.setItem('intru_auth_success','1');
+      window.location.href='/';
+    }else{showError((d.error||'Authentication failed')+'. <a href="/">Back to Store</a>')}
+  }).catch(function(e){showError('Error: '+e.message+'. <a href="/">Back to Store</a>')});
+  
+  function showError(msg){
+    document.getElementById('spinner').style.display='none';
+    document.getElementById('title').textContent='Authentication Failed';
+    document.getElementById('msg').style.display='none';
+    var errEl=document.getElementById('err');errEl.innerHTML=msg;errEl.style.display='block';
+  }
+})();
+</script></body></html>`);
+})
+
+// Also handle the old /api/auth/google-redirect path as a backward-compatible redirect
+app.get('/api/auth/google-redirect', (c) => {
+  return c.redirect('/auth/google/callback' + (c.req.url.includes('#') ? '' : ''), 302);
+})
+
 // ============ API: Health ============
 
 app.get('/api/health', (c) => {
@@ -625,6 +704,29 @@ app.post('/api/auth/google', async (c) => {
     } catch { return c.json({ error: 'Invalid token format' }, 400); }
   } catch (e: any) {
     return c.json({ error: e.message || 'Auth failed' }, 500);
+  }
+})
+
+// Google userinfo fallback: when redirect flow returns access_token instead of id_token
+app.post('/api/auth/google-userinfo', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { email, name, picture } = body;
+    if (!email) return c.json({ error: 'No email' }, 400);
+    const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+    const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+    if (sbUrl && sbKey) {
+      try {
+        await supabaseFetch(sbUrl, sbKey, 'users', {
+          method: 'POST',
+          headers: { 'Prefer': 'resolution=merge-duplicates' } as any,
+          body: JSON.stringify({ email, name: name || '', picture: picture || '', auth_provider: 'google', last_login: new Date().toISOString() }),
+        });
+      } catch (e) { console.error('User upsert error:', e); }
+    }
+    return c.json({ success: true });
+  } catch (e: any) {
+    return c.json({ error: e.message || 'Failed' }, 500);
   }
 })
 

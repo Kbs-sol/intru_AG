@@ -215,6 +215,24 @@ var identifiedName=localStorage.getItem('intru_user_name')||'';
 var pendingCheckout=false;
 var orderToastFired=false;
 
+/* ====== RESTORE SESSION AFTER GOOGLE REDIRECT ====== */
+(function(){
+  /* Check if we just came back from a Google redirect auth */
+  if(sessionStorage.getItem('intru_auth_success')==='1'){
+    sessionStorage.removeItem('intru_auth_success');
+    var u=localStorage.getItem('intru_user');
+    if(u){try{var user=JSON.parse(u);identifiedEmail=user.email||'';identifiedName=user.name||'';toast('Welcome, '+(user.name||user.email)+'!','ok-green');}catch(e){}}
+    /* Restore cart from backup if needed */
+    var bk=sessionStorage.getItem('intru_cart_backup');
+    if(bk){try{var bc=JSON.parse(bk);if(bc&&bc.length){cart=bc;saveCart()}}catch(e){}sessionStorage.removeItem('intru_cart_backup');}
+    /* Resume checkout if it was pending */
+    if(sessionStorage.getItem('intru_pending_checkout')==='1'){
+      sessionStorage.removeItem('intru_pending_checkout');
+      setTimeout(function(){if(identifiedEmail){openCartDrawer();setTimeout(function(){checkout()},500)}},600);
+    }
+  }
+})();
+
 /* ====== GOOGLE AUTH (Silent Identity) ====== */
 function handleGoogleAuth(r){
   if(!r.credential)return;
@@ -234,6 +252,26 @@ function handleGoogleAuth(r){
   }).catch(function(){toast('Auth failed','err')});
 }
 
+/* Process Google auth token (used by redirect callback page) */
+function processGoogleToken(idToken){
+  fetch('/api/auth/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:idToken})})
+  .then(function(res){return res.json()})
+  .then(function(d){
+    if(d.success&&d.user){
+      localStorage.setItem('intru_user',JSON.stringify(d.user));
+      localStorage.setItem('intru_user_email',d.user.email||'');
+      localStorage.setItem('intru_user_name',d.user.name||'');
+      /* Signal the homepage to resume after redirect */
+      sessionStorage.setItem('intru_auth_success','1');
+      window.location.href='/';
+    }else{
+      document.body.innerHTML='<div style="text-align:center;padding:60px;font-family:sans-serif"><h2 style="color:#e53e3e">Authentication Failed</h2><p>'+(d.error||'Unknown error')+'</p><a href="/" style="color:#0a0a0a;font-weight:700">Back to Store</a></div>';
+    }
+  }).catch(function(e){
+    document.body.innerHTML='<div style="text-align:center;padding:60px;font-family:sans-serif"><h2 style="color:#e53e3e">Auth Error</h2><p>'+e.message+'</p><a href="/" style="color:#0a0a0a;font-weight:700">Back to Store</a></div>';
+  });
+}
+
 function triggerGoogleIdentify(){
   if(typeof google!=='undefined'&&google.accounts&&google.accounts.id){
     google.accounts.id.prompt(function(n){
@@ -248,12 +286,14 @@ function triggerGoogleIdentify(){
 }
 
 function doGoogleRedirect(){
-  var cid=S.rk?'':'';/* clientId from config */
   var gcid=document.querySelector('#g_id_onload');
   var clientId=gcid?gcid.getAttribute('data-client_id'):'';
   if(!clientId||clientId==='YOUR_GOOGLE_CLIENT_ID'){toast('Google sign-in not configured. Use email.','err');return}
-  var redirect=encodeURIComponent(window.location.origin+'/api/auth/google-redirect');
-  window.location.href='https://accounts.google.com/o/oauth2/v2/auth?client_id='+clientId+'&redirect_uri='+redirect+'&response_type=token&scope=email%20profile&prompt=select_account';
+  /* Save checkout intent so it survives the redirect */
+  if(pendingCheckout)sessionStorage.setItem('intru_pending_checkout','1');
+  sessionStorage.setItem('intru_cart_backup',JSON.stringify(cart));
+  var redirect=encodeURIComponent(window.location.origin+'/auth/google/callback');
+  window.location.href='https://accounts.google.com/o/oauth2/v2/auth?client_id='+clientId+'&redirect_uri='+redirect+'&response_type=id_token&scope=openid%20email%20profile&prompt=select_account&nonce='+Date.now();
 }
 
 /* ====== SILENT IDENTITY OVERLAY ====== */
@@ -377,7 +417,16 @@ function checkout(){
 
   /* Custom dual-mode checkout */
   if(payMode==='prepaid'){doPrepaidCheckout()}
-  else{doCodCheckout()}
+  else{
+    /* Ensure COD form is visible and make sure user fills it */
+    if(!document.getElementById('codForm').classList.contains('show')){
+      setPayMode('cod');
+      toast('Please fill in your delivery address for COD','err');
+      resetBtn();
+      return;
+    }
+    doCodCheckout()
+  }
 }
 
 function doPrepaidCheckout(){
@@ -480,6 +529,11 @@ window.addEventListener('scroll',function(){document.getElementById('nb').classL
 
 /* ====== INIT ====== */
 renderCart();
+/* If user is identified, update UI to reflect it */
+if(identifiedEmail){
+  var idBtn=document.getElementById('idBtn');
+  if(idBtn)idBtn.textContent='CONTINUE AS '+identifiedEmail.split('@')[0].toUpperCase();
+}
 
 /* ====== KONAMI CODE -> /admin ====== */
 var _kseq=[38,38,40,40,37,39,37,39,66,65],_kidx=0;
