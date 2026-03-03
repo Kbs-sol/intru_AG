@@ -12,7 +12,7 @@ export function productPage(product: Product, opts: {
   const legalPages = opts.legalPages;
   const disc = product.comparePrice ? Math.round((1 - product.price / product.comparePrice) * 100) : 0;
   const related = products.filter(p => p.id !== product.id).slice(0, 3);
-  const schema = JSON.stringify({"@context":"https://schema.org","@type":"Product","name":product.name,"description":product.description,"image":product.images,"brand":{"@type":"Brand","name":"intru.in"},"offers":{"@type":"Offer","url":"https://intru.in/product/"+product.slug,"priceCurrency":"INR","price":product.price,"availability":product.inStock?"https://schema.org/InStock":"https://schema.org/OutOfStock"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"47"}});
+  const schema = JSON.stringify({"@context":"https://schema.org","@type":"Product","name":product.name,"description":product.description,"image":product.images,"brand":{"@type":"Brand","name":"intru.in"},"offers":{"@type":"Offer","url":"https://intru.in/product/"+product.slug,"priceCurrency":"INR","price":product.price,"availability":product.inStock?"https://schema.org/InStock":"https://schema.org/OutOfStock"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","reviewCount":"43"}});
   const pj = JSON.stringify({id:product.id,s:product.slug,n:product.name,p:product.price,i:product.images,sz:product.sizes});
 
   const body = `<style>
@@ -118,7 +118,7 @@ ${product.images.map((_,i)=>'<button class="gdot '+(i===0?'act':'')+'" onclick="
 <p class="pcat">${product.category}</p>
 <h1 class="pname">${product.name}</h1>
 <p class="ptag">${product.tagline}</p>
-<div class="prating"><span class="pstars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></span><span class="prtext">4.8 (47 reviews)</span></div>
+<div class="prating"><span class="pstars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></span><span class="prtext">4.8 (43 reviews)</span></div>
 <div class="pprow">
 <span class="pprice">${STORE_CONFIG.currencySymbol}${product.price.toLocaleString('en-IN')}</span>
 ${product.comparePrice?'<span class="pcmp">'+STORE_CONFIG.currencySymbol+product.comparePrice.toLocaleString('en-IN')+'</span>':''}
