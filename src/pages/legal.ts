@@ -6,6 +6,7 @@ export function legalPage(page: LegalPage, opts: {
   googleClientId?: string;
   products: Product[];
   legalPages: LegalPage[];
+  useMagicCheckout?: boolean;
 }): string {
   const legalPages = opts.legalPages;
   const products = opts.products;
@@ -53,6 +54,6 @@ ${legalPages.map(p => '<a href="/p/' + p.slug + '"' + (p.slug === page.slug ? ' 
     page.title + ' — INTRU.IN',
     page.title + ' for intru.in — India\'s premium minimalist streetwear brand. Limited drops, no restocks.',
     body,
-    { url: 'https://intru.in/p/' + page.slug, schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages }
+    { url: 'https://intru.in/p/' + page.slug, schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: opts.useMagicCheckout }
   );
 }

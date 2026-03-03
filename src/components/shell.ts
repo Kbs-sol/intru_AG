@@ -1,8 +1,10 @@
 import { STORE_CONFIG, type Product, type LegalPage, SEED_LEGAL_PAGES } from '../data'
 
 /**
- * Shell: the HTML wrapper for every page.
- * NOW accepts products[] and legalPages[] as parameters — no more hardcoded PRODUCTS import.
+ * Shell v5: Silent Identity + Hybrid Checkout (Prepaid/COD)
+ * - No login/register pages — identity captured at checkout via overlay
+ * - Admin toggle USE_MAGIC_CHECKOUT: ON = Razorpay Magic, OFF = custom dual-mode
+ * - Konami code → /admin
  */
 export function shell(
   title: string,
@@ -13,6 +15,7 @@ export function shell(
     razorpayKeyId?: string; googleClientId?: string;
     products?: Product[];
     legalPages?: LegalPage[];
+    useMagicCheckout?: boolean;
   }
 ): string {
   const og = opt?.og || 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=1200&h=630&fit=crop&q=80';
@@ -21,10 +24,10 @@ export function shell(
   const gKey = opt?.googleClientId || STORE_CONFIG.googleClientId;
   const products = opt?.products || [];
   const legalPages = opt?.legalPages || SEED_LEGAL_PAGES;
+  const useMagic = opt?.useMagicCheckout || false;
 
-  // Build product map for cart JS — from the DYNAMIC products array
   const pm = JSON.stringify(Object.fromEntries(products.map(p => [p.id, { id: p.id, n: p.name, s: p.slug, p: p.price, i: p.images, sz: p.sizes }])));
-  const sj = JSON.stringify({ cs: STORE_CONFIG.currencySymbol, ft: STORE_CONFIG.freeShippingThreshold, sc: STORE_CONFIG.shippingCost, rk: rpKey });
+  const sj = JSON.stringify({ cs: STORE_CONFIG.currencySymbol, ft: STORE_CONFIG.freeShippingThreshold, sc: STORE_CONFIG.shippingCost, rk: rpKey, magic: useMagic });
 
   return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -36,7 +39,6 @@ ${opt?.schema ? '<script type="application/ld+json">' + opt.schema + '</script>'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Archivo+Black&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css">
-<!-- Razorpay Magic Checkout SDK (replaces standard checkout.js) -->
 <script src="https://checkout.razorpay.com/v1/magic-checkout.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -77,9 +79,37 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .cst{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
 .csh{display:flex;justify-content:space-between;font-size:11px;color:var(--g400);margin-bottom:12px}
 .ctl{display:flex;justify-content:space-between;font-size:18px;font-weight:700;padding-top:12px;border-top:1px solid var(--g200)}
+/* Checkout mode selector */
+.cmode{display:flex;gap:8px;margin-bottom:14px}
+.cmode-opt{flex:1;padding:10px;border:2px solid var(--g200);border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;position:relative}
+.cmode-opt.act{border-color:var(--bk)}
+.cmode-opt.prepaid.act{border-color:var(--green)}
+.cmode-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;margin-bottom:4px}
+.cmode-opt.prepaid .cmode-badge{background:#dcfce7;color:#166534}
+.cmode-opt.cod .cmode-badge{background:var(--g100);color:var(--g500)}
+.cmode-label{font-size:12px;font-weight:700;display:block}
+.cmode-price{font-size:11px;color:var(--g400);margin-top:2px}
 .ccbtn{width:100%;margin-top:16px;padding:16px;background:var(--bk);color:var(--wh);border:none;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:all .3s}.ccbtn:hover{background:var(--g600);transform:translateY(-1px)}.ccbtn:disabled{background:var(--g300);cursor:not-allowed;transform:none}
 .cpolicy{font-size:10px;color:var(--g400);text-align:center;margin-top:12px;line-height:1.5}
 .cpolicy a{text-decoration:underline}
+/* Silent Identity Overlay */
+.id-ovl{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px}
+.id-ovl.open{display:flex}
+.id-box{background:var(--wh);max-width:440px;width:100%;padding:36px;position:relative;animation:scaleIn .3s var(--eo)}
+.id-box h3{font-family:var(--head);font-size:20px;text-transform:uppercase;letter-spacing:-.02em;margin-bottom:6px}
+.id-box p{font-size:13px;color:var(--g400);margin-bottom:20px;line-height:1.6}
+.id-inp{width:100%;padding:14px 16px;border:1.5px solid var(--g200);font-size:14px;font-family:inherit;outline:none;margin-bottom:10px;transition:border-color .2s}.id-inp:focus{border-color:var(--bk)}
+.id-btn{width:100%;padding:16px;background:var(--bk);color:var(--wh);border:none;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:all .2s;margin-top:6px}.id-btn:hover{background:var(--g600)}.id-btn:disabled{background:var(--g300)}
+.id-or{text-align:center;font-size:11px;color:var(--g400);margin:14px 0;letter-spacing:1px;text-transform:uppercase}
+.id-gcta{width:100%;padding:14px;background:var(--wh);border:1.5px solid var(--g200);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;border-radius:0}.id-gcta:hover{border-color:var(--bk)}
+.id-gcta img{width:18px;height:18px}
+.id-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;color:var(--g400);padding:4px;cursor:pointer}.id-close:hover{color:var(--bk)}
+/* COD Address Form (inline in cart footer) */
+.cod-form{display:none;margin-top:12px}
+.cod-form.show{display:block}
+.cod-form input{width:100%;padding:12px 14px;border:1.5px solid var(--g200);font-size:13px;font-family:inherit;outline:none;margin-bottom:8px;transition:border-color .2s}.cod-form input:focus{border-color:var(--bk)}
+.cod-row{display:flex;gap:8px}
+.cod-row input{flex:1}
 .ftr{background:var(--bk);color:var(--wh);padding:64px 24px 32px}
 .ftri{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px}
 .ftrb h3{font-family:var(--head);font-size:20px;margin-bottom:12px;letter-spacing:-.02em;text-transform:uppercase}.ftrb p{color:var(--g300);font-size:13px;line-height:1.7;max-width:300px}
@@ -103,7 +133,6 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <a href="/#products" class="nl nls">Shop</a>
 <a href="/collections" class="nl">Collections</a>
 <a href="/about" class="nl">About</a>
-<a href="/login" class="nl">Account</a>
 <button class="ncart" onclick="toggleCart()" aria-label="Cart"><i class="fas fa-shopping-bag"></i><span class="cbadge" id="cb">0</span></button>
 </div></div></nav>
 <div class="covl" id="co" onclick="toggleCart()"></div>
@@ -114,9 +143,51 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <div class="cst"><span>Subtotal</span><span id="csub">${STORE_CONFIG.currencySymbol}0</span></div>
 <div class="csh"><span>Shipping</span><span id="cshp">Calculated</span></div>
 <div class="ctl"><span>Total</span><span id="ctot">${STORE_CONFIG.currencySymbol}0</span></div>
+<!-- Payment Mode Selector (only when NOT magic checkout) -->
+<div class="cmode" id="cmode" style="display:none;margin-top:14px">
+<div class="cmode-opt prepaid act" onclick="setPayMode('prepaid')" id="cm_prepaid">
+<span class="cmode-badge">&#9889; SAVE Rs.99</span>
+<span class="cmode-label">Prepaid</span>
+<span class="cmode-price">FREE Shipping</span>
+</div>
+<div class="cmode-opt cod" onclick="setPayMode('cod')" id="cm_cod">
+<span class="cmode-badge">Standard Delivery</span>
+<span class="cmode-label">Cash on Delivery</span>
+<span class="cmode-price">+Rs.99 convenience</span>
+</div>
+</div>
+<!-- COD Address Form -->
+<div class="cod-form" id="codForm">
+<input class="cod-inp" id="cod_name" type="text" placeholder="Full Name *" required>
+<input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone Number *" required pattern="[0-9]{10}">
+<input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode *" required pattern="[0-9]{6}">
+<input class="cod-inp" id="cod_addr" type="text" placeholder="Full Address (House, Street, Area) *" required>
+<div class="cod-row">
+<input class="cod-inp" id="cod_city" type="text" placeholder="City">
+<input class="cod-inp" id="cod_state" type="text" placeholder="State">
+</div>
+</div>
 <button class="ccbtn" id="checkoutBtn" onclick="checkout()">Checkout</button>
 <p class="cpolicy">By placing an order, you agree to the intru.in <a href="/p/terms">Terms of Service</a> and our <a href="/p/returns">Store-Credit-only Refund Policy</a>.</p>
 </div></div>
+
+<!-- Silent Identity Overlay -->
+<div class="id-ovl" id="idOvl" onclick="if(event.target===this)closeIdentify()">
+<div class="id-box">
+<button class="id-close" onclick="closeIdentify()"><i class="fas fa-times"></i></button>
+<h3>Identify Yourself</h3>
+<p>Enter your email to continue checkout. We'll never spam you.</p>
+<input class="id-inp" id="id_email" type="email" placeholder="your@email.com" autocomplete="email">
+<button class="id-btn" id="idBtn" onclick="submitIdentity()">Continue to Checkout</button>
+<div class="id-or">or</div>
+<button class="id-gcta" id="idGoogleBtn" onclick="triggerGoogleIdentify()">
+<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
+Continue with Google
+</button>
+<p style="font-size:10px;color:var(--g400);text-align:center;margin-top:14px;line-height:1.5">No account needed. We just need your email for order updates.</p>
+</div>
+</div>
+
 <main style="padding-top:64px">${body}</main>
 <footer class="ftr" id="contact"><div class="ftri">
 <div class="ftrb"><h3>INTRU.IN</h3><p>${STORE_CONFIG.description}</p>
@@ -135,236 +206,252 @@ ${gKey !== 'YOUR_GOOGLE_CLIENT_ID' ? '<script src="https://accounts.google.com/g
 /* ====== CONFIG ====== */
 var S=${sj};
 var PM=${pm};
+var payMode='prepaid';
+var identifiedEmail=localStorage.getItem('intru_user_email')||'';
+var identifiedName=localStorage.getItem('intru_user_name')||'';
+var pendingCheckout=false;
 
-/* ====== GOOGLE AUTH ====== */
+/* ====== GOOGLE AUTH (Silent Identity) ====== */
 function handleGoogleAuth(r){
   if(!r.credential)return;
   fetch('/api/auth/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:r.credential})})
   .then(function(res){return res.json()})
-  .then(function(d){if(d.success){toast('Signed in successfully','ok');localStorage.setItem('intru_user',JSON.stringify(d.user||{}))}else{toast(d.error||'Auth failed','err')}})
-  .catch(function(){toast('Auth failed','err')});
+  .then(function(d){
+    if(d.success&&d.user){
+      identifiedEmail=d.user.email||'';
+      identifiedName=d.user.name||'';
+      localStorage.setItem('intru_user',JSON.stringify(d.user));
+      localStorage.setItem('intru_user_email',identifiedEmail);
+      localStorage.setItem('intru_user_name',identifiedName);
+      toast('Welcome, '+(d.user.name||d.user.email)+'!','ok-green');
+      closeIdentify();
+      if(pendingCheckout){pendingCheckout=false;checkout();}
+    }else{toast(d.error||'Auth failed','err')}
+  }).catch(function(){toast('Auth failed','err')});
+}
+
+function triggerGoogleIdentify(){
+  if(typeof google!=='undefined'&&google.accounts&&google.accounts.id){
+    google.accounts.id.prompt(function(n){
+      if(n.isNotDisplayed()||n.isSkippedMoment()){toast('Google popup blocked. Try email.','err')}
+    });
+  }else{toast('Google sign-in not loaded. Use email.','err')}
+}
+
+/* ====== SILENT IDENTITY OVERLAY ====== */
+function openIdentify(){document.getElementById('idOvl').classList.add('open');document.body.style.overflow='hidden';document.getElementById('id_email').focus()}
+function closeIdentify(){document.getElementById('idOvl').classList.remove('open');document.body.style.overflow=''}
+
+function submitIdentity(){
+  var email=document.getElementById('id_email').value.trim();
+  if(!email||!email.includes('@')){toast('Please enter a valid email','err');return}
+  var btn=document.getElementById('idBtn');
+  btn.disabled=true;btn.textContent='IDENTIFYING...';
+  /* Silently upsert user in backend */
+  fetch('/api/auth/identify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success){
+      identifiedEmail=email;
+      localStorage.setItem('intru_user_email',email);
+      if(d.name){identifiedName=d.name;localStorage.setItem('intru_user_name',d.name)}
+      toast('Welcome! Continuing checkout...','ok-green');
+      closeIdentify();
+      if(pendingCheckout){pendingCheckout=false;checkout();}
+    }else{toast(d.error||'Failed','err')}
+  }).catch(function(e){toast('Error: '+e.message,'err')})
+  .finally(function(){btn.disabled=false;btn.textContent='CONTINUE TO CHECKOUT'});
 }
 
 /* ====== CART ENGINE ====== */
 var cart=JSON.parse(localStorage.getItem('ic')||'[]');
 
-function saveCart(){
-  localStorage.setItem('ic',JSON.stringify(cart));
-  renderCart();
-}
+function saveCart(){localStorage.setItem('ic',JSON.stringify(cart));renderCart()}
 
-function addToCart(productId, size, qty){
+function addToCart(productId,size,qty){
   if(!productId||!size){toast('Please select a size','err');return false}
-  var p=PM[productId];
-  if(!p){toast('Product not found','err');return false}
+  var p=PM[productId];if(!p){toast('Product not found','err');return false}
   if(p.sz&&p.sz.indexOf(size)===-1){toast('Invalid size selected','err');return false}
   qty=qty||1;
   var existing=cart.find(function(i){return i.p===productId&&i.s===size});
-  if(existing){
-    if(existing.q+qty>10){toast('Max 10 per item','err');return false}
-    existing.q+=qty;
-  } else {
-    cart.push({p:productId,s:size,q:qty});
-  }
-  saveCart();
-  toast(p.n+' ('+size+') added to bag','ok');
-  openCartDrawer();
-  return true;
+  if(existing){if(existing.q+qty>10){toast('Max 10 per item','err');return false}existing.q+=qty}
+  else{cart.push({p:productId,s:size,q:qty})}
+  saveCart();toast(p.n+' ('+size+') added to bag','ok');openCartDrawer();return true;
 }
 
-function removeFromCart(productId,size){
-  cart=cart.filter(function(i){return!(i.p===productId&&i.s===size)});
-  saveCart();
-}
+function removeFromCart(productId,size){cart=cart.filter(function(i){return!(i.p===productId&&i.s===size)});saveCart()}
 
 function updateQty(productId,size,delta){
-  var item=cart.find(function(i){return i.p===productId&&i.s===size});
-  if(!item)return;
-  item.q+=delta;
-  if(item.q<=0){removeFromCart(productId,size);return}
-  if(item.q>10){item.q=10;toast('Max 10 per item','err')}
-  saveCart();
+  var item=cart.find(function(i){return i.p===productId&&i.s===size});if(!item)return;
+  item.q+=delta;if(item.q<=0){removeFromCart(productId,size);return}
+  if(item.q>10){item.q=10;toast('Max 10 per item','err')}saveCart();
 }
 
 function getCartTotals(){
-  var sub=0;
-  cart.forEach(function(i){var p=PM[i.p];if(p)sub+=p.p*i.q});
-  var sh=sub>=S.ft?0:(sub>0?S.sc:0);
-  return{subtotal:sub,shipping:sh,total:sub+sh};
+  var sub=0;cart.forEach(function(i){var p=PM[i.p];if(p)sub+=p.p*i.q});
+  var codFee=payMode==='cod'?99:0;
+  var sh=payMode==='prepaid'?0:(sub>=S.ft?0:S.sc);
+  /* Prepaid always free shipping; COD adds Rs.99 convenience fee */
+  if(payMode==='prepaid')sh=0;
+  return{subtotal:sub,shipping:sh,codFee:codFee,total:sub+sh+codFee};
 }
 
 function fmt(n){return S.cs+n.toLocaleString('en-IN')}
 
-function renderCart(){
-  var badge=document.getElementById('cb');
-  var body=document.getElementById('cby');
-  var footer=document.getElementById('cf');
-  var count=cart.reduce(function(a,i){return a+i.q},0);
-  badge.textContent=count;
-  badge.classList.toggle('vis',count>0);
-  if(!cart.length){
-    body.innerHTML='<div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div>';
-    footer.style.display='none';
-    return;
-  }
-  footer.style.display='block';
-  var html='';
-  cart.forEach(function(item){
-    var p=PM[item.p];if(!p)return;
-    html+='<div class="citm">'
-      +'<img class="cimg" src="'+p.i[0]+'" alt="'+p.n+'">'
-      +'<div class="cinf">'
-      +'<div class="cnm">'+p.n+'</div>'
-      +'<div class="cmt">Size: '+item.s+'</div>'
-      +'<div class="cpr">'+fmt(p.p*item.q)+'</div>'
-      +'<div class="cqty">'
-      +'<button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,-1)">&minus;</button>'
-      +'<span>'+item.q+'</span>'
-      +'<button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,1)">+</button>'
-      +'</div>'
-      +'<button class="crm" onclick="removeFromCart(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27)">Remove</button>'
-      +'</div></div>';
-  });
-  body.innerHTML=html;
+function setPayMode(mode){
+  payMode=mode;
+  document.getElementById('cm_prepaid').classList.toggle('act',mode==='prepaid');
+  document.getElementById('cm_cod').classList.toggle('act',mode==='cod');
+  document.getElementById('codForm').classList.toggle('show',mode==='cod');
+  renderCartTotals();
+}
+
+function renderCartTotals(){
   var t=getCartTotals();
   document.getElementById('csub').textContent=fmt(t.subtotal);
-  document.getElementById('cshp').textContent=t.shipping===0?'Free':fmt(t.shipping);
+  var shText=payMode==='prepaid'?'FREE':'';
+  if(payMode==='cod'){shText=t.shipping>0?fmt(t.shipping):'Free';shText+=(' + Rs.99 COD fee')}
+  document.getElementById('cshp').textContent=shText||'Free';
   document.getElementById('ctot').textContent=fmt(t.total);
 }
 
-/* ====== CART DRAWER ====== */
-function toggleCart(){
-  document.getElementById('co').classList.toggle('open');
-  document.getElementById('cd').classList.toggle('open');
-  document.body.style.overflow=document.getElementById('cd').classList.contains('open')?'hidden':'';
-}
-function openCartDrawer(){
-  document.getElementById('co').classList.add('open');
-  document.getElementById('cd').classList.add('open');
-  document.body.style.overflow='hidden';
+function renderCart(){
+  var badge=document.getElementById('cb');var body=document.getElementById('cby');var footer=document.getElementById('cf');
+  var count=cart.reduce(function(a,i){return a+i.q},0);
+  badge.textContent=count;badge.classList.toggle('vis',count>0);
+  if(!cart.length){body.innerHTML='<div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div>';footer.style.display='none';return}
+  footer.style.display='block';
+  /* Show payment mode selector only if NOT magic checkout */
+  document.getElementById('cmode').style.display=S.magic?'none':'flex';
+  if(S.magic){document.getElementById('codForm').classList.remove('show')}
+  var html='';
+  cart.forEach(function(item){
+    var p=PM[item.p];if(!p)return;
+    html+='<div class="citm"><img class="cimg" src="'+p.i[0]+'" alt="'+p.n+'"><div class="cinf"><div class="cnm">'+p.n+'</div><div class="cmt">Size: '+item.s+'</div><div class="cpr">'+fmt(p.p*item.q)+'</div><div class="cqty"><button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,-1)">&minus;</button><span>'+item.q+'</span><button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,1)">+</button></div><button class="crm" onclick="removeFromCart(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27)">Remove</button></div></div>';
+  });
+  body.innerHTML=html;
+  renderCartTotals();
 }
 
-/* ====== BUY NOW (Magic Checkout — direct to modal) ====== */
+/* ====== CART DRAWER ====== */
+function toggleCart(){document.getElementById('co').classList.toggle('open');document.getElementById('cd').classList.toggle('open');document.body.style.overflow=document.getElementById('cd').classList.contains('open')?'hidden':''}
+function openCartDrawer(){document.getElementById('co').classList.add('open');document.getElementById('cd').classList.add('open');document.body.style.overflow='hidden'}
+
+/* ====== BUY NOW ====== */
 function buyNow(productId,size){
   if(!size){toast('Please select a size first','err');return}
-  var p=PM[productId];
-  if(!p){toast('Product not found','err');return}
-  if(p.sz&&p.sz.indexOf(size)===-1){toast('Invalid size','err');return}
-  cart=[{p:productId,s:size,q:1}];
-  saveCart();
-  checkout();
+  var p=PM[productId];if(!p){toast('Product not found','err');return}
+  cart=[{p:productId,s:size,q:1}];saveCart();checkout();
 }
 
-/* ====== CHECKOUT -> RAZORPAY MAGIC CHECKOUT ====== */
+/* ====== CHECKOUT ====== */
 function checkout(){
   if(!cart.length){toast('Your bag is empty','err');return}
+  /* Silent Identity: if not identified, show overlay */
+  if(!identifiedEmail){pendingCheckout=true;openIdentify();return}
   var btn=document.getElementById('checkoutBtn');
   if(btn){btn.disabled=true;btn.textContent='CREATING ORDER...';}
 
-  var userObj={};
-  try{userObj=JSON.parse(localStorage.getItem('intru_user')||'{}');}catch(e){}
+  /* If Magic Checkout is ON, always use Razorpay Magic flow */
+  if(S.magic){doMagicCheckout();return}
 
-  fetch('/api/checkout',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      items:cart.map(function(i){return{productId:i.p,size:i.s,quantity:i.q}}),
-      userEmail:userObj.email||localStorage.getItem('intru_user_email')||'',
-      userPhone:localStorage.getItem('intru_user_phone')||''
-    })
-  })
+  /* Custom dual-mode checkout */
+  if(payMode==='prepaid'){doPrepaidCheckout()}
+  else{doCodCheckout()}
+}
+
+function doPrepaidCheckout(){
+  var t=getCartTotals();
+  fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    items:cart.map(function(i){return{productId:i.p,size:i.s,quantity:i.q}}),
+    userEmail:identifiedEmail,userName:identifiedName,
+    paymentMethod:'prepaid'
+  })})
   .then(function(r){return r.json()})
   .then(function(data){
     if(data.error){throw new Error(data.error)}
-    if(!data.razorpayOrderId){
-      toast('Order total: '+fmt(data.total)+'. Configure Razorpay keys to enable payments.','err');
-      resetBtn();return;
-    }
-    if(typeof Razorpay==='undefined'){
-      toast('Payment SDK failed to load. Please refresh.','err');
-      resetBtn();return;
-    }
-    /* ---- MAGIC CHECKOUT OPTIONS ---- */
-    var options={
-      key:S.rk,
-      /* Magic Checkout flag — this activates the 1-click flow */
-      one_click_checkout:true,
-      /* Order created server-side with line_items (Magic order) */
-      order_id:data.razorpayOrderId,
-      name:'intru.in',
-      show_coupons:false,
-      /* Prefill phone/email — Magic Checkout auto-fills address from phone */
-      prefill:{
-        email:data.prefill&&data.prefill.email||userObj.email||'',
-        contact:data.prefill&&data.prefill.contact||''
-      },
-      notes:{
-        items:JSON.stringify(cart.map(function(i){return i.p+':'+i.s+'x'+i.q}))
-      },
-      theme:{
-        color:'#0a0a0a',
-        backdrop_color:'rgba(0,0,0,0.6)'
-      },
-      modal:{
-        ondismiss:function(){
-          resetBtn();
-          toast('Checkout cancelled','err');
-        }
-      },
-      /* handler fires for prepaid payments (UPI/card/wallet) */
+    if(!data.razorpayOrderId){toast('Order: '+fmt(data.total)+'. Configure Razorpay.','err');resetBtn();return}
+    if(typeof Razorpay==='undefined'){toast('Payment SDK failed. Refresh.','err');resetBtn();return}
+    var options={key:S.rk,order_id:data.razorpayOrderId,name:'intru.in',
+      prefill:{email:identifiedEmail,contact:localStorage.getItem('intru_user_phone')||''},
+      theme:{color:'#0a0a0a',backdrop_color:'rgba(0,0,0,0.6)'},
+      modal:{ondismiss:function(){resetBtn();toast('Payment cancelled','err')}},
       handler:function(response){
-        if(btn)btn.textContent='VERIFYING PAYMENT...';
-        fetch('/api/payment/verify',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({
-            razorpay_order_id:response.razorpay_order_id,
-            razorpay_payment_id:response.razorpay_payment_id,
-            razorpay_signature:response.razorpay_signature
-          })
-        })
-        .then(function(r){return r.json()})
-        .then(function(vd){
-          if(vd.success){
-            cart=[];saveCart();toggleCart();
-            toast('Order confirmed! Thank you.','ok-green');
-            setTimeout(function(){if(vd.orderId){toast('Order ID: '+vd.orderId,'ok')}},1500);
-          } else {
-            toast('Verification failed: '+(vd.error||'Unknown'),'err');
-          }
-        })
-        .catch(function(e){toast('Verification error: '+e.message,'err')})
-        .finally(function(){resetBtn()});
-      },
-      /* callback_url alternative — Magic Checkout can also redirect */
-      /* callback_url: 'https://intru.in/api/payment/verify', */
+        var btn=document.getElementById('checkoutBtn');if(btn)btn.textContent='VERIFYING...';
+        fetch('/api/payment/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          razorpay_order_id:response.razorpay_order_id,razorpay_payment_id:response.razorpay_payment_id,razorpay_signature:response.razorpay_signature
+        })}).then(function(r){return r.json()}).then(function(vd){
+          if(vd.success){cart=[];saveCart();toggleCart();toast('Drop secured! Check email.','ok-green');setTimeout(function(){toast('Order: '+vd.orderId,'ok')},1500)}
+          else{toast('Verification failed: '+(vd.error||''),'err')}
+        }).catch(function(e){toast('Error: '+e.message,'err')}).finally(function(){resetBtn()});
+      }
     };
     var rzp=new Razorpay(options);
-    rzp.on('payment.failed',function(response){
-      toast('Payment failed: '+(response.error&&response.error.description||'Unknown error'),'err');
-      resetBtn();
-    });
+    rzp.on('payment.failed',function(r){toast('Payment failed: '+(r.error&&r.error.description||''),'err');resetBtn()});
     rzp.open();
-  })
-  .catch(function(e){
-    toast('Checkout error: '+e.message,'err');
-    resetBtn();
-  });
+  }).catch(function(e){toast('Error: '+e.message,'err');resetBtn()});
 }
 
-function resetBtn(){
-  var btn=document.getElementById('checkoutBtn');
-  if(btn){btn.disabled=false;btn.textContent='CHECKOUT';}
+function doCodCheckout(){
+  var name=document.getElementById('cod_name').value.trim();
+  var phone=document.getElementById('cod_phone').value.trim();
+  var pincode=document.getElementById('cod_pincode').value.trim();
+  var addr=document.getElementById('cod_addr').value.trim();
+  if(!name||!phone||!pincode||!addr){toast('Fill all address fields for COD','err');resetBtn();return}
+  if(!/^[0-9]{10}$/.test(phone)){toast('Enter valid 10-digit phone','err');resetBtn();return}
+  if(!/^[0-9]{6}$/.test(pincode)){toast('Enter valid 6-digit pincode','err');resetBtn();return}
+  var city=document.getElementById('cod_city').value.trim();
+  var state=document.getElementById('cod_state').value.trim();
+
+  fetch('/api/checkout/cod',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    items:cart.map(function(i){return{productId:i.p,size:i.s,quantity:i.q}}),
+    userEmail:identifiedEmail,userName:name,userPhone:phone,
+    address:{name:name,phone:phone,pincode:pincode,line1:addr,city:city,state:state,country:'India'}
+  })})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success){cart=[];saveCart();toggleCart();toast('COD order placed! Check email.','ok-green');setTimeout(function(){toast('Order: '+(d.orderId||''),'ok')},1500)}
+    else{toast(d.error||'COD failed','err')}
+  }).catch(function(e){toast('Error: '+e.message,'err')})
+  .finally(function(){resetBtn()});
 }
+
+function doMagicCheckout(){
+  fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    items:cart.map(function(i){return{productId:i.p,size:i.s,quantity:i.q}}),
+    userEmail:identifiedEmail,userName:identifiedName,paymentMethod:'magic'
+  })})
+  .then(function(r){return r.json()})
+  .then(function(data){
+    if(data.error){throw new Error(data.error)}
+    if(!data.razorpayOrderId){toast('Configure Razorpay keys','err');resetBtn();return}
+    if(typeof Razorpay==='undefined'){toast('Payment SDK failed. Refresh.','err');resetBtn();return}
+    var options={key:S.rk,one_click_checkout:true,order_id:data.razorpayOrderId,name:'intru.in',show_coupons:false,
+      prefill:{email:identifiedEmail,contact:localStorage.getItem('intru_user_phone')||''},
+      theme:{color:'#0a0a0a',backdrop_color:'rgba(0,0,0,0.6)'},
+      modal:{ondismiss:function(){resetBtn();toast('Checkout cancelled','err')}},
+      handler:function(response){
+        var btn=document.getElementById('checkoutBtn');if(btn)btn.textContent='VERIFYING...';
+        fetch('/api/payment/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          razorpay_order_id:response.razorpay_order_id,razorpay_payment_id:response.razorpay_payment_id,razorpay_signature:response.razorpay_signature
+        })}).then(function(r){return r.json()}).then(function(vd){
+          if(vd.success){cart=[];saveCart();toggleCart();toast('Drop secured!','ok-green')}
+          else{toast('Verification failed','err')}
+        }).catch(function(e){toast('Error: '+e.message,'err')}).finally(function(){resetBtn()});
+      }
+    };
+    var rzp=new Razorpay(options);
+    rzp.on('payment.failed',function(r){toast('Payment failed','err');resetBtn()});
+    rzp.open();
+  }).catch(function(e){toast('Error: '+e.message,'err');resetBtn()});
+}
+
+function resetBtn(){var btn=document.getElementById('checkoutBtn');if(btn){btn.disabled=false;btn.textContent='CHECKOUT'}}
 
 /* ====== TOAST ====== */
 function toast(msg,type){
-  type=type||'ok';
-  var c=document.getElementById('tc');
-  var t=document.createElement('div');
-  t.className='toast toast-'+(type==='err'?'err':type==='ok-green'?'ok-green':'ok');
-  t.textContent=msg;
-  c.appendChild(t);
+  type=type||'ok';var c=document.getElementById('tc');var t=document.createElement('div');
+  t.className='toast toast-'+(type==='err'?'err':type==='ok-green'?'ok-green':'ok');t.textContent=msg;c.appendChild(t);
   setTimeout(function(){t.style.opacity='0';t.style.transform='translateY(10px)';t.style.transition='all .3s';setTimeout(function(){t.remove()},300)},3500);
 }
 
@@ -376,8 +463,6 @@ renderCart();
 
 /* ====== KONAMI CODE -> /admin ====== */
 var _kseq=[38,38,40,40,37,39,37,39,66,65],_kidx=0;
-document.addEventListener('keydown',function(e){
-  if(e.keyCode===_kseq[_kidx]){_kidx++;if(_kidx===_kseq.length){_kidx=0;window.location.href='/admin';}}else{_kidx=0;}
-});
+document.addEventListener('keydown',function(e){if(e.keyCode===_kseq[_kidx]){_kidx++;if(_kidx===_kseq.length){_kidx=0;window.location.href='/admin'}}else{_kidx=0}});
 </script></body></html>`;
 }

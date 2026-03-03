@@ -6,6 +6,8 @@ import {
   createRazorpayOrder, createMagicCheckoutOrder, fetchRazorpayOrder,
   buildMagicLineItems, hmacSHA256, supabaseFetch,
   fetchProducts, fetchProductBySlug, fetchProductById, fetchLegalPages,
+  sendResendEmail, emailDropSecured, emailCodReceived, emailCodManagerAlert,
+  fetchStoreSetting,
 } from './data'
 import { homePage } from './pages/home'
 import { productPage } from './pages/product'
@@ -13,8 +15,6 @@ import { legalPage } from './pages/legal'
 import { adminPage } from './pages/admin'
 import { collectionsPage } from './pages/collections'
 import { aboutPage } from './pages/about'
-import { loginPage } from './pages/login'
-import { registerPage } from './pages/register'
 
 type Bindings = Env & { [key: string]: string }
 
@@ -22,382 +22,342 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('/api/*', cors())
 
-// Helper: get env value with fallback
 function getEnv(env: Bindings, key: keyof Env, fallback?: string): string {
   return (env as any)[key] || fallback || '';
 }
 
-// ============ PAGE ROUTES (all async — data comes from Supabase) ============
-
-app.get('/', async (c) => {
+// Helper: get common page options
+async function getPageOpts(c: any) {
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
   const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
+  const sbKey = sbSvc || sbAnon;
   const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
   const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
-  return c.html(homePage({
+  const useMagic = await fetchStoreSetting(sbUrl, sbKey, 'USE_MAGIC_CHECKOUT');
+  return {
     razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
     googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
-    products,
-    legalPages,
-  }))
+    products, legalPages,
+    useMagicCheckout: useMagic === 'true',
+  };
+}
+
+// ============ PAGE ROUTES ============
+
+app.get('/', async (c) => {
+  const opts = await getPageOpts(c);
+  return c.html(homePage(opts));
 })
 
 app.get('/product/:slug', async (c) => {
-  const slug = c.req.param('slug')
+  const slug = c.req.param('slug');
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
-  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
-  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
-  const key = sbSvc || sbAnon;
-  const product = await fetchProductBySlug(sbUrl, key, slug);
-  if (!product) {
-    return c.html(`<html><head><meta http-equiv="refresh" content="0;url=/"></head></html>`, 404)
-  }
-  const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
-  const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
-  return c.html(productPage(product, {
-    razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
-    googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
-    products,
-    legalPages,
-  }))
+  const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+  const product = await fetchProductBySlug(sbUrl, sbKey, slug);
+  if (!product) return c.html(`<html><head><meta http-equiv="refresh" content="0;url=/"></head></html>`, 404);
+  const opts = await getPageOpts(c);
+  return c.html(productPage(product, opts));
 })
 
 app.get('/p/:slug', async (c) => {
-  const slug = c.req.param('slug')
-  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
-  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
-  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
-  const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
-  const page = legalPages.find(p => p.slug === slug)
-  if (!page) {
-    return c.html(`<html><head><meta http-equiv="refresh" content="0;url=/"></head></html>`, 404)
-  }
-  const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
-  return c.html(legalPage(page, {
-    razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
-    googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
-    products,
-    legalPages,
-  }))
+  const slug = c.req.param('slug');
+  const opts = await getPageOpts(c);
+  const page = opts.legalPages.find(p => p.slug === slug);
+  if (!page) return c.html(`<html><head><meta http-equiv="refresh" content="0;url=/"></head></html>`, 404);
+  return c.html(legalPage(page, opts));
 })
 
 app.get('/admin', async (c) => {
-  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
-  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
-  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
-  const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
-  const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
-  return c.html(adminPage({
-    razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
-    googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
-    products,
-    legalPages,
-  }))
+  const opts = await getPageOpts(c);
+  return c.html(adminPage(opts));
 })
-
-// ============ COLLECTIONS PAGE (filterable product grid) ============
 
 app.get('/collections', async (c) => {
-  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
-  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
-  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
-  const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
-  const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
-  return c.html(collectionsPage({
-    razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
-    googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
-    products,
-    legalPages,
-  }))
+  const opts = await getPageOpts(c);
+  return c.html(collectionsPage(opts));
 })
-
-// ============ AUTH PAGES ============
-
-app.get('/login', async (c) => {
-  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
-  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
-  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
-  const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
-  const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
-  return c.html(loginPage({
-    razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
-    googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
-    products,
-    legalPages,
-    supabaseUrl: sbUrl,
-    supabaseAnonKey: sbAnon,
-  }))
-})
-
-app.get('/register', async (c) => {
-  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
-  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
-  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
-  const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
-  const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
-  return c.html(registerPage({
-    razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
-    googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
-    products,
-    legalPages,
-    supabaseUrl: sbUrl,
-    supabaseAnonKey: sbAnon,
-  }))
-})
-
-// ============ ABOUT PAGE (SEO brand story) ============
 
 app.get('/about', async (c) => {
-  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
-  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
-  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
-  const { products } = await fetchProducts(sbUrl, sbSvc, sbAnon);
-  const { pages: legalPages } = await fetchLegalPages(sbUrl, sbSvc, sbAnon);
-  return c.html(aboutPage({
-    razorpayKeyId: getEnv(c.env, 'RAZORPAY_KEY_ID', STORE_CONFIG.razorpayKeyId),
-    googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
-    products,
-    legalPages,
-  }))
+  const opts = await getPageOpts(c);
+  return c.html(aboutPage(opts));
 })
 
 // ============ API: Health ============
 
 app.get('/api/health', (c) => {
   return c.json({
-    status: 'ok',
-    store: STORE_CONFIG.name,
-    timestamp: new Date().toISOString(),
+    status: 'ok', store: STORE_CONFIG.name, timestamp: new Date().toISOString(),
     services: {
       razorpay: getEnv(c.env, 'RAZORPAY_KEY_ID') ? 'connected' : 'not configured',
       supabase: getEnv(c.env, 'SUPABASE_URL') ? 'connected' : 'not configured',
+      resend: getEnv(c.env, 'RESEND_API_KEY') ? 'connected' : 'not configured',
     }
-  })
+  });
 })
 
-// ============ API: Debug DB (hidden endpoint) ============
-
-app.get('/api/debug-db', async (c) => {
-  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
-  const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
-  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
-  try {
-    const { products, source } = await fetchProducts(sbUrl, sbSvc, sbAnon);
-    return c.json({
-      connection: source === 'static' ? 'no_supabase' : 'success',
-      count: products.length,
-      source,
-      products: products.map(p => ({ id: p.id, name: p.name, price: p.price, images: p.images.length })),
-      env: {
-        SUPABASE_URL: sbUrl ? 'set' : 'missing',
-        SUPABASE_SERVICE_KEY: sbSvc ? 'set' : 'missing',
-        SUPABASE_ANON_KEY: sbAnon ? 'set' : 'missing',
-      }
-    })
-  } catch (e: any) {
-    return c.json({ connection: 'error', error: e.message }, 500)
-  }
-})
-
-// ============ API: Products (dynamic from Supabase) ============
+// ============ API: Products ============
 
 app.get('/api/products', async (c) => {
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
   const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
   const { products, source } = await fetchProducts(sbUrl, sbSvc, sbAnon);
-  return c.json({ products, source })
+  return c.json({ products, source });
 })
 
 app.get('/api/products/:id', async (c) => {
-  const id = c.req.param('id')
+  const id = c.req.param('id');
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
   const product = await fetchProductById(sbUrl, sbKey, id);
-  if (!product) return c.json({ error: 'Product not found' }, 404)
-  return c.json({ product })
+  if (!product) return c.json({ error: 'Product not found' }, 404);
+  return c.json({ product });
 })
 
-// ============ CHECKOUT: Magic Checkout — line_items + COD-ready ============
+// ============ CHECKOUT: Prepaid (Razorpay Standard or Magic) ============
 
 app.post('/api/checkout', async (c) => {
   try {
-    const body = await c.req.json()
-    const items = body.items
-    const userEmail = body.userEmail || ''
-    const userPhone = body.userPhone || ''
+    const body = await c.req.json();
+    const items = body.items;
+    const userEmail = body.userEmail || '';
+    const userName = body.userName || '';
+    const paymentMethod = body.paymentMethod || 'prepaid';
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return c.json({ error: 'No items in cart' }, 400)
-    }
+    if (!items || !Array.isArray(items) || items.length === 0)
+      return c.json({ error: 'No items in cart' }, 400);
 
     const sbUrl = getEnv(c.env, 'SUPABASE_URL');
     const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
     const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
     const sbKey = sbSvc || sbAnon;
 
-    // Step 1: Server-side price validation from DATABASE (never trust client)
-    let subtotal = 0
-    const validatedItems: any[] = []
+    let subtotal = 0;
+    const validatedItems: any[] = [];
 
     for (const item of items) {
       const product = await fetchProductById(sbUrl, sbKey, item.productId);
-      if (!product) {
-        return c.json({ error: `Product ${item.productId} not found` }, 400)
-      }
-      if (!product.inStock) {
-        return c.json({ error: `${product.name} is out of stock` }, 400)
-      }
-      if (!item.size || !product.sizes.includes(item.size)) {
-        return c.json({ error: `Size "${item.size}" not available for ${product.name}` }, 400)
-      }
+      if (!product) return c.json({ error: `Product ${item.productId} not found` }, 400);
+      if (!product.inStock) return c.json({ error: `${product.name} is out of stock` }, 400);
+      if (!item.size || !product.sizes.includes(item.size))
+        return c.json({ error: `Size "${item.size}" not available for ${product.name}` }, 400);
 
-      const qty = Math.max(1, Math.min(10, parseInt(item.quantity) || 1))
-      const lineTotal = product.price * qty
-      subtotal += lineTotal
-
+      const qty = Math.max(1, Math.min(10, parseInt(item.quantity) || 1));
+      const lineTotal = product.price * qty;
+      subtotal += lineTotal;
       validatedItems.push({
-        productId: product.id,
-        name: product.name,
-        size: item.size,
-        quantity: qty,
-        unitPrice: product.price,
-        lineTotal,
-        image: product.images[0] || '',
-        slug: product.slug,
-        description: product.description,
-      })
+        productId: product.id, name: product.name, size: item.size,
+        quantity: qty, unitPrice: product.price, lineTotal,
+        image: product.images[0] || '', slug: product.slug, description: product.description,
+      });
     }
 
-    const shipping = subtotal >= STORE_CONFIG.freeShippingThreshold ? 0 : STORE_CONFIG.shippingCost
-    const total = subtotal + shipping
+    // Prepaid = free shipping always
+    const shipping = 0;
+    const total = subtotal + shipping;
 
-    // Step 2: Create Razorpay Magic Checkout order (with line_items)
     const rzpKeyId = getEnv(c.env, 'RAZORPAY_KEY_ID');
     const rzpKeySecret = getEnv(c.env, 'RAZORPAY_KEY_SECRET');
-
     let razorpayOrderId: string | null = null;
 
     if (rzpKeyId && rzpKeySecret) {
       try {
         const receipt = 'intru_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
-        const { line_items, line_items_total } = buildMagicLineItems(validatedItems);
+        const isMagic = paymentMethod === 'magic';
 
-        // Use Magic Checkout order creation (sends line_items so Razorpay activates Magic flow)
-        const rzpOrder = await createMagicCheckoutOrder(
-          rzpKeyId, rzpKeySecret, total, receipt, line_items, line_items_total
-        );
-        razorpayOrderId = rzpOrder.id;
+        if (isMagic) {
+          const { line_items, line_items_total } = buildMagicLineItems(validatedItems);
+          const rzpOrder = await createMagicCheckoutOrder(rzpKeyId, rzpKeySecret, total, receipt, line_items, line_items_total);
+          razorpayOrderId = rzpOrder.id;
+        } else {
+          const rzpOrder = await createRazorpayOrder(rzpKeyId, rzpKeySecret, total, receipt);
+          razorpayOrderId = rzpOrder.id;
+        }
 
-        // Step 3: Store pending order in Supabase (address comes later via webhook/callback)
         if (sbUrl && sbKey) {
           try {
             await supabaseFetch(sbUrl, sbKey, 'orders', {
               method: 'POST',
               body: JSON.stringify({
                 razorpay_order_id: razorpayOrderId,
-                items: validatedItems,
-                subtotal, shipping, total,
-                customer_email: userEmail,
-                customer_phone: userPhone,
-                status: 'pending',
-                payment_method: 'pending', // will be updated by webhook (prepaid / cod)
+                items: validatedItems, subtotal, shipping, total,
+                customer_email: userEmail, customer_name: userName,
+                status: 'pending', payment_method: 'prepaid',
                 created_at: new Date().toISOString(),
               }),
             });
-          } catch (e) {
-            console.error('Failed to store order in Supabase:', e);
-          }
+          } catch (e) { console.error('Failed to store order:', e); }
         }
       } catch (e: any) {
-        return c.json({ error: 'Payment gateway error: ' + (e.message || 'Failed to create order') }, 500)
+        return c.json({ error: 'Payment gateway error: ' + (e.message || 'Failed') }, 500);
       }
     }
 
     return c.json({
-      success: true,
-      items: validatedItems,
-      subtotal, shipping, total,
-      currency: 'INR',
-      razorpayOrderId,
-      storeCredit: 0,
-      // Pass prefill data back to frontend for Magic Checkout modal
-      prefill: { email: userEmail, contact: userPhone },
-    })
+      success: true, items: validatedItems, subtotal, shipping, total,
+      currency: 'INR', razorpayOrderId,
+      prefill: { email: userEmail, contact: '' },
+    });
   } catch (e: any) {
-    return c.json({ error: e.message || 'Checkout failed' }, 500)
+    return c.json({ error: e.message || 'Checkout failed' }, 500);
   }
 })
 
-// ============ SHIPPING INFO API (Magic Checkout calls this) ============
-// Magic Checkout sends customer address here; we return serviceability + shipping fees
-// Configure this URL in Razorpay Dashboard → Magic Checkout → Shipping Setup → API
+// ============ CHECKOUT: COD (custom form) ============
+
+app.post('/api/checkout/cod', async (c) => {
+  try {
+    const body = await c.req.json();
+    const items = body.items;
+    const userEmail = body.userEmail || '';
+    const userName = body.userName || '';
+    const userPhone = body.userPhone || '';
+    const address = body.address || {};
+
+    if (!items || !Array.isArray(items) || items.length === 0)
+      return c.json({ error: 'No items in cart' }, 400);
+    if (!userName || !userPhone || !address.pincode || !address.line1)
+      return c.json({ error: 'Name, phone, pincode, and address are required for COD' }, 400);
+
+    const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+    const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
+    const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
+    const sbKey = sbSvc || sbAnon;
+
+    let subtotal = 0;
+    const validatedItems: any[] = [];
+
+    for (const item of items) {
+      const product = await fetchProductById(sbUrl, sbKey, item.productId);
+      if (!product) return c.json({ error: `Product ${item.productId} not found` }, 400);
+      if (!product.inStock) return c.json({ error: `${product.name} is out of stock` }, 400);
+      if (!item.size || !product.sizes.includes(item.size))
+        return c.json({ error: `Size "${item.size}" not available for ${product.name}` }, 400);
+
+      const qty = Math.max(1, Math.min(10, parseInt(item.quantity) || 1));
+      const lineTotal = product.price * qty;
+      subtotal += lineTotal;
+      validatedItems.push({
+        productId: product.id, name: product.name, size: item.size,
+        quantity: qty, unitPrice: product.price, lineTotal,
+        image: product.images[0] || '', slug: product.slug,
+      });
+    }
+
+    const codFee = 99;
+    const shipping = 0;
+    const total = subtotal + shipping + codFee;
+
+    let orderId = '';
+
+    if (sbUrl && sbKey) {
+      try {
+        const addrStr = [address.line1, address.line2, address.city, address.state, address.pincode].filter(Boolean).join(', ');
+        const res = await supabaseFetch(sbUrl, sbKey, 'orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            items: validatedItems, subtotal, shipping, total,
+            customer_name: userName, customer_email: userEmail,
+            customer_phone: userPhone,
+            status: 'placed', payment_method: 'cod', cod_fee: codFee,
+            shipping_address: address,
+            shipping_address_line1: address.line1 || '',
+            shipping_address_line2: address.line2 || '',
+            shipping_city: address.city || '',
+            shipping_state: address.state || '',
+            shipping_pincode: address.pincode || '',
+            shipping_country: 'India',
+            latitude: address.latitude || null,
+            longitude: address.longitude || null,
+            created_at: new Date().toISOString(),
+          }),
+        });
+        if (res.ok) {
+          const rows = await res.json() as any[];
+          orderId = rows?.[0]?.id || '';
+        }
+      } catch (e) { console.error('Failed to store COD order:', e); }
+    }
+
+    // Send Resend emails for COD
+    const resendKey = getEnv(c.env, 'RESEND_API_KEY');
+    if (resendKey) {
+      // Email to customer
+      try {
+        await sendResendEmail(resendKey, userEmail,
+          'COD Order Received — intru.in',
+          emailCodReceived(orderId, userName, validatedItems, total)
+        );
+      } catch (e) { console.error('Resend customer email error:', e); }
+
+      // Email to manager
+      try {
+        const managerEmail = await fetchStoreSetting(
+          getEnv(c.env, 'SUPABASE_URL'),
+          sbKey,
+          'MANAGER_EMAIL'
+        ) || 'shop@intru.in';
+        const addrStr = [address.line1, address.line2, address.city, address.state, address.pincode].filter(Boolean).join(', ');
+        await sendResendEmail(resendKey, managerEmail,
+          'NEW COD ALERT — ' + userName + ' — Rs.' + total,
+          emailCodManagerAlert(orderId, userName, userPhone, addrStr, validatedItems, total)
+        );
+      } catch (e) { console.error('Resend manager email error:', e); }
+    }
+
+    return c.json({ success: true, orderId, total, codFee });
+  } catch (e: any) {
+    return c.json({ error: e.message || 'COD checkout failed' }, 500);
+  }
+})
+
+// ============ SHIPPING INFO API ============
 
 app.post('/api/shipping-info', async (c) => {
   try {
     const body = await c.req.json();
-    // body contains: { order_id, razorpay_order_id, email, contact, addresses: [{ zipcode, state_code, country }] }
     const addresses = body.addresses || [];
-
-    // Build shipping response for each address
-    const addressResponses = addresses.map((addr: any) => {
-      const zipcode = addr.zipcode || '';
-      // India-only shipping; simple serviceability check
-      const serviceable = addr.country === 'in' || !addr.country;
-
-      return {
-        zipcode,
-        state_code: addr.state_code || '',
-        country: addr.country || 'in',
-        shipping_methods: [
-          {
-            id: 'standard',
-            name: 'Standard Delivery',
-            description: 'Dispatched within 36 hours. Delivery in 3–7 business days.',
-            serviceable,
-            shipping_fee: 9900, // Rs.99 in paise (overridden to 0 if free shipping threshold met)
-            cod: true,
-            cod_fee: 0,  // no extra COD fee
-          }
-        ],
-      };
-    });
-
+    const addressResponses = addresses.map((addr: any) => ({
+      zipcode: addr.zipcode || '',
+      state_code: addr.state_code || '',
+      country: addr.country || 'in',
+      shipping_methods: [{
+        id: 'standard', name: 'Standard Delivery',
+        description: 'Dispatched within 36 hours. Delivery in 3-7 business days.',
+        serviceable: addr.country === 'in' || !addr.country,
+        shipping_fee: 9900, cod: true, cod_fee: 9900,
+      }],
+    }));
     return c.json({ addresses: addressResponses });
-  } catch (e: any) {
-    return c.json({ addresses: [] }, 200);
-  }
+  } catch { return c.json({ addresses: [] }, 200); }
 })
 
-// ============ PAYMENT VERIFICATION (post Magic Checkout) ============
+// ============ PAYMENT VERIFICATION ============
 
 app.post('/api/payment/verify', async (c) => {
   try {
-    const body = await c.req.json()
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body
+    const body = await c.req.json();
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return c.json({ error: 'Missing payment details' }, 400)
-    }
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature)
+      return c.json({ error: 'Missing payment details' }, 400);
 
     const rzpKeyId = getEnv(c.env, 'RAZORPAY_KEY_ID');
     const rzpKeySecret = getEnv(c.env, 'RAZORPAY_KEY_SECRET');
-    if (!rzpKeySecret) {
-      return c.json({ error: 'Payment verification not configured' }, 500)
-    }
+    if (!rzpKeySecret) return c.json({ error: 'Payment verification not configured' }, 500);
 
     const expectedSignature = await hmacSHA256(rzpKeySecret, razorpay_order_id + '|' + razorpay_payment_id);
+    if (expectedSignature !== razorpay_signature)
+      return c.json({ error: 'Payment verification failed. Signature mismatch.' }, 400);
 
-    if (expectedSignature !== razorpay_signature) {
-      console.error('Payment signature mismatch', { razorpay_order_id, razorpay_payment_id });
-      return c.json({ error: 'Payment verification failed. Signature mismatch.' }, 400)
-    }
-
-    // Fetch full order from Razorpay to get shipping address collected by Magic Checkout
     let shippingAddress: any = null;
     let customerEmail = '';
     let customerPhone = '';
+    let customerName = '';
+    let orderItems: any[] = [];
+    let orderTotal = 0;
+
     if (rzpKeyId && rzpKeySecret) {
       try {
         const rzpOrder = await fetchRazorpayOrder(rzpKeyId, rzpKeySecret, razorpay_order_id);
@@ -405,50 +365,66 @@ app.post('/api/payment/verify', async (c) => {
           shippingAddress = rzpOrder.customer_details?.shipping_address || null;
           customerEmail = rzpOrder.customer_details?.email || '';
           customerPhone = rzpOrder.customer_details?.contact || '';
+          customerName = rzpOrder.customer_details?.shipping_address?.name || '';
+          orderTotal = (rzpOrder.amount || 0) / 100;
         }
-      } catch (e) {
-        console.error('Failed to fetch Razorpay order details:', e);
-      }
+      } catch (e) { console.error('Failed to fetch Razorpay order:', e); }
     }
 
-    // Update order in Supabase (mark paid + save address from Magic Checkout)
     const sbUrl = getEnv(c.env, 'SUPABASE_URL');
     const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
 
     if (sbUrl && sbKey) {
       try {
+        // Fetch order items for email
+        const orderRes = await supabaseFetch(sbUrl, sbKey, `orders?razorpay_order_id=eq.${razorpay_order_id}&select=items,total,customer_email`);
+        if (orderRes.ok) {
+          const orders = await orderRes.json() as any[];
+          if (orders.length > 0) {
+            orderItems = orders[0].items || [];
+            orderTotal = orders[0].total || orderTotal;
+            if (!customerEmail) customerEmail = orders[0].customer_email || '';
+          }
+        }
+
         const updatePayload: any = {
-          status: 'paid',
-          payment_method: 'prepaid',
-          razorpay_payment_id,
-          razorpay_signature,
+          status: 'paid', payment_method: 'prepaid',
+          razorpay_payment_id, razorpay_signature,
           paid_at: new Date().toISOString(),
         };
         if (shippingAddress) updatePayload.shipping_address = shippingAddress;
         if (customerEmail) updatePayload.customer_email = customerEmail;
         if (customerPhone) updatePayload.customer_phone = customerPhone;
+        if (customerName) updatePayload.customer_name = customerName;
 
         await supabaseFetch(sbUrl, sbKey, `orders?razorpay_order_id=eq.${razorpay_order_id}`, {
-          method: 'PATCH',
-          body: JSON.stringify(updatePayload),
+          method: 'PATCH', body: JSON.stringify(updatePayload),
         });
-      } catch (e) {
-        console.error('Failed to update order in Supabase:', e);
-      }
+      } catch (e) { console.error('Failed to update order:', e); }
+    }
+
+    // Send "Drop Secured" email for prepaid
+    const resendKey = getEnv(c.env, 'RESEND_API_KEY');
+    if (resendKey && customerEmail) {
+      try {
+        await sendResendEmail(resendKey, customerEmail,
+          'Drop Secured! — intru.in',
+          emailDropSecured(razorpay_order_id, orderItems, orderTotal)
+        );
+      } catch (e) { console.error('Resend email error:', e); }
     }
 
     return c.json({
-      success: true,
-      orderId: razorpay_order_id,
+      success: true, orderId: razorpay_order_id,
       razorpayPaymentId: razorpay_payment_id,
       message: 'Payment verified and order confirmed.',
-    })
+    });
   } catch (e: any) {
-    return c.json({ error: e.message || 'Verification failed' }, 500)
+    return c.json({ error: e.message || 'Verification failed' }, 500);
   }
 })
 
-// ============ RAZORPAY WEBHOOK (Magic Checkout: order.created, payment.captured, payment.failed) ============
+// ============ RAZORPAY WEBHOOK ============
 
 app.post('/api/webhooks/razorpay', async (c) => {
   try {
@@ -456,28 +432,21 @@ app.post('/api/webhooks/razorpay', async (c) => {
     const webhookSecret = getEnv(c.env, 'RAZORPAY_WEBHOOK_SECRET') || getEnv(c.env, 'RAZORPAY_KEY_SECRET');
     const receivedSignature = c.req.header('x-razorpay-signature') || '';
 
-    if (!webhookSecret) {
-      return c.json({ error: 'Webhook not configured' }, 500);
-    }
+    if (!webhookSecret) return c.json({ error: 'Webhook not configured' }, 500);
 
     const expectedSig = await hmacSHA256(webhookSecret, rawBody);
-    if (expectedSig !== receivedSignature) {
-      return c.json({ error: 'Invalid webhook signature' }, 400);
-    }
+    if (expectedSig !== receivedSignature) return c.json({ error: 'Invalid signature' }, 400);
 
     const event = JSON.parse(rawBody);
     const eventType = event.event;
-
     const sbUrl = getEnv(c.env, 'SUPABASE_URL');
     const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
     const rzpKeyId = getEnv(c.env, 'RAZORPAY_KEY_ID');
     const rzpKeySecret = getEnv(c.env, 'RAZORPAY_KEY_SECRET');
 
-    // ---- order.created: COD order placed via Magic Checkout ----
     if (eventType === 'order.created' && sbUrl && sbKey) {
       const order = event.payload?.order?.entity;
       if (order?.id) {
-        // Fetch full order details to get shipping address + COD info
         let shippingAddress: any = null;
         let customerDetails: any = null;
         let codFee = 0;
@@ -490,105 +459,71 @@ app.post('/api/webhooks/razorpay', async (c) => {
               shippingAddress = fullOrder.customer_details?.shipping_address || null;
               customerDetails = fullOrder.customer_details || null;
               codFee = fullOrder.cod_fee || 0;
-              // Razorpay sends rto_risk in notes or metadata for Magic Checkout
-              rtoRiskLevel = fullOrder.notes?.rto_risk_level
-                || fullOrder.rto_risk_level
-                || order.notes?.rto_risk_level
-                || 'unknown';
+              rtoRiskLevel = fullOrder.notes?.rto_risk_level || fullOrder.rto_risk_level || 'unknown';
             }
-          } catch (e) {
-            console.error('Failed to fetch order details for COD:', e);
-          }
+          } catch (e) { console.error('Failed to fetch COD order:', e); }
         }
 
-        // Check if order already exists (was pre-created at /api/checkout)
         try {
           const existingRes = await supabaseFetch(sbUrl, sbKey, `orders?razorpay_order_id=eq.${order.id}&select=id`);
           const existing = existingRes.ok ? (await existingRes.json() as any[]) : [];
 
+          const updateData: any = {
+            status: 'placed', payment_method: 'cod',
+            cod_fee: codFee, rto_risk_level: rtoRiskLevel,
+            shipping_address: shippingAddress,
+            customer_email: customerDetails?.email || '',
+            customer_phone: customerDetails?.contact || '',
+            customer_name: shippingAddress?.name || '',
+          };
+
           if (existing.length > 0) {
-            // Update existing order with COD details
             await supabaseFetch(sbUrl, sbKey, `orders?razorpay_order_id=eq.${order.id}`, {
-              method: 'PATCH',
-              body: JSON.stringify({
-                status: 'placed',  // COD orders are "placed" not "paid"
-                payment_method: 'cod',
-                cod_fee: codFee,
-                rto_risk_level: rtoRiskLevel,
-                shipping_address: shippingAddress,
-                customer_email: customerDetails?.email || '',
-                customer_phone: customerDetails?.contact || '',
-              }),
+              method: 'PATCH', body: JSON.stringify(updateData),
             });
           } else {
-            // Create new order row (if /api/checkout wasn't called or failed)
             await supabaseFetch(sbUrl, sbKey, 'orders', {
               method: 'POST',
               body: JSON.stringify({
-                razorpay_order_id: order.id,
-                items: [],
-                subtotal: (order.amount || 0) / 100,
-                shipping: 0,
+                razorpay_order_id: order.id, items: [],
+                subtotal: (order.amount || 0) / 100, shipping: 0,
                 total: (order.amount || 0) / 100,
-                status: 'placed',
-                payment_method: 'cod',
-                cod_fee: codFee,
-                rto_risk_level: rtoRiskLevel,
-                shipping_address: shippingAddress,
-                customer_email: customerDetails?.email || '',
-                customer_phone: customerDetails?.contact || '',
-                created_at: new Date().toISOString(),
+                ...updateData, created_at: new Date().toISOString(),
               }),
             });
           }
-        } catch (e) {
-          console.error('Failed to save COD order:', e);
-        }
+        } catch (e) { console.error('Failed to save COD order:', e); }
       }
     }
 
-    // ---- payment.captured: Prepaid payment confirmed ----
     if (eventType === 'payment.captured' && sbUrl && sbKey) {
       const payment = event.payload?.payment?.entity;
       if (payment?.order_id) {
         const updatePayload: any = {
-          status: 'paid',
-          payment_method: payment.method || 'prepaid',
-          razorpay_payment_id: payment.id,
-          paid_at: new Date().toISOString(),
+          status: 'paid', payment_method: payment.method || 'prepaid',
+          razorpay_payment_id: payment.id, paid_at: new Date().toISOString(),
         };
-
-        // Fetch full order to get address if we don't have it yet
         if (rzpKeyId && rzpKeySecret) {
           try {
             const fullOrder = await fetchRazorpayOrder(rzpKeyId, rzpKeySecret, payment.order_id);
-            if (fullOrder?.customer_details?.shipping_address) {
+            if (fullOrder?.customer_details?.shipping_address)
               updatePayload.shipping_address = fullOrder.customer_details.shipping_address;
-            }
-            if (fullOrder?.customer_details?.email) {
+            if (fullOrder?.customer_details?.email)
               updatePayload.customer_email = fullOrder.customer_details.email;
-            }
-          } catch (e) {
-            console.error('Failed to fetch order for payment.captured:', e);
-          }
+          } catch (e) { console.error('Fetch order for payment.captured:', e); }
         }
-
         await supabaseFetch(sbUrl, sbKey, `orders?razorpay_order_id=eq.${payment.order_id}`, {
-          method: 'PATCH',
-          body: JSON.stringify(updatePayload),
+          method: 'PATCH', body: JSON.stringify(updatePayload),
         });
       }
     }
 
-    // ---- payment.failed: Payment attempt failed ----
     if (eventType === 'payment.failed' && sbUrl && sbKey) {
       const payment = event.payload?.payment?.entity;
       if (payment?.order_id) {
         await supabaseFetch(sbUrl, sbKey, `orders?razorpay_order_id=eq.${payment.order_id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            status: 'payment_failed',
-            failure_reason: payment.error_description || 'Payment failed',
+          method: 'PATCH', body: JSON.stringify({
+            status: 'payment_failed', failure_reason: payment.error_description || 'Payment failed',
           }),
         });
       }
@@ -600,51 +535,80 @@ app.post('/api/webhooks/razorpay', async (c) => {
   }
 })
 
-// ============ AUTH ============
+// ============ AUTH: Silent Identity ============
+
+app.post('/api/auth/identify', async (c) => {
+  try {
+    const { email } = await c.req.json();
+    if (!email || !email.includes('@')) return c.json({ error: 'Valid email required' }, 400);
+
+    const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+    const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+
+    if (sbUrl && sbKey) {
+      // Check if user exists
+      const res = await supabaseFetch(sbUrl, sbKey, `users?email=eq.${encodeURIComponent(email)}&select=id,name,email&limit=1`);
+      if (res.ok) {
+        const users = await res.json() as any[];
+        if (users.length > 0) {
+          // Existing user — link session
+          return c.json({ success: true, name: users[0].name, existing: true });
+        }
+      }
+      // New user — silently create in public.users
+      try {
+        await supabaseFetch(sbUrl, sbKey, 'users', {
+          method: 'POST',
+          headers: { 'Prefer': 'resolution=merge-duplicates' } as any,
+          body: JSON.stringify({
+            email, name: '', auth_provider: 'email',
+            last_login: new Date().toISOString(),
+          }),
+        });
+      } catch (e) { console.error('User create error:', e); }
+      return c.json({ success: true, existing: false });
+    }
+
+    return c.json({ success: true, message: 'Identity noted (Supabase not configured)' });
+  } catch (e: any) {
+    return c.json({ error: e.message || 'Failed' }, 500);
+  }
+})
 
 app.post('/api/auth/google', async (c) => {
   try {
-    const body = await c.req.json()
-    const { credential } = body
-    if (!credential) return c.json({ error: 'No credential' }, 400)
-
+    const body = await c.req.json();
+    const { credential } = body;
+    if (!credential) return c.json({ error: 'No credential' }, 400);
     const parts = credential.split('.');
     if (parts.length !== 3) return c.json({ error: 'Invalid token' }, 400);
-
     try {
       const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
       const { email, name, picture, sub } = payload;
-
       const sbUrl = getEnv(c.env, 'SUPABASE_URL');
       const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
-
       if (sbUrl && sbKey) {
         try {
           await supabaseFetch(sbUrl, sbKey, 'users', {
             method: 'POST',
             headers: { 'Prefer': 'resolution=merge-duplicates' } as any,
-            body: JSON.stringify({ email, name, picture, google_id: sub, last_login: new Date().toISOString() }),
+            body: JSON.stringify({ email, name, picture, google_id: sub, auth_provider: 'google', last_login: new Date().toISOString() }),
           });
         } catch (e) { console.error('User upsert error:', e); }
       }
-
-      return c.json({ success: true, user: { email, name, picture } })
-    } catch (e) {
-      return c.json({ error: 'Invalid token format' }, 400);
-    }
+      return c.json({ success: true, user: { email, name, picture } });
+    } catch { return c.json({ error: 'Invalid token format' }, 400); }
   } catch (e: any) {
-    return c.json({ error: e.message || 'Auth failed' }, 500)
+    return c.json({ error: e.message || 'Auth failed' }, 500);
   }
 })
 
 app.post('/api/auth/magic-link', async (c) => {
   try {
-    const { email } = await c.req.json()
-    if (!email || !email.includes('@')) return c.json({ error: 'Valid email required' }, 400)
-
+    const { email } = await c.req.json();
+    if (!email || !email.includes('@')) return c.json({ error: 'Valid email required' }, 400);
     const sbUrl = getEnv(c.env, 'SUPABASE_URL');
     const sbKey = getEnv(c.env, 'SUPABASE_ANON_KEY');
-
     if (sbUrl && sbKey) {
       const res = await fetch(`${sbUrl}/auth/v1/magiclink`, {
         method: 'POST',
@@ -655,99 +619,78 @@ app.post('/api/auth/magic-link', async (c) => {
       const err = await res.json();
       return c.json({ error: (err as any).msg || 'Failed to send' }, 400);
     }
-
-    return c.json({ success: true, message: 'Magic link endpoint ready. Set SUPABASE_URL and SUPABASE_ANON_KEY to enable.' })
+    return c.json({ success: true, message: 'Magic link ready. Set SUPABASE keys.' });
   } catch (e: any) {
-    return c.json({ error: e.message || 'Failed' }, 500)
+    return c.json({ error: e.message || 'Failed' }, 500);
   }
 })
 
-// Admin auth
+// ============ ADMIN AUTH ============
+
 app.post('/api/admin/auth', async (c) => {
   try {
-    const body = await c.req.json()
+    const body = await c.req.json();
     const adminPwd = getEnv(c.env, 'ADMIN_PASSWORD', STORE_CONFIG.adminPassword);
-    if (body.password === adminPwd) return c.json({ success: true })
-    return c.json({ error: 'Invalid password' }, 401)
-  } catch { return c.json({ error: 'Auth failed' }, 500) }
+    if (body.password === adminPwd) return c.json({ success: true });
+    return c.json({ error: 'Invalid password' }, 401);
+  } catch { return c.json({ error: 'Auth failed' }, 500); }
 })
 
 // ============ ADMIN API ============
 
-// Admin: get orders
 app.get('/api/admin/orders', async (c) => {
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
-
   if (sbUrl && sbKey) {
     try {
       const res = await supabaseFetch(sbUrl, sbKey, 'orders?select=*&order=created_at.desc&limit=50');
-      if (res.ok) {
-        const orders = await res.json();
-        return c.json({ orders, source: 'supabase' });
-      }
-      console.error('Orders fetch failed:', res.status, await res.text());
+      if (res.ok) return c.json({ orders: await res.json(), source: 'supabase' });
     } catch (e) { console.error('Orders fetch error:', e); }
   }
-  return c.json({ orders: [], source: 'none', message: 'Connect Supabase to see live orders' });
+  return c.json({ orders: [], source: 'none' });
 })
 
-// Admin: update order
 app.patch('/api/admin/orders/:id', async (c) => {
   const orderId = c.req.param('id');
   const body = await c.req.json();
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
-
   if (sbUrl && sbKey) {
     const res = await supabaseFetch(sbUrl, sbKey, `orders?id=eq.${orderId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(body),
+      method: 'PATCH', body: JSON.stringify(body),
     });
     if (res.ok) return c.json({ success: true });
-    const errText = await res.text();
-    console.error('Order update failed:', res.status, errText);
-    return c.json({ error: 'Update failed: ' + errText }, 500);
+    return c.json({ error: await res.text() }, 500);
   }
   return c.json({ error: 'Supabase not configured' }, 500);
 })
 
-// Admin: update product (upsert-friendly)
 app.patch('/api/admin/products/:id', async (c) => {
   const productId = c.req.param('id');
   const body = await c.req.json();
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
-
   if (sbUrl && sbKey) {
     const res = await supabaseFetch(sbUrl, sbKey, `products?id=eq.${productId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(body),
+      method: 'PATCH', body: JSON.stringify(body),
     });
     if (res.ok) return c.json({ success: true });
-    const errText = await res.text();
-    console.error('Product update failed:', res.status, errText);
-    return c.json({ error: 'Update failed: ' + errText }, 500);
+    return c.json({ error: await res.text() }, 500);
   }
   return c.json({ error: 'Supabase not configured' }, 500);
 })
 
-// Admin: update legal page
 app.patch('/api/admin/legal/:slug', async (c) => {
   const slug = c.req.param('slug');
   const body = await c.req.json();
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
-
   if (sbUrl && sbKey) {
     const res = await supabaseFetch(sbUrl, sbKey, `legal_pages?slug=eq.${slug}`, {
-      method: 'PATCH',
-      body: JSON.stringify(body),
+      method: 'PATCH', body: JSON.stringify(body),
     });
     if (res.ok) return c.json({ success: true });
-    const errText = await res.text();
-    console.error('Legal update failed:', res.status, errText);
-    return c.json({ error: 'Update failed: ' + errText }, 500);
+    return c.json({ error: await res.text() }, 500);
   }
   return c.json({ error: 'Supabase not configured' }, 500);
 })
@@ -760,27 +703,21 @@ app.get('/api/size-chart', async (c) => {
   if (sbUrl && sbKey) {
     try {
       const res = await supabaseFetch(sbUrl, sbKey, 'size_chart?select=*&order=sort_order.asc');
-      if (res.ok) {
-        const sizes = await res.json();
-        return c.json({ sizes, source: 'supabase' });
-      }
-    } catch (e) { console.error('Size chart fetch error:', e); }
+      if (res.ok) return c.json({ sizes: await res.json(), source: 'supabase' });
+    } catch (e) { console.error('Size chart error:', e); }
   }
-  // Fallback static data
   return c.json({
     sizes: [
       { size_label: 'XS', chest: 36, length: 26, sort_order: 1 },
-      { size_label: 'S',  chest: 38, length: 27, sort_order: 2 },
-      { size_label: 'M',  chest: 40, length: 28, sort_order: 3 },
-      { size_label: 'L',  chest: 42, length: 29, sort_order: 4 },
+      { size_label: 'S', chest: 38, length: 27, sort_order: 2 },
+      { size_label: 'M', chest: 40, length: 28, sort_order: 3 },
+      { size_label: 'L', chest: 42, length: 29, sort_order: 4 },
       { size_label: 'XL', chest: 44, length: 30, sort_order: 5 },
       { size_label: 'XXL', chest: 46, length: 31, sort_order: 6 },
-    ],
-    source: 'static'
+    ], source: 'static'
   });
 })
 
-// Admin: CRUD size chart
 app.put('/api/admin/size-chart/:label', async (c) => {
   const label = c.req.param('label');
   const body = await c.req.json();
@@ -788,18 +725,11 @@ app.put('/api/admin/size-chart/:label', async (c) => {
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
   if (sbUrl && sbKey) {
     const res = await supabaseFetch(sbUrl, sbKey, 'size_chart', {
-      method: 'POST',
-      headers: { 'Prefer': 'resolution=merge-duplicates' } as any,
-      body: JSON.stringify({
-        size_label: label,
-        chest: body.chest,
-        length: body.length,
-        sort_order: body.sort_order || 0,
-      }),
+      method: 'POST', headers: { 'Prefer': 'resolution=merge-duplicates' } as any,
+      body: JSON.stringify({ size_label: label, chest: body.chest, length: body.length, sort_order: body.sort_order || 0 }),
     });
     if (res.ok) return c.json({ success: true });
-    const errText = await res.text();
-    return c.json({ error: 'Update failed: ' + errText }, 500);
+    return c.json({ error: await res.text() }, 500);
   }
   return c.json({ error: 'Supabase not configured' }, 500);
 })
@@ -809,16 +739,105 @@ app.delete('/api/admin/size-chart/:label', async (c) => {
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
   if (sbUrl && sbKey) {
-    const res = await supabaseFetch(sbUrl, sbKey, `size_chart?size_label=eq.${encodeURIComponent(label)}`, {
-      method: 'DELETE',
-    });
+    const res = await supabaseFetch(sbUrl, sbKey, `size_chart?size_label=eq.${encodeURIComponent(label)}`, { method: 'DELETE' });
     if (res.ok) return c.json({ success: true });
     return c.json({ error: 'Delete failed' }, 500);
   }
   return c.json({ error: 'Supabase not configured' }, 500);
 })
 
-// ============ SUBSCRIBERS API ("Notify Me") ============
+// ============ STORE SETTINGS API ============
+
+app.get('/api/admin/settings', async (c) => {
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+  if (sbUrl && sbKey) {
+    try {
+      const res = await supabaseFetch(sbUrl, sbKey, 'store_settings?select=*');
+      if (res.ok) {
+        const rows = await res.json() as any[];
+        const settings: any = {};
+        rows.forEach((r: any) => { settings[r.key] = r.value; });
+        return c.json({ settings, source: 'supabase' });
+      }
+    } catch (e) { console.error('Settings error:', e); }
+  }
+  return c.json({ settings: { USE_MAGIC_CHECKOUT: 'false', MANAGER_EMAIL: 'shop@intru.in', COD_FEE: '99' }, source: 'static' });
+})
+
+app.put('/api/admin/settings/:key', async (c) => {
+  const key = c.req.param('key');
+  const body = await c.req.json();
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+  if (sbUrl && sbKey) {
+    const res = await supabaseFetch(sbUrl, sbKey, 'store_settings', {
+      method: 'POST', headers: { 'Prefer': 'resolution=merge-duplicates' } as any,
+      body: JSON.stringify({ key, value: body.value }),
+    });
+    if (res.ok) return c.json({ success: true });
+    return c.json({ error: await res.text() }, 500);
+  }
+  return c.json({ error: 'Supabase not configured' }, 500);
+})
+
+// ============ INSTAGRAM FEED API ============
+
+app.get('/api/instagram-feed', async (c) => {
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+  if (sbUrl && sbKey) {
+    try {
+      const res = await supabaseFetch(sbUrl, sbKey, 'instagram_feed?select=*&active=eq.true&order=sort_order.asc');
+      if (res.ok) return c.json({ feed: await res.json(), source: 'supabase' });
+    } catch (e) { console.error('IG feed error:', e); }
+  }
+  return c.json({ feed: [], source: 'static' });
+})
+
+app.post('/api/admin/instagram-feed', async (c) => {
+  const body = await c.req.json();
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+  if (sbUrl && sbKey) {
+    const res = await supabaseFetch(sbUrl, sbKey, 'instagram_feed', {
+      method: 'POST',
+      body: JSON.stringify({ image_url: body.image_url, link_url: body.link_url || '', caption: body.caption || '', sort_order: body.sort_order || 0, active: true }),
+    });
+    if (res.ok) return c.json({ success: true });
+    return c.json({ error: await res.text() }, 500);
+  }
+  return c.json({ error: 'Supabase not configured' }, 500);
+})
+
+app.patch('/api/admin/instagram-feed/:id', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json();
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+  if (sbUrl && sbKey) {
+    const res = await supabaseFetch(sbUrl, sbKey, `instagram_feed?id=eq.${id}`, {
+      method: 'PATCH', body: JSON.stringify(body),
+    });
+    if (res.ok) return c.json({ success: true });
+    return c.json({ error: await res.text() }, 500);
+  }
+  return c.json({ error: 'Supabase not configured' }, 500);
+})
+
+app.delete('/api/admin/instagram-feed/:id', async (c) => {
+  const id = c.req.param('id');
+  const sbUrl = getEnv(c.env, 'SUPABASE_URL');
+  const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+  if (sbUrl && sbKey) {
+    const res = await supabaseFetch(sbUrl, sbKey, `instagram_feed?id=eq.${id}`, { method: 'DELETE' });
+    if (res.ok) return c.json({ success: true });
+    return c.json({ error: 'Delete failed' }, 500);
+  }
+  return c.json({ error: 'Supabase not configured' }, 500);
+})
+
+// ============ SUBSCRIBERS ("Notify Me") ============
 
 app.post('/api/subscribe', async (c) => {
   try {
@@ -828,29 +847,24 @@ app.post('/api/subscribe', async (c) => {
     const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
     if (sbUrl && sbKey) {
       const res = await supabaseFetch(sbUrl, sbKey, 'subscribers', {
-        method: 'POST',
-        headers: { 'Prefer': 'resolution=merge-duplicates' } as any,
+        method: 'POST', headers: { 'Prefer': 'resolution=merge-duplicates' } as any,
         body: JSON.stringify({ email, source: 'notify_me', subscribed_at: new Date().toISOString() }),
       });
-      if (res.ok) return c.json({ success: true, message: 'You\'re on the list!' });
-      const errText = await res.text();
-      return c.json({ error: 'Failed to subscribe: ' + errText }, 500);
+      if (res.ok) return c.json({ success: true, message: "You're on the list!" });
+      return c.json({ error: 'Failed to subscribe' }, 500);
     }
-    return c.json({ success: true, message: 'You\'re on the list! (Supabase not configured yet)' });
-  } catch (e: any) {
-    return c.json({ error: e.message }, 500);
-  }
+    return c.json({ success: true, message: "You're on the list! (Supabase not configured yet)" });
+  } catch (e: any) { return c.json({ error: e.message }, 500); }
 })
 
-// Store credit
+// ============ STORE CREDIT ============
+
 app.post('/api/store-credit', async (c) => {
   try {
-    const { email } = await c.req.json()
-    if (!email) return c.json({ error: 'Email required' }, 400)
-
+    const { email } = await c.req.json();
+    if (!email) return c.json({ error: 'Email required' }, 400);
     const sbUrl = getEnv(c.env, 'SUPABASE_URL');
     const sbKey = getEnv(c.env, 'SUPABASE_ANON_KEY');
-
     if (sbUrl && sbKey) {
       const res = await supabaseFetch(sbUrl, sbKey, `store_credits?email=eq.${email}&select=amount`);
       if (res.ok) {
@@ -859,20 +873,17 @@ app.post('/api/store-credit', async (c) => {
         return c.json({ email, balance });
       }
     }
-    return c.json({ email, balance: 0 })
-  } catch (e: any) {
-    return c.json({ error: e.message }, 500)
-  }
+    return c.json({ email, balance: 0 });
+  } catch (e: any) { return c.json({ error: e.message }, 500); }
 })
 
 // ============ 404 ============
 app.all('*', (c) => {
   return c.html(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>404 — INTRU.IN</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Space Grotesk',sans-serif;background:#fafafa;color:#0a0a0a;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}h1{font-family:'Archivo Black',sans-serif;font-size:clamp(60px,12vw,120px);text-transform:uppercase;letter-spacing:-.05em;margin-bottom:8px}p{color:#737373;font-size:14px;margin-bottom:28px}a{display:inline-block;padding:14px 36px;background:#0a0a0a;color:#fafafa;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:all .2s}a:hover{background:#404040;transform:translateY(-2px)}</style></head>
-<body><div><h1>404</h1><p>This page doesn't exist. Maybe it sold out.</p><a href="/">Back to Drop</a></div></body></html>`, 404)
+<body><div><h1>404</h1><p>This page doesn't exist. Maybe it sold out.</p><a href="/">Back to Drop</a></div></body></html>`, 404);
 })
 
 export default app

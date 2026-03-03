@@ -6,6 +6,7 @@ export function aboutPage(opts: {
   googleClientId?: string;
   products: Product[];
   legalPages: LegalPage[];
+  useMagicCheckout?: boolean;
 }): string {
   const products = opts.products;
   const legalPages = opts.legalPages;
@@ -106,6 +107,6 @@ export function aboutPage(opts: {
     'About — INTRU.IN | Exclusive Streetwear India | Our Story',
     'The story behind intru.in — exclusive streetwear India by two best friends tired of mass-produced fashion. Limited edition, authentic boutique clothing made with love.',
     body,
-    { url: 'https://intru.in/about', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages }
+    { url: 'https://intru.in/about', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: opts.useMagicCheckout }
   );
 }

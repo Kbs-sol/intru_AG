@@ -23,6 +23,7 @@ export interface Env {
   SUPABASE_SERVICE_KEY: string;
   GOOGLE_CLIENT_ID: string;
   ADMIN_PASSWORD: string;
+  RESEND_API_KEY: string;
 }
 
 // ============ STORE CONFIG (static — never changes at runtime) ============
@@ -511,4 +512,110 @@ export async function createRazorpayOrder(keyId: string, keySecret: string, amou
     throw new Error(`Razorpay order creation failed: ${err}`);
   }
   return res.json();
+}
+
+// ============ Resend email helper ============
+
+export async function sendResendEmail(
+  apiKey: string,
+  to: string | string[],
+  subject: string,
+  html: string,
+  from?: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!apiKey) return { success: false, error: 'RESEND_API_KEY not configured' };
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: from || 'intru.in <noreply@intru.in>',
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      return { success: false, error: err };
+    }
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+// ============ Email templates ============
+
+export function emailDropSecured(orderId: string, items: any[], total: number): string {
+  const itemsHtml = items.map((i: any) =>
+    `<tr><td style="padding:12px;border-bottom:1px solid #eee;font-size:14px">${i.name} (${i.size}) x${i.quantity}</td><td style="padding:12px;border-bottom:1px solid #eee;text-align:right;font-size:14px;font-weight:700">Rs.${(i.unitPrice * i.quantity).toLocaleString('en-IN')}</td></tr>`
+  ).join('');
+  return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;background:#fff">
+    <div style="background:#0a0a0a;padding:32px;text-align:center">
+      <h1 style="color:#fff;font-size:24px;margin:0;letter-spacing:4px;text-transform:uppercase">DROP SECURED</h1>
+    </div>
+    <div style="padding:32px">
+      <p style="font-size:16px;color:#333;margin-bottom:24px">Your order is confirmed. We're getting it ready for dispatch within 36 hours.</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+        <thead><tr><th style="text-align:left;padding:12px;border-bottom:2px solid #0a0a0a;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#666">Item</th><th style="text-align:right;padding:12px;border-bottom:2px solid #0a0a0a;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#666">Price</th></tr></thead>
+        <tbody>${itemsHtml}</tbody>
+        <tfoot><tr><td style="padding:12px;font-weight:700;font-size:16px">Total</td><td style="padding:12px;text-align:right;font-weight:700;font-size:16px">Rs.${total.toLocaleString('en-IN')}</td></tr></tfoot>
+      </table>
+      <p style="font-size:12px;color:#999;line-height:1.6">Order ID: ${orderId}<br>Free shipping included. Track via email/SMS.</p>
+    </div>
+    <div style="background:#f5f5f5;padding:24px;text-align:center;font-size:11px;color:#999">
+      <p style="margin:0">intru.in — Limited Drops. No Restocks.</p>
+    </div>
+  </div>`;
+}
+
+export function emailCodReceived(orderId: string, name: string, items: any[], total: number): string {
+  return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;background:#fff">
+    <div style="background:#0a0a0a;padding:32px;text-align:center">
+      <h1 style="color:#fff;font-size:24px;margin:0;letter-spacing:4px;text-transform:uppercase">COD ORDER RECEIVED</h1>
+    </div>
+    <div style="padding:32px">
+      <p style="font-size:16px;color:#333">Hi ${name || 'there'},</p>
+      <p style="font-size:14px;color:#666;line-height:1.7">Your Cash on Delivery order has been placed. Our team may call to verify before dispatch. Please keep Rs.${total.toLocaleString('en-IN')} ready at delivery.</p>
+      <p style="font-size:12px;color:#999;margin-top:24px">Order ID: ${orderId}</p>
+    </div>
+    <div style="background:#f5f5f5;padding:24px;text-align:center;font-size:11px;color:#999">
+      <p style="margin:0">intru.in — Limited Drops. No Restocks.</p>
+    </div>
+  </div>`;
+}
+
+export function emailCodManagerAlert(orderId: string, name: string, phone: string, address: string, items: any[], total: number): string {
+  const itemsList = items.map((i: any) => `${i.name} (${i.size}) x${i.quantity}`).join(', ');
+  return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;background:#fff">
+    <div style="background:#dc2626;padding:24px;text-align:center">
+      <h1 style="color:#fff;font-size:20px;margin:0;letter-spacing:3px;text-transform:uppercase">NEW COD ALERT</h1>
+    </div>
+    <div style="padding:32px">
+      <table style="width:100%;font-size:14px;line-height:1.8">
+        <tr><td style="font-weight:700;padding:6px 12px;color:#666">Customer</td><td style="padding:6px 12px">${name}</td></tr>
+        <tr><td style="font-weight:700;padding:6px 12px;color:#666">Phone</td><td style="padding:6px 12px"><a href="tel:${phone}">${phone}</a></td></tr>
+        <tr><td style="font-weight:700;padding:6px 12px;color:#666">Address</td><td style="padding:6px 12px">${address}</td></tr>
+        <tr><td style="font-weight:700;padding:6px 12px;color:#666">Items</td><td style="padding:6px 12px">${itemsList}</td></tr>
+        <tr><td style="font-weight:700;padding:6px 12px;color:#666">Total (COD)</td><td style="padding:6px 12px;font-weight:700;font-size:16px">Rs.${total.toLocaleString('en-IN')}</td></tr>
+        <tr><td style="font-weight:700;padding:6px 12px;color:#666">Order ID</td><td style="padding:6px 12px;font-size:12px">${orderId}</td></tr>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ============ Store settings helper ============
+
+export async function fetchStoreSetting(sbUrl: string, sbKey: string, key: string): Promise<string | null> {
+  if (!sbUrl || !sbKey) return null;
+  try {
+    const res = await supabaseFetch(sbUrl, sbKey, `store_settings?key=eq.${encodeURIComponent(key)}&select=value&limit=1`);
+    if (!res.ok) return null;
+    const rows = await res.json() as any[];
+    return rows.length > 0 ? rows[0].value : null;
+  } catch { return null; }
 }

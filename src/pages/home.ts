@@ -6,6 +6,7 @@ export function homePage(opts: {
   googleClientId?: string;
   products: Product[];
   legalPages: LegalPage[];
+  useMagicCheckout?: boolean;
 }): string {
   const products = opts.products;
   const legalPages = opts.legalPages;
@@ -172,6 +173,6 @@ function subscribeEmail(form){
     'INTRU.IN — Exclusive Streetwear India | Limited Edition Fashion | Authentic Boutique Clothing',
     'intru.in: exclusive streetwear India. Limited edition fashion, authentic boutique clothing by two best friends. T-shirts, shirts & more. Free shipping over Rs.1,999.',
     body,
-    { url: 'https://intru.in', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages }
+    { url: 'https://intru.in', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: opts.useMagicCheckout }
   );
 }
