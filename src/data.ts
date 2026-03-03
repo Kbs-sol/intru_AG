@@ -401,6 +401,36 @@ export async function hmacSHA256(key: string, data: string): Promise<string> {
   return Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Add this to the email section of data.ts
+export async function emailAdminPaymentAlert(resendApiKey: string, paymentData: any) {
+  const adminEmail = "Venkatpradeep760@gmail.com";
+  const amount = (paymentData.amount / 100).toFixed(2);
+  const orderId = paymentData.order_id || "N/A";
+
+  return fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${resendApiKey}`
+    },
+    body: JSON.stringify({
+      from: 'intru.in <noreply@intru.in>',
+      to: adminEmail,
+      subject: `💰 Payment Received: ₹${amount}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee;">
+          <h2 style="color: #10b981;">New Payment Captured</h2>
+          <p><strong>Amount:</strong> ₹${amount} INR</p>
+          <p><strong>Order ID:</strong> ${orderId}</p>
+          <p><strong>Payment ID:</strong> ${paymentData.id}</p>
+          <p><strong>Customer Email:</strong> ${paymentData.email || 'N/A'}</p>
+          <hr />
+          <p style="font-size: 12px; color: #666;">This is an automated alert for INTRU.IN</p>
+        </div>
+      `
+    })
+  });
+}
 // ============ Magic Checkout line_item builder ============
 
 export interface MagicLineItem {
