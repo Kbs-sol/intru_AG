@@ -174,31 +174,7 @@ app.get('/api/health', (c) => {
     }
   });
 })
-// This fixes the 404 error you saw
-app.get('/api/auth/google-redirect', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Authenticating...</title>
-        <style>body{background:#000;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;}</style>
-      </head>
-      <body>
-        <div>Securing your session...</div>
-        <script>
-          // Google sends the token after the # (fragment)
-          const hash = window.location.hash;
-          if (hash) {
-            // Redirect back to home with the token so Supabase can read it
-            window.location.href = '/' + hash;
-          } else {
-            window.location.href = '/?error=no_token';
-          }
-        </script>
-      </body>
-    </html>
-  `);
-});
+
 // ============ API: Products ============
 
 app.get('/api/products', async (c) => {
@@ -278,9 +254,11 @@ app.post('/api/checkout', async (c) => {
           razorpayOrderId = rzpOrder.id;
         }
 
-        if (sbUrl && sbKey) {
+        // Use service key for writes (RLS requires service_role)
+        const writeKey = sbSvc || sbKey;
+        if (sbUrl && writeKey) {
           try {
-            await supabaseFetch(sbUrl, sbKey, 'orders', {
+            const orderRes = await supabaseFetch(sbUrl, writeKey, 'orders', {
               method: 'POST',
               body: JSON.stringify({
                 razorpay_order_id: razorpayOrderId,
@@ -290,6 +268,7 @@ app.post('/api/checkout', async (c) => {
                 created_at: new Date().toISOString(),
               }),
             });
+            if (!orderRes.ok) console.error('Prepaid order insert failed:', orderRes.status, await orderRes.text());
           } catch (e) { console.error('Failed to store order:', e); }
         }
       } catch (e: any) {
@@ -353,64 +332,61 @@ app.post('/api/checkout/cod', async (c) => {
     const total = subtotal + shipping + codFee;
 
     let orderId = '';
+    let dbError = '';
 
-    if (sbUrl && sbKey) {
+    // IMPORTANT: Use service key for writes (RLS requires service_role for inserts)
+    const writeKey = sbSvc || sbKey;
+    if (sbUrl && writeKey) {
       try {
-        const addrStr = [address.line1, address.line2, address.city, address.state, address.pincode].filter(Boolean).join(', ');
-        const res = await supabaseFetch(sbUrl, sbKey, 'orders', {
+        const orderPayload: any = {
+          items: validatedItems, subtotal, shipping, total,
+          customer_name: userName, customer_email: userEmail,
+          customer_phone: userPhone,
+          status: 'placed', payment_method: 'cod', cod_fee: codFee,
+          shipping_address: address,
+          created_at: new Date().toISOString(),
+        };
+        const res = await supabaseFetch(sbUrl, writeKey, 'orders', {
           method: 'POST',
-          body: JSON.stringify({
-            items: validatedItems, subtotal, shipping, total,
-            customer_name: userName, customer_email: userEmail,
-            customer_phone: userPhone,
-            status: 'placed', payment_method: 'cod', cod_fee: codFee,
-            shipping_address: address,
-            shipping_address_line1: address.line1 || '',
-            shipping_address_line2: address.line2 || '',
-            shipping_city: address.city || '',
-            shipping_state: address.state || '',
-            shipping_pincode: address.pincode || '',
-            shipping_country: 'India',
-            latitude: address.latitude || null,
-            longitude: address.longitude || null,
-            created_at: new Date().toISOString(),
-          }),
+          body: JSON.stringify(orderPayload),
         });
         if (res.ok) {
           const rows = await res.json() as any[];
           orderId = rows?.[0]?.id || '';
+        } else {
+          dbError = await res.text();
+          console.error('Supabase order insert failed:', res.status, dbError);
         }
-      } catch (e) { console.error('Failed to store COD order:', e); }
+      } catch (e: any) {
+        dbError = e.message || 'Unknown DB error';
+        console.error('Failed to store COD order:', e);
+      }
     }
 
-    // Send Resend emails for COD
+    // Send Resend emails for COD (send even without orderId — order was logically placed)
     const resendKey = getEnv(c.env, 'RESEND_API_KEY');
-    if (resendKey && orderId) {
-      // Email to customer: "Action Required: Confirm your intru.in COD Order #[Order ID]"
+    if (resendKey) {
+      const shortId = orderId ? orderId.slice(-8).toUpperCase() : ('COD' + Date.now().toString(36).slice(-5).toUpperCase());
+      // Email to customer
       try {
-        const shortId = orderId.slice(-8).toUpperCase();
         await sendResendEmail(resendKey, userEmail,
           `Action Required: Confirm your intru.in COD Order #${shortId}`,
-          emailCodReceived(orderId, userName, validatedItems, total)
+          emailCodReceived(orderId || shortId, userName, validatedItems, total)
         );
       } catch (e) { console.error('Resend customer email error:', e); }
 
-      // Email to manager: "NEW COD ORDER - Action Required"
+      // Email to manager
       try {
-        const managerEmail = await fetchStoreSetting(
-          getEnv(c.env, 'SUPABASE_URL'),
-          sbKey,
-          'MANAGER_EMAIL'
-        ) || 'shop@intru.in';
+        const managerEmail = await fetchStoreSetting(sbUrl, writeKey, 'MANAGER_EMAIL') || 'shop@intru.in';
         const addrStr = [address.line1, address.line2, address.city, address.state, address.pincode].filter(Boolean).join(', ');
         await sendResendEmail(resendKey, managerEmail,
           `NEW COD ORDER - Action Required — ${userName} — Rs.${total}`,
-          emailCodManagerAlert(orderId, userName, userPhone, addrStr, validatedItems, total)
+          emailCodManagerAlert(orderId || shortId, userName, userPhone, addrStr, validatedItems, total)
         );
       } catch (e) { console.error('Resend manager email error:', e); }
     }
 
-    return c.json({ success: true, orderId, total, codFee });
+    return c.json({ success: true, orderId, total, codFee, ...(dbError ? { dbWarning: dbError } : {}) });
   } catch (e: any) {
     return c.json({ error: e.message || 'COD checkout failed' }, 500);
   }
