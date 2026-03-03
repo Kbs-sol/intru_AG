@@ -1098,25 +1098,89 @@ app.post('/api/store-credit', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500); }
 })
 
-// ============ CUSTOMER: MY ORDERS [AG] ============
+// ============ AI STYLIST API [AG] ============
 
-app.get('/api/customer/orders', async (c) => {
-  const email = c.req.query('email');
-  if (!email) return c.json({ orders: [] });
+app.post('/api/ai/chat', async (c) => {
+  const { messages } = await c.req.json();
+  if (!messages || !messages.length) return c.json({ error: 'No messages' }, 400);
 
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
 
-  if (sbUrl && sbKey) {
+  // 1. Fetch AI Config from DB
+  const [orKey, orModel, gqKey, gqModel, gmKey, sysPrompt] = await Promise.all([
+    fetchStoreSetting(sbUrl, sbKey, 'AI_OPENROUTER_KEY'),
+    fetchStoreSetting(sbUrl, sbKey, 'AI_OPENROUTER_MODEL'),
+    fetchStoreSetting(sbUrl, sbKey, 'AI_GROQ_KEY'),
+    fetchStoreSetting(sbUrl, sbKey, 'AI_GROQ_MODEL'),
+    fetchStoreSetting(sbUrl, sbKey, 'AI_GEMINI_KEY'),
+    fetchStoreSetting(sbUrl, sbKey, 'AI_SYSTEM_PROMPT'),
+  ]);
+
+  // 2. Build Context Aware Prompt
+  const productContext = SEED_PRODUCTS.map(p => `- ${p.name} (Rs.${p.price}): ${p.tagline}. Sizes: ${p.sizes.join(',')}`).join('\n');
+  const fullSystemPrompt = (sysPrompt || `You are the official INTRU.IN AI Stylist...`)
+    + `\n\nCORE BRAND INFO:\n- Store Name: ${STORE_CONFIG.name}\n- Style: Premium Streetwear, No Restocks, Limited Drops.\n- Current Inventory:\n${productContext}\n\nRULES:\n- Be stylish, helpful, and concise.\n- Always recommend specific products from the inventory above.\n- If asked about sizes, reference our size chart (Standard Indian Fitting).`;
+
+  const payload = {
+    model: orModel || 'google/gemini-2.0-flash-001',
+    messages: [{ role: 'system', content: fullSystemPrompt }, ...messages],
+    temperature: 0.7,
+  };
+
+  // 3. Multi-Provider Fallback Logic
+  // Try OpenRouter -> Groq -> Gemini Direct
+
+  // Provider 1: OpenRouter
+  if (orKey) {
     try {
-      const res = await supabaseFetch(sbUrl, sbKey, `orders?customer_email=eq.${email}&select=id,razorpay_order_id,total,status,items,created_at&order=created_at.desc`);
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${orKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
       if (res.ok) {
-        const orders = await res.json();
-        return c.json({ orders });
+        const data = await res.json() as any;
+        return c.json({ content: data.choices[0].message.content, provider: 'openrouter' });
       }
-    } catch (e) { console.error('Error fetching customer orders:', e); }
+    } catch (e) { console.error('OpenRouter Failed:', e); }
   }
-  return c.json({ orders: [] });
+
+  // Provider 2: Groq
+  if (gqKey) {
+    try {
+      const gqPayload = { ...payload, model: gqModel || 'llama-3.3-70b-versatile' };
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${gqKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(gqPayload),
+      });
+      if (res.ok) {
+        const data = await res.json() as any;
+        return c.json({ content: data.choices[0].message.content, provider: 'groq' });
+      }
+    } catch (e) { console.error('Groq Failed:', e); }
+  }
+
+  // Provider 3: Gemini Direct (Fallback)
+  if (gmKey) {
+    try {
+      const gmUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${gmKey}`;
+      const res = await fetch(gmUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: fullSystemPrompt + "\n\nUser Question: " + (messages[messages.length - 1].content) }] }]
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json() as any;
+        return c.json({ content: data.candidates[0].content.parts[0].text, provider: 'gemini' });
+      }
+    } catch (e) { console.error('Gemini Direct Failed:', e); }
+  }
+
+  return c.json({ error: 'Stylist currently busy on a shoot. Try again later.' }, 503);
 });
 
 // ============ ADMIN: LIMITS & USAGE [AG] ============

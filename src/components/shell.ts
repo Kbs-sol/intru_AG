@@ -91,6 +91,24 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .pcbtns button{flex:1;padding:12px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;border:none;transition:all .2s}
 .pc-atc{background:var(--wh);color:var(--bk);border:1px solid var(--bk) !important}.pc-atc:hover{background:var(--g50)}
 .pc-bn{background:var(--bk);color:var(--wh)}.pc-bn:hover{background:var(--g600)}
+/* AI Stylist Widget [AG] */
+.aiw{position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:16px;font-family:inherit}
+.ai-btn{width:56px;height:56px;border-radius:50%;background:var(--bk);color:var(--wh);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;box-shadow:0 8px 32px rgba(0,0,0,.2);transition:all .4s var(--eo);position:relative;overflow:hidden}.ai-btn:hover{transform:scale(1.05) translateY(-2px)}
+.ai-dot{position:absolute;top:12px;right:12px;width:10px;height:10px;background:var(--green);border-radius:50%;border:2px solid var(--bk)}
+.ai-pop{position:absolute;bottom:70px;right:0;width:360px;max-width:calc(100vw - 48px);height:500px;max-height:calc(100vh - 120px);background:rgba(255,255,255,.9);backdrop-filter:blur(24px);border:1px solid rgba(0,0,0,.05);border-radius:16px;box-shadow:0 12px 60px rgba(0,0,0,.15);display:none;flex-direction:column;overflow:hidden;transform:translateY(20px);opacity:0;transition:all .4s var(--eo)}.ai-pop.open{display:flex;transform:translateY(0);opacity:1}
+.ai-hdr{padding:16px 20px;background:var(--bk);color:var(--wh);display:flex;align-items:center;justify-content:space-between}
+.ai-hdr h4{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin:0}
+.ai-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.ai-msg{max-width:85%;padding:12px 16px;font-size:13px;line-height:1.5;border-radius:12px;position:relative}
+.ai-msg.user{align-self:flex-end;background:var(--bk);color:var(--wh);border-bottom-right-radius:2px}
+.ai-msg.bot{align-self:flex-start;background:var(--g50);color:var(--bk);border-bottom-left-radius:2px;border:1px solid rgba(0,0,0,.05)}
+.ai-ftr{padding:16px;border-top:1px solid rgba(0,0,0,.05);background:var(--wh);display:flex;gap:8px}
+.ai-input{flex:1;padding:10px 14px;border:1px solid var(--g200);border-radius:8px;font-size:13px;font-family:inherit;outline:none;transition:border-color .2s}.ai-input:focus{border-color:var(--bk)}
+.ai-send{width:40px;height:40px;background:var(--bk);color:var(--wh);border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}.ai-send:hover{background:var(--g600)}
+.ai-dots{display:flex;gap:4px;padding:4px 0}.ai-dot-sq{width:6px;height:6px;background:var(--g300);border-radius:50%;animation:ai-bounce 1s infinite alternate}
+.ai-dot-sq:nth-child(2){animation-delay:.2s}.ai-dot-sq:nth-child(3){animation-delay:.4s}
+@keyframes ai-bounce{from{transform:translateY(0)}to{transform:translateY(-6px)}}
+@media(max-width:480px){.ai-pop{width:calc(100vw - 32px);height:440px;bottom:64px;right:-8px}}
 .covl{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s}.covl.open{opacity:1;pointer-events:all}
 .cdrw{position:fixed;top:0;right:0;bottom:0;z-index:201;width:440px;max-width:100vw;background:rgba(255,255,255,.8);backdrop-filter:blur(32px);transform:translateX(100%);transition:transform .5s var(--eo);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.15)}.cdrw.open{transform:translateX(0)}
 .chdr{display:flex;align-items:center;justify-content:space-between;padding:24px 32px;border-bottom:1px solid rgba(0,0,0,.04)}
@@ -246,6 +264,30 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <div class="ftrbt"><span>&copy; 2026 intru.in &mdash; Premium Indian Streetwear. All sales final.</span>
 <div class="fsoc"><a href="https://instagram.com/${STORE_CONFIG.instagram}" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a></div>
 </div></footer>
+
+<!-- AI Stylist Widget [AG] -->
+<div class="aiw" id="aiStylist">
+  <div class="ai-pop" id="aiPop">
+    <div class="ai-hdr">
+      <div>
+        <h4>AI Stylist</h4>
+        <div style="font-size:9px;opacity:0.7;font-weight:700;letter-spacing:1px">BY INTRU.IN</div>
+      </div>
+      <button onclick="toggleAIChat()" style="background:none;border:none;color:var(--wh);cursor:pointer;font-size:18px"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ai-body" id="aiBody">
+      <div class="ai-msg bot">Hi! I'm your INTRU Stylist. Looking for a fresh drop or need help with sizing?</div>
+    </div>
+    <div class="ai-ftr">
+      <input type="text" class="ai-input" id="aiInput" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter')sendAIMessage()">
+      <button class="ai-send" onclick="sendAIMessage()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+  <div class="ai-btn" onclick="toggleAIChat()">
+    <i class="fas fa-magic"></i>
+    <div class="ai-dot"></div>
+  </div>
+</div>
 <div class="tc" id="tc"></div>
 ${gKey !== 'YOUR_GOOGLE_CLIENT_ID' ? '<script src="https://accounts.google.com/gsi/client" async defer></script><div id="g_id_onload" data-client_id="' + gKey + '" data-context="signin" data-ux_mode="popup" data-callback="handleGoogleAuth" data-itp_support="true" data-auto_select="false" data-auto_prompt="false"></div>' : '<!-- Google One-Tap: Set GOOGLE_CLIENT_ID env var to enable -->'}
 <script>
@@ -543,6 +585,33 @@ function renderCart(){
 /* ====== CART DRAWER ====== */
 function toggleCart(){document.getElementById('co').classList.toggle('open');document.getElementById('cd').classList.toggle('open');document.body.style.overflow=document.getElementById('cd').classList.contains('open')?'hidden':''}
 function openCartDrawer(){document.getElementById('co').classList.add('open');document.getElementById('cd').classList.add('open');document.body.style.overflow='hidden'}
+
+/* ====== AI STYLIST LOGIC [AG] ====== */
+var aiMsgs=JSON.parse(localStorage.getItem('ai_chat')||'[]');
+function toggleAIChat(){
+  var p=document.getElementById('aiPop');p.classList.toggle('open');
+  if(p.classList.contains('open')){document.getElementById('aiInput').focus();renderAIChat()}
+}
+function renderAIChat(){
+  var b=document.getElementById('aiBody');
+  var h='<div class="ai-msg bot">Hi! I\\'m your INTRU Stylist. Looking for a fresh drop or need help with sizing?</div>';
+  aiMsgs.forEach(function(m){h+='<div class="ai-msg '+(m.role==='user'?'user':'bot')+'">'+m.content+'</div>'});
+  b.innerHTML=h;b.scrollTop=b.scrollHeight;
+}
+function sendAIMessage(){
+  var inp=document.getElementById('aiInput');var txt=inp.value.trim();if(!txt)return;
+  inp.value='';aiMsgs.push({role:'user',content:txt});renderAIChat();
+  var b=document.getElementById('aiBody');
+  var dotWrap=document.createElement('div');dotWrap.className='ai-msg bot';dotWrap.id='aiTyping';
+  dotWrap.innerHTML='<div class="ai-dots"><div class="ai-dot-sq"></div><div class="ai-dot-sq"></div><div class="ai-dot-sq"></div></div>';
+  b.appendChild(dotWrap);b.scrollTop=b.scrollHeight;
+  fetch('/api/ai/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:aiMsgs})})
+  .then(function(r){return r.json()}).then(function(d){
+    var el=document.getElementById('aiTyping');if(el)el.remove();
+    if(d.content){aiMsgs.push({role:'assistant',content:d.content});localStorage.setItem('ai_chat',JSON.stringify(aiMsgs));renderAIChat()}
+    else{toast(d.error||'Stylist is busy','err')}
+  }).catch(function(){var el=document.getElementById('aiTyping');if(el)el.remove();toast('Network error','err')});
+}
 
 /* ====== BUY NOW (unified: adds to temp cart + opens drawer with payment selection) ====== */
 function buyNow(productId,size){

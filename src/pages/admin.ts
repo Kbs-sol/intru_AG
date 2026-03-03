@@ -107,6 +107,7 @@ export function adminPage(opts: {
 <button class="atab" onclick="showTab(this,'tsize')">Size Chart</button>
 <button class="atab" onclick="showTab(this,'tig')">IG Feed</button>
 <button class="atab" onclick="showTab(this,'tsett')">Settings</button>
+<button class="atab" onclick="showTab(this,'tai')">AI Stylist</button>
 <button class="atab" onclick="showTab(this,'tlim')">Limits & Status</button>
 </div>
 
@@ -221,6 +222,42 @@ export function adminPage(opts: {
 </div>
 </div>
 
+<!-- AI Stylist Tab [AG] -->
+<div class="apan" id="tai">
+<div class="sett-card" style="background:var(--g50)">
+  <h4>AI Stylist Engine</h4>
+  <p>Configure the "brain" of your store's AI shopping assistant. All keys are stored securely in Supabase.</p>
+</div>
+
+<div class="sett-card">
+  <h4>OpenRouter Config (Primary)</h4>
+  <p>Highly recommended for best performance and latest models.</p>
+  <div class="apc-row"><label>API Key</label><input type="password" id="aiOpenRouterKey" class="ainp" placeholder="sk-or-v1-..."></div>
+  <div class="apc-row"><label>Default Model</label><input type="text" id="aiOpenRouterModel" class="ainp" placeholder="google/gemini-2.0-flash-001"></div>
+</div>
+
+<div class="sett-card">
+  <h4>Groq Config (Secondary/Fast)</h4>
+  <p>Used as an ultra-fast fallback for chat responses.</p>
+  <div class="apc-row"><label>API Key</label><input type="password" id="aiGroqKey" class="ainp" placeholder="gsk_..."></div>
+  <div class="apc-row"><label>Default Model</label><input type="text" id="aiGroqModel" class="ainp" placeholder="llama-3.3-70b-versatile"></div>
+</div>
+
+<div class="sett-card">
+  <h4>Gemini Config (Direct Fallback)</h4>
+  <p>Final fallback using direct Google AI API.</p>
+  <div class="apc-row"><label>API Key</label><input type="password" id="aiGeminiKey" class="ainp" placeholder="AIzaSy..."></div>
+</div>
+
+<div class="sett-card">
+  <h4>Stylist Persona</h4>
+  <p>Define the AI's personality, tone, and knowledge boundaries.</p>
+  <textarea class="alta" id="aiPrompt" style="min-height:200px" placeholder="You are the official INTRU.IN AI Stylist..."></textarea>
+</div>
+
+<button class="asave" onclick="saveAIConfig()">Save AI Configuration</button>
+</div>
+
 <!-- Limits & Status Tab [AG] -->
 <div class="apan" id="tlim">
 <div class="sett-card" style="background:var(--g50)">
@@ -277,7 +314,7 @@ if(sessionStorage.getItem('iadm')==='1'){document.addEventListener('DOMContentLo
 
 function showTab(btn,id){document.querySelectorAll('.atab').forEach(function(t){t.classList.remove('act')});document.querySelectorAll('.apan').forEach(function(p){p.classList.remove('act')});btn.classList.add('act');document.getElementById(id).classList.add('act')}
 
-function initAdmin(){loadOrders();loadProducts();initLegal();loadSizeChart();loadIgFeed();loadSettings();loadLimits()}
+function initAdmin(){loadOrders();loadProducts();initLegal();loadSizeChart();loadIgFeed();loadSettings();loadLimits();loadAIConfig()}
 
 /* ====== LIMITS [AG] ====== */
 function loadLimits(){
@@ -460,6 +497,37 @@ function loadSettings(){
 function saveSetting(key,val){
   fetch('/api/admin/settings/'+encodeURIComponent(key),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:val})})
   .then(function(r){return r.json()}).then(function(d){if(d.success){toast(key+' updated','ok-green')}else{toast('Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
+}
+
+/* ====== AI STYLIST [AG] ====== */
+function loadAIConfig(){
+  fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(d){
+    var s=d.settings||{};
+    document.getElementById('aiOpenRouterKey').value=s.AI_OPENROUTER_KEY||'';
+    document.getElementById('aiOpenRouterModel').value=s.AI_OPENROUTER_MODEL||'google/gemini-2.0-flash-001';
+    document.getElementById('aiGroqKey').value=s.AI_GROQ_KEY||'';
+    document.getElementById('aiGroqModel').value=s.AI_GROQ_MODEL||'llama-3.3-70b-versatile';
+    document.getElementById('aiGeminiKey').value=s.AI_GEMINI_KEY||'';
+    document.getElementById('aiPrompt').value=s.AI_SYSTEM_PROMPT||'';
+  }).catch(function(){});
+}
+function saveAIConfig(){
+  var keys=['AI_OPENROUTER_KEY','AI_OPENROUTER_MODEL','AI_GROQ_KEY','AI_GROQ_MODEL','AI_GEMINI_KEY','AI_SYSTEM_PROMPT'];
+  var vals=[
+    document.getElementById('aiOpenRouterKey').value,
+    document.getElementById('aiOpenRouterModel').value,
+    document.getElementById('aiGroqKey').value,
+    document.getElementById('aiGroqModel').value,
+    document.getElementById('aiGeminiKey').value,
+    document.getElementById('aiPrompt').value
+  ];
+  var count=0;
+  keys.forEach(function(k,i){
+    fetch('/api/admin/settings/'+encodeURIComponent(k),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:vals[i]})})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.success){count++;if(count===keys.length)toast('AI Configuration Saved','ok-green')}
+    });
+  });
 }
 </script>`;
 
