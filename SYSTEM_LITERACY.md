@@ -595,23 +595,24 @@ To enable these features, you MUST add the following Secrets to your GitHub Repo
 7. `R2_ENDPOINT`: Your R2 S3 API endpoint (found in R2 bucket settings).
 
 ### ⚙️ How to set up Cloudflare R2 Backups:
-1. **Create the Bucket**:
+1. **Find your Database Connection (IPv4 / Pooler)**:
+   - Open your project on the [Supabase Dashboard](https://supabase.com/dashboard/projects).
+   - Look at the **Left Sidebar**. At the very bottom, click the **Settings (Gear Icon ⚙️)**.
+   - In the menu that opens, look under **"Project Settings"** and click **Database**.
+   - Scroll down to the **Connection Pooler** section (NOT the "IPv4 Add-on" section below it).
+   - Ensure the **Mode** is set to **Transaction**.
+   - Copy the connection string. It will use Port **6543**. 
+   - Save this as `PROD_DATABASE_URL` in GitHub Secrets.
+
+2. **Create the Cloudflare R2 Bucket**:
    - Go to [Cloudflare Dashboard](https://dash.cloudflare.com/) → **R2** → **Create Bucket**.
    - Name it `intru-backups` and click **Create Bucket**.
-   - On the bucket page, look for the **S3 API URL** (e.g., `https://<id>.r2.cloudflarestorage.com`). This is your `R2_ENDPOINT`.
+   - Copy the **S3 API URL** from the bucket page (e.g., `https://<id>.r2.cloudflarestorage.com`). This is your `R2_ENDPOINT`.
 
-2. **Generate API Keys (Access Key & Secret)**:
-   - Go back to the main **R2** page (the list of buckets).
-   - Click **Manage R2 API Tokens** on the right side.
-   - Click **Create API Token**.
-   - Set Token Name to `Backup Bot`, select **Edit** permissions, and choose **TTL: Never**.
-   - Click **Create Token**.
-
-3. **Save to GitHub Secrets**:
-   - **Access Key ID**: This is like a username. Copy it to GitHub Secret `R2_ACCESS_KEY_ID`.
-   - **Secret Access Key**: This is like a password. **You only see it once!** Copy it to GitHub Secret `R2_SECRET_ACCESS_KEY`.
-   - **Bucket Name**: `intru-backups` (save to `R2_BUCKET_NAME`).
-   - **Endpoint**: The S3 API URL from Step 1 (save to `R2_ENDPOINT`).
+3. **Generate R2 API Keys**:
+   - Go to the main **R2** page → **Manage R2 API Tokens** → **Create API Token**.
+   - Name: `Backup Bot`, Permissions: **Edit**, TTL: **Never**.
+   - Copy the **Access Key ID** and **Secret Access Key** immediately into GitHub Secrets.
 
 ---
 
