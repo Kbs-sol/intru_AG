@@ -29,9 +29,9 @@ jobs:
       - name: Install PostgreSQL Client
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget gnupg
-          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-          echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get install -y wget gnupg curl
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17 zip
 
@@ -40,11 +40,11 @@ jobs:
           PGHOST: ${{ secrets.DB_HOST }}
           PGUSER: ${{ secrets.DB_USER }}
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          PGDATABASE: ${{ secrets.DB_NAME }}
+          PGDATABASE: postgres
           PGPORT: 6543
           PGCONNECT_TIMEOUT: 5
         run: |
-          # Try to ping the database using environment variables (Clean Slate Method)
+          # Try to ping the database using environment variables
           if psql -c "SELECT 1" > /dev/null; then
             echo "Database connection successful."
           else
@@ -57,7 +57,7 @@ jobs:
           PGHOST: ${{ secrets.DB_HOST }}
           PGUSER: ${{ secrets.DB_USER }}
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          PGDATABASE: ${{ secrets.DB_NAME }}
+          PGDATABASE: postgres
           PGPORT: 6543
         run: |
           # Use pg_dump with environment variables
@@ -72,6 +72,13 @@ jobs:
           zip -P "$BACKUP_PASS" -r db_backup_latest.zip full_backup.sql
           echo "Backup encrypted successfully."
 
+      - name: Prepare Upload Payload
+        run: |
+          # Isolate the backup file so we don't sync the whole repo to R2
+          mkdir -p upload_payload
+          mv db_backup_latest.zip upload_payload/
+          echo "Payload prepared."
+
       - name: Upload to Cloudflare R2
         uses: jakejarvis/s3-sync-action@master
         with:
@@ -83,12 +90,10 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           AWS_S3_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           AWS_REGION: 'auto'
-          SOURCE_DIR: '.'
+          SOURCE_DIR: 'upload_payload'
           DEST_DIR: 'backups/'
-          # Only sync the specific zip file
-          SOURCE_FILE: 'db_backup_latest.zip'
 
       - name: Cleanup
         run: |
-          rm full_backup.sql db_backup_latest.zip
+          rm -rf full_backup.sql upload_payload
           echo "Local temporary files cleaned up."
