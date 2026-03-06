@@ -33,27 +33,30 @@ jobs:
 
       - name: Check Database Connectivity
         env:
+          PGHOST: ${{ secrets.DB_HOST }}
+          PGUSER: ${{ secrets.DB_USER }}
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          DB_URL: ${{ secrets.PROD_DATABASE_URL }}
+          PGDATABASE: ${{ secrets.DB_NAME }}
+          PGPORT: 6543
         run: |
-          # Try to ping the database to verify connectivity before dumping
-          # Using -w 5 to timeout if unreachable
-          if psql "$DB_URL" -c "SELECT 1" -w 5 > /dev/null; then
+          # Try to ping the database using environment variables (Clean Slate Method)
+          if psql -c "SELECT 1" -w 5 > /dev/null; then
             echo "Database connection successful."
           else
-            echo "::error::Database connection failed. Please ensure PROD_DATABASE_URL uses Port 6543 (Pooler) for IPv4 support."
+            echo "::error::Database connection failed. Please ensure DB_HOST, DB_USER, and SUPABASE_DB_PASSWORD are correct (Port 6543)."
             exit 1
           fi
 
       - name: Export Database
         env:
+          PGHOST: ${{ secrets.DB_HOST }}
+          PGUSER: ${{ secrets.DB_USER }}
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          # DATABASE_URL should be the full Postgres connection string from Supabase
-          DB_URL: ${{ secrets.PROD_DATABASE_URL }}
+          PGDATABASE: ${{ secrets.DB_NAME }}
+          PGPORT: 6543
         run: |
-          # Use pg_dump to export the entire schema and data
-          # --no-owner and --no-privileges help with portability to other DB providers
-          pg_dump "$DB_URL" --no-owner --no-privileges > full_backup.sql
+          # Use pg_dump with environment variables
+          pg_dump --no-owner --no-privileges > full_backup.sql
           echo "Database export completed."
 
       - name: Encrypt Backup

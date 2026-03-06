@@ -582,27 +582,26 @@ To prevent Supabase free-tier hibernation and ensure data safety, the following 
 
 ### 3. Required GitHub Secrets
 To enable these features, you MUST add the following Secrets to your GitHub Repository:
-1. `PROD_DATABASE_URL`: Your **Connection Pooler** string.
-   - **⚠️ IMPORTANT**: Do NOT use the "Dedicated IPv4" add-on (which costs $4/mo).
-   - Instead, go to **Settings → Database → Connection Pooler**. 
-   - Copy the string that uses Port **6543**. This is **FREE** and works perfectly for GitHub Actions.
-   - Format: `postgres://postgres:[PASS]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres`
-2. `DB_BACKUP_PASSWORD`: A secure password to encrypt the backup files.
-3. `SUPABASE_DB_PASSWORD`: Your Supabase database password (for `pg_dump`).
-4. `R2_ACCESS_KEY_ID`: Your Cloudflare R2 Access Key.
-5. `R2_SECRET_ACCESS_KEY`: Your Cloudflare R2 Secret Key.
-6. `R2_BUCKET_NAME`: The name of your R2 bucket (e.g., `intru-backups`).
-7. `R2_ENDPOINT`: Your R2 S3 API endpoint (found in R2 bucket settings).
+1. `DB_HOST`: The **Pooler Hostname** (e.g., `aws-1-ap-northeast-1.pooler.supabase.com`).
+2. `DB_USER`: Your **Database User** (e.g., `postgres.pxhiwuldnytfrqajywup`).
+3. `DB_NAME`: Your **Database Name** (Usually `postgres`).
+4. `SUPABASE_DB_PASSWORD`: Your raw Supabase password (e.g., `Intru@may28`). **NO ENCODING NEEDED.**
+5. `DB_BACKUP_PASSWORD`: A secure password to encrypt the backup files.
+6. `R2_ACCESS_KEY_ID`: Your Cloudflare R2 Access Key.
+7. `R2_SECRET_ACCESS_KEY`: Your Cloudflare R2 Secret Key.
+8. `R2_BUCKET_NAME`: The name of your R2 bucket (e.g., `intru-backups`).
+9. `R2_ENDPOINT`: Your R2 S3 API endpoint.
 
 ### ⚙️ How to set up Cloudflare R2 Backups:
-1. **Find your Database Connection (IPv4 / Pooler)**:
+1. **Find your Database Details**:
    - Open your project on the [Supabase Dashboard](https://supabase.com/dashboard/projects).
-   - Look at the **Left Sidebar**. At the very bottom, click the **Settings (Gear Icon ⚙️)**.
-   - In the menu that opens, look under **"Project Settings"** and click **Database**.
-   - Scroll down to the **Connection Pooler** section (NOT the "IPv4 Add-on" section below it).
-   - Ensure the **Mode** is set to **Transaction**.
-   - Copy the connection string. It will use Port **6543**. 
-   - Save this as `PROD_DATABASE_URL` in GitHub Secrets.
+   - Click the **Settings (Gear Icon ⚙️)** at the bottom left.
+   - Click **Database** under Project Settings.
+   - Look for the **Connection Pooler** section.
+   - **DB_HOST**: Copy the Host (ends in `.pooler.supabase.com`).
+   - **DB_USER**: Copy the User (usually `postgres.your-id`).
+   - **DB_NAME**: Usually `postgres`.
+   - **SUPABASE_DB_PASSWORD**: Your raw password (no `[]` or `%40` needed).
 
 2. **Create the Cloudflare R2 Bucket**:
    - Go to [Cloudflare Dashboard](https://dash.cloudflare.com/) → **R2** → **Create Bucket**.
