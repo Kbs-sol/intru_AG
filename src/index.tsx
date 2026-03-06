@@ -797,6 +797,17 @@ app.post('/api/auth/magic-link', async (c) => {
   }
 })
 
+// ============ ADMIN SECURITY MIDDLEWARE [AG] ============
+app.use('/api/admin/*', async (c, next) => {
+  if (c.req.path === '/api/admin/auth') return await next();
+  const token = c.req.header('x-admin-token');
+  const adminPwd = getEnv(c.env, 'ADMIN_PASSWORD', STORE_CONFIG.adminPassword);
+  if (!token || token !== adminPwd) {
+    return c.json({ error: 'Unauthorized: Admin token required' }, 401);
+  }
+  await next();
+});
+
 // ============ ADMIN AUTH ============
 
 app.post('/api/admin/auth', async (c) => {

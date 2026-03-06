@@ -4,7 +4,7 @@
 - **Name**: intru.in
 - **Goal**: High-conversion streetwear e-commerce with frictionless checkout
 - **Stack**: Hono + TypeScript + Cloudflare Pages + Supabase + Razorpay + Resend
-- **Version**: v9 [AG]
+- **Version**: v10 [AG] (2026-03-06)
 
 ## URLs
 - **Production**: https://intru-genz.pages.dev (staging) → https://intru.in (custom domain pending)
@@ -163,7 +163,7 @@ npx wrangler pages secret put RAZORPAY_WEBHOOK_SECRET --project-name intru-in
 ## Deployment
 - **Platform**: Cloudflare Pages
 - **Status**: ✅ Active
-- **Last Updated**: 2026-03-03 (v8)
+- **Last Updated**: 2026-03-06 (v10) - Added Admin API Security, Mobile Optimization, and AI Stylist Enhancements.
 
 ## Full System Documentation
 

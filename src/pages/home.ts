@@ -38,6 +38,10 @@ export function homePage(opts: {
 .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .pcard{position:relative;overflow:hidden;cursor:pointer;text-decoration:none;color:inherit;transition:transform .4s var(--ease)}
 .pcard:hover{transform:translateY(-4px)}
+.trust-bar{display:flex;justify-content:center;gap:40px;padding:24px;background:var(--wh);border-bottom:1px solid var(--g100);max-width:1280px;margin:0 auto}
+.t-item{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--g500)}
+.t-item i{color:var(--bk);font-size:14px}
+@media(max-width:768px){.trust-bar{gap:20px;flex-wrap:wrap;justify-content:center}.t-item{font-size:9px}}
 .pcimg{position:relative;aspect-ratio:3/4;overflow:hidden;border-radius:8px;background:var(--g50)}
 .pcimg img{width:100%;height:100%;object-fit:cover;transition:transform .6s var(--ease)}
 .pcard:hover .pcimg img{transform:scale(1.06)}
@@ -84,6 +88,12 @@ export function homePage(opts: {
 <a href="#products" class="hero-cta anim d4">Discover the Drop <i class="fas fa-arrow-right"></i></a>
 <div class="hero-scroll"><span>Explore Collection</span><div class="hero-line"></div></div>
 </section>
+
+<div class="trust-bar anim d4">
+  <div class="t-item"><i class="fas fa-shipping-fast"></i> Fast Shipping</div>
+  <div class="t-item"><i class="fas fa-gem"></i> Premium Cotton</div>
+  <div class="t-item"><i class="fas fa-hand-holding-heart"></i> Made in India</div>
+</div>
 
     <div class="mq"><div class="mqt">
 ${Array(4).fill('<span class="mqi">Limited Stock Only</span><span class="mqi mqd">/</span><span class="mqi">No Fake Drops</span><span class="mqi mqd">/</span><span class="mqi" style="color:#22c55e;opacity:1">Free Delivery on Prepaid ⚡</span><span class="mqi mqd">/</span><span class="mqi">Made With Love</span><span class="mqi mqd">/</span><span class="mqi">Made in India</span><span class="mqi mqd">/</span><span class="mqi">Never Restocked</span><span class="mqi mqd">/</span>').join('')}

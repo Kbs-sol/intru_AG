@@ -319,7 +319,7 @@ function initAdmin(){loadOrders();loadProducts();initLegal();loadSizeChart();loa
 /* ====== LIMITS [AG] ====== */
 function loadLimits(){
   var dbEl=document.getElementById('limDb');var stEl=document.getElementById('limStorage');var emEl=document.getElementById('limEmail');
-  fetch('/api/admin/limits').then(function(r){return r.json()}).then(function(d){
+  fetch('/api/admin/limits',{headers:{'x-admin-token':sessionStorage.getItem('iadm_t')}}).then(function(r){return r.json()}).then(function(d){
     dbEl.textContent=d.rows.toLocaleString();
     stEl.textContent=d.storageMb+' MB';
     emEl.textContent=d.emailsSentEst;
@@ -332,7 +332,7 @@ function loadLimits(){
 /* ====== ORDERS ====== */
 function loadOrders(){
   document.getElementById('otbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--g400)">Loading...</td></tr>';
-  fetch('/api/admin/orders').then(function(r){return r.json()}).then(function(d){
+  fetch('/api/admin/orders',{headers:{'x-admin-token':sessionStorage.getItem('iadm_t')}}).then(function(r){return r.json()}).then(function(d){
     var src=document.getElementById('ordSrc');
     src.textContent=d.source==='supabase'?'Live Database':'No Database';
     src.className='asrc '+(d.source==='supabase'?'asrc-db':'asrc-static');
@@ -372,7 +372,7 @@ function fallbackCopy(txt){var ta=document.createElement('textarea');ta.value=tx
 
 function updateOrder(orderId,newStatus){
   if(!newStatus)return;
-  fetch('/api/admin/orders/'+orderId,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:newStatus})})
+  fetch('/api/admin/orders/'+orderId,{method:'PATCH',headers:{'Content-Type':'application/json','x-admin-token':sessionStorage.getItem('iadm_t')},body:JSON.stringify({status:newStatus})})
   .then(function(r){return r.json()}).then(function(d){if(d.success){toast('Order updated','ok-green');loadOrders()}else{toast(d.error||'Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
 }
 
@@ -401,7 +401,7 @@ function saveProd(idx){
   var p=prods[idx];var name=document.getElementById('pname_'+idx).value;var price=parseInt(document.getElementById('pprice_'+idx).value)||p.price;
   var cmp=parseInt(document.getElementById('pcmp_'+idx).value)||null;var inStock=document.getElementById('pstock_'+idx).checked;
   var imgs=(p.images||[]).filter(function(u){return u&&u.trim()});
-  fetch('/api/admin/products/'+p.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,price:price,compare_price:cmp,in_stock:inStock,images:imgs})})
+  fetch('/api/admin/products/'+p.id,{method:'PATCH',headers:{'Content-Type':'application/json','x-admin-token':sessionStorage.getItem('iadm_t')},body:JSON.stringify({name:name,price:price,compare_price:cmp,in_stock:inStock,images:imgs})})
   .then(function(r){return r.json()}).then(function(d){if(d.success){toast('"'+name+'" saved','ok-green')}else{toast(d.error||'Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
 }
 
@@ -411,7 +411,7 @@ function switchLegal(){curLeg=parseInt(document.getElementById('alsel').value);d
 function prevLegal(){document.getElementById('alprev').innerHTML=document.getElementById('alta').value}
 function saveLegal(){
   var l=legals[curLeg];var content=document.getElementById('alta').value;
-  fetch('/api/admin/legal/'+l.slug,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:content,updated_at:new Date().toISOString().split('T')[0]})})
+  fetch('/api/admin/legal/'+l.slug,{method:'PATCH',headers:{'Content-Type':'application/json','x-admin-token':sessionStorage.getItem('iadm_t')},body:JSON.stringify({content:content,updated_at:new Date().toISOString().split('T')[0]})})
   .then(function(r){return r.json()}).then(function(d){if(d.success){legals[curLeg].content=content;toast('"'+l.title+'" saved','ok-green')}else{toast(d.error||'Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
 }
 
@@ -440,13 +440,13 @@ function saveSize(idx){
   var label=document.getElementById('szl_'+idx).value.trim().toUpperCase();var chest=parseFloat(document.getElementById('szc_'+idx).value)||0;
   var len=parseFloat(document.getElementById('szlen_'+idx).value)||0;var order=parseInt(document.getElementById('szo_'+idx).value)||idx+1;
   if(!label){toast('Label required','err');return}
-  fetch('/api/admin/size-chart/'+encodeURIComponent(label),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({chest:chest,length:len,sort_order:order})})
+  fetch('/api/admin/size-chart/'+encodeURIComponent(label),{method:'PUT',headers:{'Content-Type':'application/json','x-admin-token':sessionStorage.getItem('iadm_t')},body:JSON.stringify({chest:chest,length:len,sort_order:order})})
   .then(function(r){return r.json()}).then(function(d){if(d.success){toast('"'+label+'" saved','ok-green');loadSizeChart()}else{toast(d.error||'Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
 }
 function deleteSize(idx){
   var label=sizeData[idx].size_label;if(!label){sizeData.splice(idx,1);renderSizeChart();return}
   if(!confirm('Delete "'+label+'"?'))return;
-  fetch('/api/admin/size-chart/'+encodeURIComponent(label),{method:'DELETE'}).then(function(r){return r.json()}).then(function(d){if(d.success){toast('Deleted','ok-green');loadSizeChart()}else{toast('Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
+  fetch('/api/admin/size-chart/'+encodeURIComponent(label),{method:'DELETE',headers:{'x-admin-token':sessionStorage.getItem('iadm_t')}}).then(function(r){return r.json()}).then(function(d){if(d.success){toast('Deleted','ok-green');loadSizeChart()}else{toast('Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
 }
 
 /* ====== INSTAGRAM FEED ====== */
@@ -471,22 +471,22 @@ function renderIgFeed(){
   });document.getElementById('igGrid').innerHTML=h;
 }
 function addIgItem(){
-  fetch('/api/admin/instagram-feed',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image_url:'',sort_order:igFeed.length})})
+  fetch('/api/admin/instagram-feed',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':sessionStorage.getItem('iadm_t')},body:JSON.stringify({image_url:'',sort_order:igFeed.length})})
   .then(function(r){return r.json()}).then(function(d){if(d.success){toast('Added','ok-green');loadIgFeed()}else{toast('Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
 }
 function saveIgItem(idx){
   var item=igFeed[idx];if(!item||!item.id)return;
-  fetch('/api/admin/instagram-feed/'+item.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({image_url:item.image_url,link_url:item.link_url,caption:item.caption})})
+  fetch('/api/admin/instagram-feed/'+item.id,{method:'PATCH',headers:{'Content-Type':'application/json','x-admin-token':sessionStorage.getItem('iadm_t')},body:JSON.stringify({image_url:item.image_url,link_url:item.link_url,caption:item.caption})})
   .then(function(r){return r.json()}).then(function(d){if(d.success){toast('Saved','ok-green')}else{toast('Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
 }
 function deleteIgItem(idx){
   var item=igFeed[idx];if(!item||!item.id)return;if(!confirm('Delete this feed item?'))return;
-  fetch('/api/admin/instagram-feed/'+item.id,{method:'DELETE'}).then(function(r){return r.json()}).then(function(d){if(d.success){toast('Deleted','ok-green');loadIgFeed()}else{toast('Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
+  fetch('/api/admin/instagram-feed/'+item.id,{method:'DELETE',headers:{'x-admin-token':sessionStorage.getItem('iadm_t')}}).then(function(r){return r.json()}).then(function(d){if(d.success){toast('Deleted','ok-green');loadIgFeed()}else{toast('Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
 }
 
 /* ====== SETTINGS ====== */
 function loadSettings(){
-  fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(d){
+  fetch('/api/admin/settings',{headers:{'x-admin-token':sessionStorage.getItem('iadm_t')}}).then(function(r){return r.json()}).then(function(d){
     var s=d.settings||{};
     document.getElementById('settMagic').checked=s.USE_MAGIC_CHECKOUT==='true';
     document.getElementById('settManager').value=s.MANAGER_EMAIL||'shop@intru.in';
@@ -495,13 +495,13 @@ function loadSettings(){
   }).catch(function(){});
 }
 function saveSetting(key,val){
-  fetch('/api/admin/settings/'+encodeURIComponent(key),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:val})})
+  fetch('/api/admin/settings/'+encodeURIComponent(key),{method:'PUT',headers:{'Content-Type':'application/json','x-admin-token':sessionStorage.getItem('iadm_t')},body:JSON.stringify({value:val})})
   .then(function(r){return r.json()}).then(function(d){if(d.success){toast(key+' updated','ok-green')}else{toast('Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
 }
 
 /* ====== AI STYLIST [AG] ====== */
 function loadAIConfig(){
-  fetch('/api/admin/settings').then(function(r){return r.json()}).then(function(d){
+  fetch('/api/admin/settings',{headers:{'x-admin-token':sessionStorage.getItem('iadm_t')}}).then(function(r){return r.json()}).then(function(d){
     var s=d.settings||{};
     document.getElementById('aiOpenRouterKey').value=s.AI_OPENROUTER_KEY||'';
     document.getElementById('aiOpenRouterModel').value=s.AI_OPENROUTER_MODEL||'google/gemini-2.0-flash-001';
@@ -523,7 +523,7 @@ function saveAIConfig(){
   ];
   var count=0;
   keys.forEach(function(k,i){
-    fetch('/api/admin/settings/'+encodeURIComponent(k),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:vals[i]})})
+    fetch('/api/admin/settings/'+encodeURIComponent(k),{method:'PUT',headers:{'Content-Type':'application/json','x-admin-token':sessionStorage.getItem('iadm_t')},body:JSON.stringify({value:vals[i]})})
     .then(function(r){return r.json()}).then(function(d){
       if(d.success){count++;if(count===keys.length)toast('AI Configuration Saved','ok-green')}
     });

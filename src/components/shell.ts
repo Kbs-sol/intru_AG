@@ -81,6 +81,21 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .nbtn:hover{color:var(--bk)}
 .ncart{position:relative;background:none;border:none;font-size:18px;color:var(--bk);padding:8px;margin-bottom:-2px}
 .cbadge{position:absolute;top:0;right:0;background:var(--bk);color:var(--wh);font-size:9px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;transform:scale(0);transition:transform .3s var(--eo)}.cbadge.vis{transform:scale(1)}
+/* Responsive Header & Mobile Menu */
+.menu-btn{display:none;background:none;border:none;font-size:20px;color:var(--bk);padding:8px;z-index:101}
+.mob-nav{position:fixed;top:0;left:0;bottom:0;width:280px;background:var(--wh);z-index:202;transform:translateX(-100%);transition:transform .4s var(--eo);display:flex;flex-direction:column;padding:32px;box-shadow:20px 0 60px rgba(0,0,0,0.1)}
+.mob-nav.open{transform:translateX(0)}
+.mob-nav .nbtn{font-size:14px;padding:16px 0;border-bottom:1px solid var(--g100);display:block;width:100%;text-align:left}
+.mob-close{position:absolute;top:24px;right:24px;font-size:20px;color:var(--g400);background:none;border:none}
+@media(max-width:768px){
+  .menu-btn{display:block}
+  .nlinks{display:none}
+  .navi{grid-template-columns:auto 1fr auto;padding:0 16px}
+  .logo{grid-column:2;justify-content:center}
+  .logo svg{width:90px}
+  .nactions{grid-column:3;gap:8px}
+  .nbtn#navAccountBtn{display:none}
+}
 /* Quick Action System */
 .pcard-actions{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);padding:16px;transform:translateY(100%);transition:transform .4s var(--eo);display:flex;flex-direction:column;gap:12px;z-index:10}
 .pcard:hover .pcard-actions{transform:translateY(0)}
@@ -93,9 +108,13 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .pc-bn{background:var(--bk);color:var(--wh)}.pc-bn:hover{background:var(--g600)}
 /* AI Stylist Widget [AG] */
 .aiw{position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:16px;font-family:inherit}
-.ai-btn{width:56px;height:56px;border-radius:50%;background:var(--bk);color:var(--wh);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;box-shadow:0 8px 32px rgba(0,0,0,.2);transition:all .4s var(--eo);position:relative;overflow:hidden}.ai-btn:hover{transform:scale(1.05) translateY(-2px)}
-.ai-dot{position:absolute;top:12px;right:12px;width:10px;height:10px;background:var(--green);border-radius:50%;border:2px solid var(--bk);animation:ai-pulse 2s infinite}
-@keyframes ai-pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.7)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.ai-btn{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0a0a0a 0%,#2d2d2d 100%);color:var(--wh);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;box-shadow:0 8px 32px rgba(0,0,0,.3);transition:all .4s var(--eo);position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.1)}.ai-btn:hover{transform:scale(1.1) translateY(-4px);box-shadow:0 12px 48px rgba(0,0,0,.4)}
+.ai-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:translateX(-100%);animation:ai-shimmer 3s infinite}
+@keyframes ai-shimmer{100%{transform:translateX(100%)}}
+.ai-dot{position:absolute;top:12px;right:12px;width:10px;height:10px;background:#22c55e;border-radius:50%;border:2px solid #000;animation:ai-pulse 2s infinite;z-index:2}
+@keyframes ai-pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,0.7)}70%{box-shadow:0 0 0 10px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.ai-cta{position:absolute;right:70px;bottom:8px;background:var(--wh);color:var(--bk);padding:10px 18px;border-radius:12px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 10px 30px rgba(0,0,0,0.1);opacity:0;transform:translateX(20px);transition:all .5s var(--eo);pointer-events:none;border:1px solid rgba(0,0,0,0.05);display:flex;align-items:center;gap:8px}.ai-cta.show{opacity:1;transform:translateX(0);pointer-events:all}
+.ai-cta::after{content:'';position:absolute;right:-6px;top:50%;transform:translateY(-50%);border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:6px solid var(--wh)}
 .ai-pop{position:absolute;bottom:70px;right:0;width:360px;max-width:calc(100vw - 48px);height:500px;max-height:calc(100vh - 120px);background:rgba(255,255,255,.9);backdrop-filter:blur(24px);border:1px solid rgba(0,0,0,.05);border-radius:16px;box-shadow:0 12px 60px rgba(0,0,0,.15);display:none;flex-direction:column;overflow:hidden;transform:translateY(20px);opacity:0;transition:all .4s var(--eo)}.ai-pop.open{display:flex;transform:translateY(0);opacity:1}
 .ai-hdr{padding:16px 20px;background:var(--bk);color:var(--wh);display:flex;align-items:center;justify-content:space-between}
 .ai-hdr h4{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin:0}
@@ -109,6 +128,9 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .ai-dots{display:flex;gap:4px;padding:4px 0}.ai-dot-sq{width:6px;height:6px;background:var(--g300);border-radius:50%;animation:ai-bounce 1s infinite alternate}
 .ai-dot-sq:nth-child(2){animation-delay:.2s}.ai-dot-sq:nth-child(3){animation-delay:.4s}
 @keyframes ai-bounce{from{transform:translateY(0)}to{transform:translateY(-6px)}}
+.ai-tooltip{position:absolute;bottom:80px;right:0;background:var(--bk);color:var(--wh);padding:8px 16px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:4px;white-space:nowrap;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+.aiw:hover .ai-tooltip{opacity:1;transform:translateY(0)}
+.ai-tooltip::after{content:'';position:absolute;bottom:-6px;right:25px;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid var(--bk)}
 @media(max-width:480px){.ai-pop{width:calc(100vw - 32px);height:440px;bottom:64px;right:-8px}}
 .covl{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s}.covl.open{opacity:1;pointer-events:all}
 .cdrw{position:fixed;top:0;right:0;bottom:0;z-index:201;width:440px;max-width:100vw;background:rgba(255,255,255,.8);backdrop-filter:blur(32px);transform:translateX(100%);transition:transform .5s var(--eo);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.15)}.cdrw.open{transform:translateX(0)}
@@ -172,16 +194,27 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 </style></head>
 <body class="${opt?.cls || ''}">
 <nav class="nav glass" id="nb"><div class="navi">
+<button class="menu-btn" onclick="toggleMobNav()" aria-label="Menu"><i class="fas fa-bars"></i></button>
 <div class="nlinks">
   <a href="/" class="nbtn">Shop</a>
   <a href="/collections" class="nbtn">Collections</a>
 </div>
-<a href="/" class="logo"><svg viewBox="0 0 110 32" width="110" height="32" xmlns="http://www.w3.org/2000/svg" aria-label="intru.in"><text x="0" y="25" font-family="'Archivo Black',sans-serif" font-size="28" font-weight="900" fill="#0a0a0a" letter-spacing="-1">INTRU</text><text x="88" y="25" font-family="'Space Grotesk',sans-serif" font-size="16" font-weight="400" fill="#0a0a0a" opacity=".4">.in</text></svg></a>
+<a href="/" class="logo"><svg viewBox="0 0 100 32" width="100" height="32" xmlns="http://www.w3.org/2000/svg" aria-label="intru.in"><text x="50%" y="24" dominant-baseline="middle" text-anchor="middle" font-family="'Archivo Black',sans-serif" font-size="24" font-weight="900" fill="#0a0a0a" letter-spacing="-0.04em">INTRU</text></svg></a>
 <div class="nactions">
   <button class="nbtn" onclick="openIdentifyOrOrders()" id="navAccountBtn">Login</button>
   <button class="ncart" onclick="toggleCart()" aria-label="Cart Bag"><i class="fas fa-shopping-bag"></i><span class="cbadge" id="cb">0</span></button>
 </div></div></nav>
-<div class="covl" id="co" onclick="toggleCart()"></div>
+<div class="mob-nav" id="mn">
+  <button class="mob-close" onclick="toggleMobNav()"><i class="fas fa-times"></i></button>
+  <div style="margin-top:40px">
+    <a href="/" class="nbtn" onclick="toggleMobNav()">Shop All</a>
+    <a href="/collections" class="nbtn" onclick="toggleMobNav()">Collections</a>
+    <a href="/about" class="nbtn" onclick="toggleMobNav()">About Us</a>
+    <a href="/#contact" class="nbtn" onclick="toggleMobNav()">Contact</a>
+    <button class="nbtn" onclick="toggleMobNav();openIdentifyOrOrders()" style="margin-top:20px;border:none;color:var(--bk);font-weight:700">My Account / Login</button>
+  </div>
+</div>
+<div class="covl" id="co" onclick="closeAllDrawers()"></div>
 <div class="cdrw" id="cd">
 <div class="chdr"><h3>Your Bag</h3><button class="ccls" onclick="toggleCart()"><i class="fas fa-times"></i></button></div>
 <div class="cbdy" id="cby"><div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div></div>
@@ -268,6 +301,11 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 
 <!-- AI Stylist Widget [AG] -->
 <div class="aiw" id="aiStylist">
+  <div class="ai-cta" id="aiCta">
+    <i class="fas fa-sparkles" style="color:#eab308"></i>
+    <span>Ask my AI Stylist</span>
+  </div>
+  <div class="ai-tooltip">Need help? Ask our AI Stylist!</div>
   <div class="ai-pop" id="aiPop">
     <div class="ai-hdr">
       <div>
@@ -285,7 +323,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
     </div>
   </div>
   <div class="ai-btn" onclick="toggleAIChat()">
-    <i class="fas fa-tshirt"></i>
+    <i class="fas fa-magic-wand-sparkles"></i>
     <div class="ai-dot"></div>
   </div>
 </div>
@@ -583,14 +621,33 @@ function renderCart(){
   renderCartTotals();
 }
 
-/* ====== CART DRAWER ====== */
+/* ====== DRAWER ENGINE ====== */
 function toggleCart(){document.getElementById('co').classList.toggle('open');document.getElementById('cd').classList.toggle('open');document.body.style.overflow=document.getElementById('cd').classList.contains('open')?'hidden':''}
 function openCartDrawer(){document.getElementById('co').classList.add('open');document.getElementById('cd').classList.add('open');document.body.style.overflow='hidden'}
+function closeAllDrawers(){
+  document.getElementById('co').classList.remove('open');
+  document.getElementById('cd').classList.remove('open');
+  document.getElementById('mn').classList.remove('open');
+  document.body.style.overflow='';
+}
 
 /* ====== AI STYLIST LOGIC [AG] ====== */
 var aiMsgs=JSON.parse(localStorage.getItem('ai_chat')||'[]');
+/* AI CTA Delay Logic */
+setTimeout(function(){
+  var cta = document.getElementById('aiCta');
+  if(cta && !localStorage.getItem('ai_chat_opened')){
+    cta.classList.add('show');
+    /* Auto-hide CTA if user doesn't interact, but keep it available on hover or re-scroll? Let's just keep it for now. */
+  }
+}, 3000);
+
 function toggleAIChat(){
-  var p=document.getElementById('aiPop');p.classList.toggle('open');
+  var p=document.getElementById('aiPop');
+  var cta=document.getElementById('aiCta');
+  p.classList.toggle('open');
+  if(cta) cta.classList.remove('show');
+  localStorage.setItem('ai_chat_opened', '1');
   if(p.classList.contains('open')){document.getElementById('aiInput').focus();renderAIChat()}
 }
 function renderAIChat(){
@@ -799,6 +856,14 @@ function toast(msg,type){
 /* ====== NAV SCROLL ====== */
 window.addEventListener('scroll',function(){document.getElementById('nb').classList.toggle('scrolled',window.scrollY>20)});
 
+function toggleMobNav(){
+  const mn = document.getElementById('mn');
+  const co = document.getElementById('co');
+  mn.classList.toggle('open');
+  co.classList.toggle('open');
+  document.body.style.overflow=mn.classList.contains('open')?'hidden':'';
+}
+
 /* ====== INIT ====== */
 renderCart();
 updateAccountBtn();
@@ -830,7 +895,11 @@ function handleAdminUpload(inputId, bucket, statusId, btnId, lastUrlId, lastDivI
   if (status) status.textContent = 'Uploading...';
   if (btn) btn.disabled = true;
 
-  fetch('/api/admin/upload', { method: 'POST', body: fd })
+  fetch('/api/admin/upload', { 
+    method: 'POST', 
+    headers: { 'x-admin-token': sessionStorage.getItem('iadm_t') },
+    body: fd 
+  })
     .then(function(r) { return r.json() })
     .then(function(data) {
       if (data.success && data.url) {

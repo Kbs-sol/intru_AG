@@ -1,5 +1,5 @@
 # INTRU.IN — Full System Literacy & Architecture Reference
-**Version**: v9 | **Date**: 2026-03-04 | **Production**: https://intru-genz.pages.dev (staging for intru.in) [AG]
+**Version**: v10 | **Date**: 2026-03-06 | **Production**: https://intru-genz.pages.dev (staging for intru.in) [AG]
 
 > This document is designed to be read by manager of e-commerce website AND used as a context prompt for AI assistants. It contains everything needed to understand, debug, fix, or extend the intru.in codebase.
 
@@ -458,6 +458,18 @@ RESEND_API_KEY=re_xxx
 ### Issue: TypeScript Lint Errors & Web APIs [AG]
 **Root Cause**: `tsconfig.json` was missing `DOM` and `DOM.Iterable` in the `lib` section, causing errors for `fetch`, `console`, `File`, etc.
 **Fix**: Added `DOM` and `DOM.Iterable` to `tsconfig.json` libs.
+
+### Issue: Admin API Security [AG]
+**Root Cause**: Public exposure of internal admin endpoints.
+**Fix**: Implemented `x-admin-token` middleware in `index.tsx` for all `/api/admin/*` routes.
+
+### Issue: Mobile Nav Overlap [AG]
+**Root Cause**: Header links overlapped logo on small screens.
+**Fix**: Refactored header to grid layout with centered logo and implemented a slide-in hamburger menu drawer in `shell.ts`.
+
+### Issue: AI Assistant Discoverability [AG]
+**Root Cause**: Visitors missed the AI bot button.
+**Fix**: Added automated CTA bubble ("Ask my AI Stylist"), modern magic icon, and premium shimmer pulse in `shell.ts`.
 
 ---
 
