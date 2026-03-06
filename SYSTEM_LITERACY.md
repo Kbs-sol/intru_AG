@@ -582,8 +582,10 @@ To prevent Supabase free-tier hibernation and ensure data safety, the following 
 
 ### 3. Required GitHub Secrets
 To enable these features, you MUST add the following Secrets to your GitHub Repository:
-1. `PROD_DATABASE_URL`: The **Connection Pooler** string (Found in Supabase → Settings → Database → Connection Pooler). 
-   - **IMPORTANT**: Use Port **6543** (Transaction mode). This ensures the backup works over IPv4, which is required for GitHub Actions runners.
+1. `PROD_DATABASE_URL`: Your **Connection Pooler** string.
+   - **⚠️ IMPORTANT**: Do NOT use the "Dedicated IPv4" add-on (which costs $4/mo).
+   - Instead, go to **Settings → Database → Connection Pooler**. 
+   - Copy the string that uses Port **6543**. This is **FREE** and works perfectly for GitHub Actions.
    - Format: `postgres://postgres:[PASS]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres`
 2. `DB_BACKUP_PASSWORD`: A secure password to encrypt the backup files.
 3. `SUPABASE_DB_PASSWORD`: Your Supabase database password (for `pg_dump`).
