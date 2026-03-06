@@ -1,0 +1,62 @@
+name: Supabase Maintenance & Backup
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  keep_alive:
+    name: Supabase Keep-Alive
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Production API
+        run: |
+          # Pinging the products API ensures Supabase is touched and kept active
+          curl -s https://intru-genz.pages.dev/api/products > /dev/null
+          echo "Keep-alive ping sent successfully."
+
+  backup:
+    name: Database Backup
+    runs-on: ubuntu-latest
+    needs: keep_alive
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install PostgreSQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client zip
+
+      - name: Export Database
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          # DATABASE_URL should be the full Postgres connection string from Supabase
+          DB_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          # Use pg_dump to export the entire schema and data
+          # --no-owner and --no-privileges help with portability to other DB providers
+          pg_dump "$DB_URL" --no-owner --no-privileges > full_backup.sql
+          echo "Database export completed."
+
+      - name: Encrypt Backup
+        env:
+          BACKUP_PASS: ${{ secrets.DB_BACKUP_PASSWORD }}
+        run: |
+          # Zip the SQL file with a password-protected encryption
+          zip -P "$BACKUP_PASS" -r db_backup_$(date +%Y-%m-%d).zip full_backup.sql
+          rm full_backup.sql
+          echo "Backup encrypted successfully."
+
+      - name: Commit & Push Backup
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p backups
+          mv db_backup_*.zip backups/
+          git add backups/
+          git commit -m "chore: nightly database backup $(date +%Y-%m-%d) [secure]"
+          git push origin main

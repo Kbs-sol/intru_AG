@@ -562,7 +562,30 @@ curl https://intru.in/api/health  # Should return connected services
 
 ---
 
-## 16. QUICK REFERENCE FOR AI ASSISTANTS
+## 16. DATA RESILIENCE & MAINTENANCE [AG]
+
+To prevent Supabase free-tier hibernation and ensure data safety, the following systems are in place via GitHub Actions:
+
+### 1. Supabase Keep-Alive
+- **Workflow**: `.github/workflows/supabase-maintenance.yml`
+- **Schedule**: Every day at 00:00 UTC.
+- **Action**: Pings the `/api/products` endpoint to trigger a database read.
+- **Benefit**: Prevents Supabase projects from pausing due to inactivity.
+
+### 2. Encrypted Daily Backups
+- **Workflow**: Same as above.
+- **Action**: Performs a full `pg_dump`, compresses it into a **password-protected ZIP**, and commits it to the `/backups` directory in the repository.
+- **Benefit**: Ensures a portable, secure copy of the database exists even if the service provider is unavailable.
+
+### 3. Required GitHub Secrets
+To enable these features, you MUST add the following Secrets to your GitHub Repository:
+1. `PROD_DATABASE_URL`: The full Postgres connection string (e.g., `postgres://postgres:[PASS]@[HOST]:5432/postgres`).
+2. `DB_BACKUP_PASSWORD`: A secure password of your choice to encrypt the backup files.
+3. `SUPABASE_DB_PASSWORD`: Your Supabase database password (for `pg_dump` auth).
+
+---
+
+## 17. QUICK REFERENCE FOR AI ASSISTANTS
 
 When asked to fix/modify this project:
 1. **Main backend logic**: `src/index.tsx` — all routes and API handlers
