@@ -1141,6 +1141,7 @@ app.post('/api/ai/chat', async (c) => {
 
   // 3. Multi-Provider Fallback Logic
   // Try OpenRouter -> Groq -> Gemini Direct
+  const debugInfo: any = { keys: { or: !!orKey, gq: !!gqKey, gm: !!gmKey } };
 
   // Provider 1: OpenRouter
   if (orKey) {
@@ -1153,8 +1154,10 @@ app.post('/api/ai/chat', async (c) => {
       if (res.ok) {
         const data = await res.json() as any;
         return c.json({ content: data.choices[0].message.content, provider: 'openrouter' });
+      } else {
+        debugInfo.orError = await res.text();
       }
-    } catch (e) { console.error('OpenRouter Failed:', e); }
+    } catch (e) { debugInfo.orFailed = String(e); }
   }
 
   // Provider 2: Groq
@@ -1169,8 +1172,10 @@ app.post('/api/ai/chat', async (c) => {
       if (res.ok) {
         const data = await res.json() as any;
         return c.json({ content: data.choices[0].message.content, provider: 'groq' });
+      } else {
+        debugInfo.gqError = await res.text();
       }
-    } catch (e) { console.error('Groq Failed:', e); }
+    } catch (e) { debugInfo.gqFailed = String(e); }
   }
 
   // Provider 3: Gemini Direct (Fallback)
@@ -1187,11 +1192,13 @@ app.post('/api/ai/chat', async (c) => {
       if (res.ok) {
         const data = await res.json() as any;
         return c.json({ content: data.candidates[0].content.parts[0].text, provider: 'gemini' });
+      } else {
+        debugInfo.gmError = await res.text();
       }
-    } catch (e) { console.error('Gemini Direct Failed:', e); }
+    } catch (e) { debugInfo.gmFailed = String(e); }
   }
 
-  return c.json({ error: 'Stylist currently busy on a shoot. Try again later.' }, 503);
+  return c.json({ error: 'Stylist currently busy on a shoot. Try again later.', debug: debugInfo }, 503);
 });
 
 // ============ ADMIN: LIMITS & USAGE [AG] ============
