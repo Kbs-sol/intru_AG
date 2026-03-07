@@ -16,6 +16,7 @@ import { adminPage } from './pages/admin'
 import { collectionsPage } from './pages/collections'
 import { aboutPage } from './pages/about'
 import { stylistPage } from './pages/stylist'
+import { maintenancePage } from './pages/maintenance'
 
 type Bindings = Env & { [key: string]: string }
 
@@ -50,6 +51,11 @@ async function getPageOpts(c: any) {
 }
 
 // ============ PAGE ROUTES ============
+
+app.get('/maintenance', async (c) => {
+  const opts = await getPageOpts(c);
+  return c.html(maintenancePage(opts));
+})
 
 app.get('/', async (c) => {
   const opts = await getPageOpts(c);

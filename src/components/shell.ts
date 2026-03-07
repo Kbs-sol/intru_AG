@@ -210,22 +210,33 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 </style>
 <script>
   var m_skip = sessionStorage.getItem('mSkip');
-  var m_enabled = ${!!mBanner.enabled};
-  var m_show = m_enabled && !(m_skip && '${mBanner.type}' === 'skippable');
+  var m_enabled = ${mBanner.enabled ? 'true' : 'false'};
+  var m_type = '${mBanner.type}';
+  var m_show = false;
+  
+  if (m_enabled) {
+    if (m_type === 'skippable' && !m_skip) {
+      m_show = true;
+    } else if (m_type === 'fixed') {
+      // If fixed maintenance, redirect to /maintenance page unless already there
+      if (window.location.pathname !== '/maintenance') {
+        window.location.href = '/maintenance';
+      }
+    }
+  }
 </script>
 </head>
 <body class="${opt?.cls || ''}">
-${mBanner.enabled ? `
+${mBanner.enabled && mBanner.type === 'skippable' ? `
 <div class="m-overlay" id="mbanner" style="display:none">
   <div class="m-box">
-    ${mBanner.type === 'skippable' ? `
     <h2>Pardon Our Dust 🛠️</h2>
     <p>We're currently updating our website. Some product images might be temporarily missing, but <strong>you can still place orders normally!</strong><br><br>If you run into any issues, <a href="mailto:shop@intru.in">email us</a>.</p>
-    <button class="m-btn" onclick="document.getElementById('mbanner').style.display='none';sessionStorage.setItem('mSkip','1');document.body.style.overflow='auto'">I Understand, Let Me Shop</button>
-    ` : `
-    <h2>Site Maintenance 🚧</h2>
-    <p>The site is currently down for scheduled maintenance. Nobody can browse or place orders at the moment. Please check back later.<br><br>For urgent matters, <a href="mailto:shop@intru.in">email us</a>.</p>
-    `}
+    <div style="text-align:left;margin-bottom:20px;display:flex;align-items:flex-start;gap:8px">
+      <input type="checkbox" id="mAgreeChk" style="margin-top:4px" onchange="document.getElementById('mAgreeBtn').disabled = !this.checked; document.getElementById('mAgreeBtn').style.opacity = this.checked ? '1' : '0.5'">
+      <label for="mAgreeChk" style="font-size:12px;color:var(--g600);line-height:1.4">I agree that I have noticed the site is under maintenance. I understand I might experience bugs and missing images, but I can still make purchases.</label>
+    </div>
+    <button class="m-btn" id="mAgreeBtn" disabled style="opacity:0.5" onclick="document.getElementById('mbanner').style.display='none';sessionStorage.setItem('mSkip','1');document.body.style.overflow='auto'">I Understand, Let Me Shop</button>
   </div>
 </div>
 <script>if(m_show){ document.getElementById('mbanner').style.display='flex'; document.body.style.overflow='hidden'; }</script>
