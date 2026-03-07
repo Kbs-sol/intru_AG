@@ -220,7 +220,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 @media(max-width:480px){.ftri{grid-template-columns:1fr}}
 </style>
 </head>
-<body class="${opt?.cls || ''}">
+<body class="${opt?.cls || ''}" ${mcMode === 'soft' ? 'style="overflow:hidden"' : ''}>
 <nav class="nav glass" id="nb"><div class="navi">
 <button class="menu-btn" onclick="toggleMobNav()" aria-label="Menu"><i class="fas fa-bars"></i></button>
 <div class="nlinks">
@@ -234,7 +234,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
   <button class="ncart" onclick="toggleCart()" aria-label="Cart Bag"><i class="fas fa-shopping-bag"></i><span class="cbadge" id="cb">0</span></button>
 </div></div></nav>
 <!-- Soft Maintenance Banner [AG] -->
-<div id="mntBanner" style="display:none;background:var(--bk);color:var(--wh);font-family:var(--sans);font-size:13px;align-items:center;justify-content:space-between;padding:12px 24px;width:100%;margin-top:72px;z-index:90;position:relative">
+<div id="mntBanner" style="${mcMode === 'soft' ? 'display:flex;' : 'display:none;'}background:var(--bk);color:var(--wh);font-family:var(--sans);font-size:13px;align-items:center;justify-content:space-between;padding:12px 24px;width:100%;margin-top:72px;z-index:90;position:relative">
   <div style="display:flex;align-items:center;gap:12px">
     <span style="font-size:18px">&#x1F6A7;</span>
     <span><strong>Under Maintenance</strong> &mdash; ${mcMsg.length > 80 ? mcMsg.substring(0, 80) + '...' : mcMsg}</span>
@@ -320,7 +320,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 </div>
 
 <!-- Soft Maintenance Modal [AG] -->
-<div class="id-ovl" id="mntOvl" style="z-index:9999">
+<div class="id-ovl${mcMode === 'soft' ? ' open' : ''}" id="mntOvl" style="z-index:9999">
   <div class="id-box">
     <h3 style="margin-bottom:12px;display:flex;align-items:center;gap:10px"><span style="font-size:24px">&#x1F6A7;</span> Site Under Maintenance</h3>
     <p style="font-size:14px;color:var(--bk);margin-bottom:16px;line-height:1.6">${mcMsg}</p>
@@ -329,6 +329,18 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
     <button class="id-btn" onclick="mntAcknowledge()" style="width:100%">I Understand, Let Me Browse</button>
   </div>
 </div>
+<script>
+(function() {
+  if (sessionStorage.getItem('intru_maintenance_ack')) {
+    var o = document.getElementById('mntOvl');
+    if (o) { o.classList.remove('open'); document.body.style.overflow = ''; }
+  }
+  if (sessionStorage.getItem('intru_banner_dismissed')) {
+    var b = document.getElementById('mntBanner');
+    if (b) b.style.display = 'none';
+  }
+})();
+</script>
 
 <main style="padding-top:64px">${body}</main>
 <footer class="ftr" id="contact"><div class="ftri">
@@ -986,28 +998,13 @@ loadSavedAddress();
 /* If user is identified, update UI to reflect it */
 
 /* ====== MAINTENANCE logic [AG] ====== */
-document.addEventListener('DOMContentLoaded', function() {
-  if (window.__MAINTENANCE__ && window.__MAINTENANCE__.mode === 'soft') {
-    var ack = sessionStorage.getItem('intru_maintenance_ack');
-    if (!ack) {
-      var ovl = document.getElementById('mntOvl');
-      if (ovl) { ovl.classList.add('open'); document.body.style.overflow = 'hidden'; }
-    } else {
-      var dismissed = sessionStorage.getItem('intru_banner_dismissed');
-      if (!dismissed) {
-        var b = document.getElementById('mntBanner');
-        if (b) { b.style.setProperty('display', 'flex', 'important'); }
-      }
-    }
-  }
-});
 function mntAcknowledge() {
   sessionStorage.setItem('intru_maintenance_ack', '1');
   var ovl = document.getElementById('mntOvl');
   if (ovl) ovl.classList.remove('open');
   document.body.style.overflow = '';
   var b = document.getElementById('mntBanner');
-  if (b) b.style.setProperty('display', 'flex', 'important');
+  if (b) b.style.display = 'flex';
 }
 function mntDismissBanner() {
   sessionStorage.setItem('intru_banner_dismissed', '1');
