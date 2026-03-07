@@ -229,6 +229,22 @@ export function adminPage(opts: {
 <div style="display:flex;gap:8px"><input class="ainp" id="settCodFee" type="number" style="margin:0;width:120px" placeholder="99">
 <button class="asave" onclick="saveSetting('COD_FEE',document.getElementById('settCodFee').value)">Save</button></div>
 </div>
+<div class="sett-card">
+<h4>Site Maintenance</h4>
+<p>Show a banner alerting customers about ongoing maintenance (e.g., missing images) while still allowing orders.</p>
+<div class="sett-toggle" style="margin-bottom:12px">
+<label>Banner OFF</label>
+<label class="switch"><input type="checkbox" id="settBannerEn" onchange="saveSetting('MAINTENANCE_BANNER_ENABLED',this.checked?'true':'false')"><span class="slider"></span></label>
+<label>Banner ON</label>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<label style="font-size:13px;font-weight:600">Banner Type:</label>
+<select class="ainp" id="settBannerType" style="margin:0;width:100%;max-width:300px" onchange="saveSetting('MAINTENANCE_BANNER_TYPE',this.value)">
+<option value="skippable">Skippable Full-Width (Allows closing)</option>
+<option value="fixed">Fixed Top Header (Cannot be closed)</option>
+</select>
+</div>
+</div>
 </div>
 
 <!-- AI Stylist Tab [AG] -->
@@ -503,6 +519,10 @@ function loadSettings(){
     document.getElementById('settIgFeed').checked=s.INSTAGRAM_FEED_ENABLED!=='false';
     const settSizeGuide = document.getElementById('settSizeGuide');
     if (settSizeGuide) settSizeGuide.checked=s.SIZE_GUIDE_ENABLED!=='false';
+    const settBannerEn = document.getElementById('settBannerEn');
+    if (settBannerEn) settBannerEn.checked=s.MAINTENANCE_BANNER_ENABLED==='true';
+    const settBannerType = document.getElementById('settBannerType');
+    if (settBannerType) settBannerType.value=s.MAINTENANCE_BANNER_TYPE||'skippable';
   }).catch(function(){});
 }
 function saveSetting(key,val){
