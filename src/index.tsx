@@ -42,14 +42,11 @@ async function getPageOpts(c: any) {
     googleClientId: getEnv(c.env, 'GOOGLE_CLIENT_ID', STORE_CONFIG.googleClientId),
     products, legalPages,
     useMagicCheckout: storeSettings.USE_MAGIC_CHECKOUT === 'true',
-<<<<<<< Updated upstream
-=======
     maintenanceConfig: {
       mode: mMode,
       message: storeSettings.MAINTENANCE_MESSAGE || "We're making some improvements. Back soon!",
       eta: storeSettings.MAINTENANCE_ETA || ''
     },
->>>>>>> Stashed changes
     storeSettings,
   };
 }

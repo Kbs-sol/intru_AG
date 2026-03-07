@@ -16,12 +16,9 @@ export function shell(
     razorpayKeyId?: string; googleClientId?: string;
     products?: Product[];
     legalPages?: LegalPage[];
-    useMagicCheckout?: boolean;
-<<<<<<< Updated upstream
-=======
+    useMagicCheckout: boolean;
     maintenanceConfig?: { mode?: string; message?: string; eta?: string };
     storeSettings?: Record<string, string>;
->>>>>>> Stashed changes
   }
 ): string {
   const og = opt?.og || 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=1200&h=630&fit=crop&q=80';
@@ -31,13 +28,10 @@ export function shell(
   const products = opt?.products || [];
   const legalPages = opt?.legalPages || SEED_LEGAL_PAGES;
   const useMagic = opt?.useMagicCheckout || false;
-<<<<<<< Updated upstream
-=======
   const mc = opt?.maintenanceConfig || { mode: 'off', message: '', eta: '' };
   const mcMode = mc.mode || 'off';
   const mcMsg = mc.message || '';
   const mcEta = mc.eta || '';
->>>>>>> Stashed changes
 
   const pm = JSON.stringify(Object.fromEntries(products.map(p => [p.id, { id: p.id, n: p.name, s: p.slug, p: p.price, i: p.images, sz: p.sizes }])));
   const sj = JSON.stringify({ cs: STORE_CONFIG.currencySymbol, ft: STORE_CONFIG.freeShippingThreshold, sc: STORE_CONFIG.shippingCost, rk: rpKey, magic: useMagic });
@@ -208,12 +202,6 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .toast-err{background:var(--red);color:#fff}
 .toast-ok-green{background:#065f46;color:#fff}
 .sz-error{animation:shake .3s ease;border-color:var(--red) !important}
-<<<<<<< Updated upstream
-@media(max-width:768px){.nlinks .nl:not(.nls){display:none}.ftri{grid-template-columns:1fr 1fr;gap:32px}.ftrbt{flex-direction:column;gap:16px;text-align:center}}
-@media(max-width:480px){.ftri{grid-template-columns:1fr}}
-</style></head>
-<body class="${opt?.cls || ''}">
-=======
 /* Maintenance modal & banner */
 .mnt-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .mnt-modal{background:var(--wh);max-width:460px;width:100%;padding:48px 36px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.4);animation:scaleIn .3s var(--eo)}
@@ -277,7 +265,6 @@ function mntDismissBanner(){
 }
 </script>
 ` : ''}
->>>>>>> Stashed changes
 <nav class="nav glass" id="nb"><div class="navi">
 <button class="menu-btn" onclick="toggleMobNav()" aria-label="Menu"><i class="fas fa-bars"></i></button>
 <div class="nlinks">

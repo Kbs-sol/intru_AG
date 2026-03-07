@@ -230,8 +230,6 @@ export function adminPage(opts: {
 <div style="display:flex;gap:8px"><input class="ainp" id="settCodFee" type="number" style="margin:0;width:120px" placeholder="99">
 <button class="asave" onclick="saveSetting('COD_FEE',document.getElementById('settCodFee').value)">Save</button></div>
 </div>
-<<<<<<< Updated upstream
-=======
 </div>
 
 <!-- Maintenance Tab -->
@@ -271,7 +269,6 @@ export function adminPage(opts: {
     <div style="background:var(--bk);color:var(--wh);text-align:center;padding:10px;font-size:10px;font-weight:700;letter-spacing:2px;opacity:.5">I UNDERSTAND &mdash; LET ME BROWSE</div>
   </div>
 </div>
->>>>>>> Stashed changes
 </div>
 
 <!-- AI Stylist Tab [AG] -->
@@ -546,13 +543,10 @@ function loadSettings(){
     document.getElementById('settIgFeed').checked=s.INSTAGRAM_FEED_ENABLED!=='false';
     const settSizeGuide = document.getElementById('settSizeGuide');
     if (settSizeGuide) settSizeGuide.checked=s.SIZE_GUIDE_ENABLED!=='false';
-<<<<<<< Updated upstream
-=======
     // Maintenance
     var mm=document.getElementById('settMaintMode'); if(mm) mm.value=s.MAINTENANCE_MODE||'off';
     var mMsg=document.getElementById('settMaintMsg'); if(mMsg) mMsg.value=s.MAINTENANCE_MESSAGE||'';
     var mEta=document.getElementById('settMaintEta'); if(mEta) mEta.value=s.MAINTENANCE_ETA||'';
->>>>>>> Stashed changes
   }).catch(function(){});
 }
 function saveSetting(key,val){
@@ -596,6 +590,6 @@ function saveAIConfig(){
     'Admin — INTRU.IN',
     'Admin panel for intru.in store management.',
     body,
-    { cls: 'admin-page', razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: opts.useMagicCheckout }
+    { cls: 'admin-page', razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: !!opts.useMagicCheckout }
   );
 }
