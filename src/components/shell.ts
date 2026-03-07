@@ -198,30 +198,37 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .toast-err{background:var(--red);color:#fff}
 .toast-ok-green{background:#065f46;color:#fff}
 .sz-error{animation:shake .3s ease;border-color:var(--red) !important}
-.m-banner{position:fixed;top:0;left:0;right:0;height:36px;background:var(--bk);color:var(--wh);text-align:center;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;z-index:9000}
-.m-banner a{color:var(--wh);text-decoration:underline;font-weight:800}
-.m-banner button{background:none;border:none;color:var(--g400);font-size:14px;cursor:pointer;position:absolute;right:16px}
-.m-banner button:hover{color:var(--wh)}
-body.has-m-banner .nav,body.has-m-banner .mob-nav{top:36px !important}
-body.has-m-banner{padding-top:36px !important}
-@media(max-width:768px){.nlinks .nl:not(.nls){display:none}.ftri{grid-template-columns:1fr 1fr;gap:32px}.ftrbt{flex-direction:column;gap:16px;text-align:center}
-.m-banner{font-size:10px;height:48px;padding:0 30px} body.has-m-banner .nav,body.has-m-banner .mob-nav{top:48px !important} body.has-m-banner{padding-top:48px !important}}
+.m-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.m-box{background:var(--wh);max-width:440px;width:100%;padding:48px 32px;border-radius:2px;text-align:center;box-shadow:0 32px 64px rgba(0,0,0,0.3);animation:scaleIn 0.3s var(--eo)}
+.m-box h2{font-family:var(--head);font-size:26px;margin-bottom:16px;text-transform:uppercase;letter-spacing:-0.04em}
+.m-box p{font-size:15px;color:var(--g500);margin-bottom:28px;line-height:1.6}
+.m-box a{color:var(--bk);font-weight:700;text-decoration:underline}
+.m-box .m-btn{width:100%;padding:18px;background:var(--bk);color:var(--wh);border:none;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:all 0.3s;cursor:pointer}
+.m-box .m-btn:hover{background:var(--g600);transform:translateY(-2px)}
+@media(max-width:768px){.nlinks .nl:not(.nls){display:none}.ftri{grid-template-columns:1fr 1fr;gap:32px}.ftrbt{flex-direction:column;gap:16px;text-align:center}}
 @media(max-width:480px){.ftri{grid-template-columns:1fr}}
 </style>
 <script>
   var m_skip = sessionStorage.getItem('mSkip');
-  var m_enabled = ${mBanner.enabled === true ? 'true' : 'false'};
+  var m_enabled = ${!!mBanner.enabled};
   var m_show = m_enabled && !(m_skip && '${mBanner.type}' === 'skippable');
 </script>
 </head>
 <body class="${opt?.cls || ''}">
-<script>if(m_show) document.body.classList.add('has-m-banner');</script>
 ${mBanner.enabled ? `
-<div class="m-banner" id="mbanner" style="display:none">
-  <span>Site is under maintenance (Updating Images). You can still order products. To report anything, <a href="mailto:shop@intru.in">email us</a>.</span>
-  ${mBanner.type === 'skippable' ? `<button onclick="document.getElementById('mbanner').style.display='none';document.body.classList.remove('has-m-banner');sessionStorage.setItem('mSkip','1')"><i class="fas fa-times"></i></button>` : ''}
+<div class="m-overlay" id="mbanner" style="display:none">
+  <div class="m-box">
+    ${mBanner.type === 'skippable' ? `
+    <h2>Pardon Our Dust 🛠️</h2>
+    <p>We're currently updating our website. Some product images might be temporarily missing, but <strong>you can still place orders normally!</strong><br><br>If you run into any issues, <a href="mailto:shop@intru.in">email us</a>.</p>
+    <button class="m-btn" onclick="document.getElementById('mbanner').style.display='none';sessionStorage.setItem('mSkip','1');document.body.style.overflow='auto'">I Understand, Let Me Shop</button>
+    ` : `
+    <h2>Site Maintenance 🚧</h2>
+    <p>The site is currently down for scheduled maintenance. Nobody can browse or place orders at the moment. Please check back later.<br><br>For urgent matters, <a href="mailto:shop@intru.in">email us</a>.</p>
+    `}
+  </div>
 </div>
-<script>if(m_show) document.getElementById('mbanner').style.display='flex';</script>
+<script>if(m_show){ document.getElementById('mbanner').style.display='flex'; document.body.style.overflow='hidden'; }</script>
 ` : ''}
 <nav class="nav glass" id="nb"><div class="navi">
 <button class="menu-btn" onclick="toggleMobNav()" aria-label="Menu"><i class="fas fa-bars"></i></button>
