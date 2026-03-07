@@ -109,6 +109,7 @@ export function adminPage(opts: {
 <button class="atab" onclick="showTab(this,'tsett')">Settings</button>
 <button class="atab" onclick="showTab(this,'tai')">AI Stylist</button>
 <button class="atab" onclick="showTab(this,'tlim')">Limits & Status</button>
+<button class="atab" onclick="showTab(this,'tmaint')">&#x1F6A7; Maintenance</button>
 </div>
 
 <!-- Orders Tab -->
@@ -229,6 +230,48 @@ export function adminPage(opts: {
 <div style="display:flex;gap:8px"><input class="ainp" id="settCodFee" type="number" style="margin:0;width:120px" placeholder="99">
 <button class="asave" onclick="saveSetting('COD_FEE',document.getElementById('settCodFee').value)">Save</button></div>
 </div>
+<<<<<<< Updated upstream
+=======
+</div>
+
+<!-- Maintenance Tab -->
+<div class="apan" id="tmaint">
+<div class="sett-card" style="background:var(--g50)">
+  <h4>&#x1F6A7; Maintenance Mode</h4>
+  <p>Control site-wide maintenance behaviour. Changes take effect immediately on the live site.</p>
+</div>
+<div class="sett-card">
+  <h4>Maintenance Mode</h4>
+  <p><strong>Off</strong> &mdash; normal operation.<br><strong>Soft</strong> &mdash; users see an acknowledgement modal on first visit, then a persistent banner. They can still browse and order.<br><strong>Full</strong> &mdash; all pages redirect to a standalone maintenance page. Only /admin and /api/* are accessible.</p>
+  <select class="ainp" id="settMaintMode" style="margin:0;max-width:300px" onchange="saveSetting('MAINTENANCE_MODE',this.value)">
+    <option value="off">Off (Normal operation)</option>
+    <option value="soft">Soft (Acknowledgement + Banner)</option>
+    <option value="full">Full (Site locked, maintenance page)</option>
+  </select>
+</div>
+<div class="sett-card">
+  <h4>Maintenance Message</h4>
+  <p>Shown in the modal (soft mode) and on the maintenance page (full mode).</p>
+  <div style="display:flex;gap:8px"><input class="ainp" id="settMaintMsg" style="margin:0" placeholder="We're making some improvements. Back soon!">
+  <button class="asave" onclick="saveSetting('MAINTENANCE_MESSAGE',document.getElementById('settMaintMsg').value)">Save</button></div>
+</div>
+<div class="sett-card">
+  <h4>Estimated Return Time <span style="font-weight:400;font-size:11px;color:var(--g400)">(optional)</span></h4>
+  <p>E.g. &ldquo;March 10, 2026&rdquo;. Leave empty to hide. Shown only in full mode.</p>
+  <div style="display:flex;gap:8px"><input class="ainp" id="settMaintEta" style="margin:0" placeholder="March 10, 2026">
+  <button class="asave" onclick="saveSetting('MAINTENANCE_ETA',document.getElementById('settMaintEta').value)">Save</button></div>
+</div>
+<div class="sett-card">
+  <h4>Live Preview</h4>
+  <p style="margin-bottom:8px">Modal preview (Soft mode):</p>
+  <div style="border:1.5px solid var(--g100);border-radius:6px;padding:24px;background:#f8f8f8;max-width:420px">
+    <strong style="font-size:13px;font-family:var(--head);text-transform:uppercase;letter-spacing:-.03em">&#x1F6A7; Site Maintenance</strong>
+    <p style="font-size:12px;color:var(--g500);margin:8px 0 12px">Your message will appear here.</p>
+    <div style="background:var(--g50);border:1.5px solid var(--g100);padding:10px 12px;font-size:11px;color:var(--g600);margin-bottom:12px">&#9744; I understand the site is under active maintenance...</div>
+    <div style="background:var(--bk);color:var(--wh);text-align:center;padding:10px;font-size:10px;font-weight:700;letter-spacing:2px;opacity:.5">I UNDERSTAND &mdash; LET ME BROWSE</div>
+  </div>
+</div>
+>>>>>>> Stashed changes
 </div>
 
 <!-- AI Stylist Tab [AG] -->
@@ -503,6 +546,13 @@ function loadSettings(){
     document.getElementById('settIgFeed').checked=s.INSTAGRAM_FEED_ENABLED!=='false';
     const settSizeGuide = document.getElementById('settSizeGuide');
     if (settSizeGuide) settSizeGuide.checked=s.SIZE_GUIDE_ENABLED!=='false';
+<<<<<<< Updated upstream
+=======
+    // Maintenance
+    var mm=document.getElementById('settMaintMode'); if(mm) mm.value=s.MAINTENANCE_MODE||'off';
+    var mMsg=document.getElementById('settMaintMsg'); if(mMsg) mMsg.value=s.MAINTENANCE_MESSAGE||'';
+    var mEta=document.getElementById('settMaintEta'); if(mEta) mEta.value=s.MAINTENANCE_ETA||'';
+>>>>>>> Stashed changes
   }).catch(function(){});
 }
 function saveSetting(key,val){
