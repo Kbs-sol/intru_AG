@@ -986,7 +986,7 @@ loadSavedAddress();
 /* If user is identified, update UI to reflect it */
 
 /* ====== MAINTENANCE logic [AG] ====== */
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
   if (window.__MAINTENANCE__ && window.__MAINTENANCE__.mode === 'soft') {
     var ack = sessionStorage.getItem('intru_maintenance_ack');
     if (!ack) {
@@ -996,18 +996,18 @@ loadSavedAddress();
       var dismissed = sessionStorage.getItem('intru_banner_dismissed');
       if (!dismissed) {
         var b = document.getElementById('mntBanner');
-        if (b) b.style.display = 'flex';
+        if (b) { b.style.setProperty('display', 'flex', 'important'); }
       }
     }
   }
-})();
+});
 function mntAcknowledge() {
   sessionStorage.setItem('intru_maintenance_ack', '1');
   var ovl = document.getElementById('mntOvl');
   if (ovl) ovl.classList.remove('open');
   document.body.style.overflow = '';
   var b = document.getElementById('mntBanner');
-  if (b) b.style.display = 'flex';
+  if (b) b.style.setProperty('display', 'flex', 'important');
 }
 function mntDismissBanner() {
   sessionStorage.setItem('intru_banner_dismissed', '1');
