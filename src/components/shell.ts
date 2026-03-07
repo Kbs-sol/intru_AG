@@ -1013,9 +1013,20 @@ updateAccountBtn();
 loadSavedAddress();
 /* If user is identified, update UI to reflect it */
 
-/* ====== KONAMI CODE -> /admin ====== */
-var _kseq=[38,38,40,40,37,39,37,39,66,65],_kidx=0;
-document.addEventListener('keydown',function(e){if(e.keyCode===_kseq[_kidx]){_kidx++;if(_kidx===_kseq.length){_kidx=0;window.location.href='/admin'}}else{_kidx=0}});
+/* ====== KONAMI CODE -> /admin [AG: ROBUST] ====== */
+var _kseq=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'],_kidx=0;
+document.addEventListener('keydown',function(e){
+  if(e.repeat) return;
+  if(['Shift','Control','Alt','Meta'].includes(e.key)) return;
+  var key = e.key.toLowerCase();
+  var target = _kseq[_kidx].toLowerCase();
+  if(key === target){
+    _kidx++;
+    if(_kidx===_kseq.length){_kidx=0;window.location.href='/admin'}
+  } else {
+    _kidx = (key === _kseq[0].toLowerCase()) ? 1 : 0;
+  }
+});
 
 /* ====== ADMIN IMAGE UPLOAD ====== */
 function handleAdminUpload(inputId, bucket, statusId, btnId, lastUrlId, lastDivId) {
