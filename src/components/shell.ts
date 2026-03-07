@@ -398,6 +398,25 @@ ${gKey !== 'YOUR_GOOGLE_CLIENT_ID' ? '<script src="https://accounts.google.com/g
 window.__MAINTENANCE__ = ${JSON.stringify(mc)};
 </script>
 <script>
+/* ====== MAINTENANCE GLOBALS [AG] ====== */
+function mntAcknowledge() {
+  sessionStorage.setItem('intru_maintenance_ack', '1');
+  var ovl = document.getElementById('mntOvl');
+  if (ovl) {
+    ovl.classList.remove('open');
+    ovl.style.setProperty('display', 'none', 'important');
+  }
+  document.body.style.overflow = 'auto';
+  var b = document.getElementById('mntBanner');
+  if (b) b.style.display = 'flex';
+}
+
+function mntDismissBanner() {
+  sessionStorage.setItem('intru_banner_dismissed', '1');
+  var b = document.getElementById('mntBanner');
+  if (b) b.style.setProperty('display', 'none', 'important');
+}
+
 /* ====== CONFIG ====== */
 window.STORE_PRODUCTS = ${JSON.stringify(opt?.products || [])};
 var S=${sj};
@@ -996,28 +1015,6 @@ renderCart();
 updateAccountBtn();
 loadSavedAddress();
 /* If user is identified, update UI to reflect it */
-
-/* ====== MAINTENANCE logic [AG] ====== */
-function mntAcknowledge() {
-  sessionStorage.setItem('intru_maintenance_ack', '1');
-  var ovl = document.getElementById('mntOvl');
-  if (ovl) {
-    ovl.classList.remove('open');
-    ovl.style.setProperty('display', 'none', 'important');
-  }
-  document.body.style.overflow = '';
-  document.body.style.removeProperty('overflow');
-  document.body.style.overflow = 'auto';
-  
-  var b = document.getElementById('mntBanner');
-  if (b) b.style.display = 'flex';
-}
-
-function mntDismissBanner() {
-  sessionStorage.setItem('intru_banner_dismissed', '1');
-  var b = document.getElementById('mntBanner');
-  if (b) b.style.setProperty('display', 'none', 'important');
-}
 
 /* ====== KONAMI CODE -> /admin ====== */
 var _kseq=[38,38,40,40,37,39,37,39,66,65],_kidx=0;
