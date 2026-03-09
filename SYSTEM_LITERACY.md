@@ -1,5 +1,5 @@
 # INTRU.IN — Full System Literacy & Architecture Reference
-**Version**: v11 | **Date**: 2026-03-07 | **Production**: https://intru-genz.pages.dev (staging for intru.in) [AG]
+**Version**: v12 | **Date**: 2026-03-09 | **Production**: https://intru-genz.pages.dev (staging for intru.in) [AG]
 
 > This document is designed to be read by manager of e-commerce website AND used as a context prompt for AI assistants. It contains everything needed to understand, debug, fix, or extend the intru.in codebase.
 
@@ -185,6 +185,10 @@ ALTER TABLE orders ADD CONSTRAINT orders_status_check
 | category | TEXT | 'T-Shirts', 'Shirts' |
 | in_stock | BOOLEAN | |
 | featured | BOOLEAN | |
+| stock_count | JSONB | Inventory per size e.g. {"S": 10} |
+| seo_title | TEXT | Custom SEO Title |
+| seo_description | TEXT | Custom SEO Description |
+| updated_at | TIMESTAMPTZ | Automatic timestamp |
 
 #### `orders`
 | Column | Type | Notes |
@@ -214,6 +218,8 @@ ALTER TABLE orders ADD CONSTRAINT orders_status_check
 | MANAGER_EMAIL | 'shop@intru.in' | COD alert recipient |
 | COD_FEE | '99' | COD convenience fee in INR |
 | INSTAGRAM_FEED_ENABLED | 'true' | Show/hide IG section on homepage |
+| FOMO_THRESHOLD_LOW | '10' | Stock count to trigger "Low Stock" badge |
+| FOMO_THRESHOLD_CRITICAL | '3' | Stock count to trigger "CRITICAL" badge |
 
 #### Other Tables:
 - **`legal_pages`**: slug (PK), title, content (HTML), updated_at
@@ -257,6 +263,8 @@ ALTER TABLE orders ADD CONSTRAINT orders_status_check
 | POST | `/api/subscribe` | `{email}` | `{success, message}` | Newsletter signup |
 | POST | `/api/store-credit` | `{email}` | `{email, balance}` | Check store credit balance |
 | POST | `/api/shipping-info` | `{addresses}` | `{addresses}` | For Razorpay Magic |
+| GET | `/robots.txt` | — | Text | SEO crawl-control |
+| GET | `/sitemap.xml` | — | XML | SEO sitemap with product timestamps |
 
 ### Admin APIs (require admin auth):
 
@@ -483,6 +491,14 @@ RESEND_API_KEY=re_xxx
 ### Issue: Konami Code Precision [AG v11]
 **Root Cause**: Legacy `keyCode` was unreliable; sequence reset on modifier keys (like Shift).
 **Fix**: Migrated to `e.key`, added `e.repeat` protection, and added a whitelist for modifier keys to prevent accidental resets during capital 'b' and 'a'.
+
+### Version 12 — Psychological Optimization [AG v12]
+**Enhancements**: 
+- Rebranded identity overlay as exclusive "Secure Access" portal.
+- Injected "Trust Row" friction-killers on product pages.
+- Dynamic FOMO stock counters based on threshold settings.
+- Sold-out preservation logic with "Notify Me" capture.
+- SEO Infrastructure: Dynamic buildHead, robots.txt, sitemap.xml.
 
 ---
 

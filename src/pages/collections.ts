@@ -129,8 +129,8 @@ function filterCat(cat, btn) {
 </script>`;
 
   return shell(
-    'Collections — INTRU.IN | Exclusive Streetwear India | Limited Edition Fashion',
-    'Shop all intru.in collections. Exclusive streetwear India — limited edition T-shirts, shirts, and authentic boutique clothing. Free shipping over Rs.1,999.',
+    'Streetwear Collections — INTRU.IN | Limited Edition Drops',
+    'Browse our exclusive streetwear collections. From oversized tees to limited shirts, find your next favorite piece here. No restocks, ever.',
     body,
     { url: 'https://intru.in/collections', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: !!opts.useMagicCheckout, maintenanceConfig: opts.maintenanceConfig, storeSettings: opts.storeSettings }
   );

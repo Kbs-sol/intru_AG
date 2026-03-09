@@ -159,24 +159,20 @@ Sitemap: https://intru.in/sitemap.xml`);
 
 app.get('/sitemap.xml', async (c) => {
   const opts = await getPageOpts(c);
-  const now = new Date().toISOString();
+  const now = new Date().toISOString().split('T')[0];
+  const staticPages = [
+    { loc: '', priority: '1.0', changefreq: 'daily' },
+    { loc: '/collections', priority: '0.8', changefreq: 'daily' },
+    { loc: '/about', priority: '0.7', changefreq: 'weekly' }
+  ];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://intru.in/</loc><lastmod>${now}</lastmod><priority>1.0</priority></url>
-  <url><loc>https://intru.in/collections</loc><lastmod>${now}</lastmod><priority>0.8</priority></url>
-  <url><loc>https://intru.in/about</loc><lastmod>${now}</lastmod><priority>0.7</priority></url>`;
-
-  opts.products.forEach(p => {
-    xml += `\n  <url><loc>https://intru.in/product/${p.slug}</loc><lastmod>${now}</lastmod><priority>0.9</priority></url>`;
-  });
-
-  opts.legalPages.forEach(p => {
-    xml += `\n  <url><loc>https://intru.in/p/${p.slug}</loc><lastmod>${now}</lastmod><priority>0.5</priority></url>`;
-  });
-
-  xml += '\n</urlset>';
-  c.header('Content-Type', 'text/xml');
+  ${staticPages.map(p => `<url><loc>https://intru.in${p.loc}</loc><lastmod>${now}</lastmod><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`).join('')}
+  ${opts.products.map(p => `<url><loc>https://intru.in/product/${p.slug}</loc><lastmod>${(p.updatedAt || now).split('T')[0]}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>`).join('')}
+  ${opts.legalPages.map(p => `<url><loc>https://intru.in/p/${p.slug}</loc><lastmod>${(p.updatedAt || now).split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>`).join('')}
+</urlset>`;
+  c.header('Content-Type', 'application/xml');
   return c.body(xml);
 });
 

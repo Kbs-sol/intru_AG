@@ -8,6 +8,9 @@ export interface Product {
   id: string; slug: string; name: string; tagline: string; description: string;
   price: number; comparePrice?: number; currency: string; images: string[];
   sizes: string[]; category: string; inStock: boolean; featured: boolean;
+  stockCount?: Record<string, number>;
+  seoTitle?: string; seoDescription?: string;
+  updatedAt?: string;
 }
 export interface LegalPage { slug: string; title: string; content: string; updatedAt: string; }
 export interface CartItem { productId: string; size: string; quantity: number; }
@@ -374,6 +377,10 @@ function mapDbProduct(row: any): Product {
     category: row.category || '',
     inStock: row.in_stock !== false,
     featured: row.featured === true,
+    stockCount: typeof row.stock_count === 'object' ? row.stock_count : (typeof row.stock_count === 'string' ? JSON.parse(row.stock_count) : {}),
+    seoTitle: row.seo_title || '',
+    seoDescription: row.seo_description || '',
+    updatedAt: row.updated_at || '',
   };
 }
 

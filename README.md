@@ -4,7 +4,7 @@
 - **Name**: intru.in
 - **Goal**: High-conversion streetwear e-commerce with frictionless checkout
 - **Stack**: Hono + TypeScript + Cloudflare Pages + Supabase + Razorpay + Resend
-- **Version**: v11 [AG] (2026-03-07)
+- **Version**: v12 [AG] (2026-03-09) — Psychological Conversion + SEO Optimization
 
 ## URLs
 - **Production**: https://intru-genz.pages.dev (staging) → https://intru.in (custom domain pending)
@@ -45,10 +45,13 @@
 - Single "Checkout" button → Razorpay Magic Checkout handles everything
 - Payment mode selector hidden; Razorpay manages address/COD/1-click
 
-**Psychological Nudges:**
-- Prepaid always shows bright green "⚡ SAVE Rs.99 / FREE SHIPPING"
-- COD always shows gray "Rs.99 Convenience Fee added"
-- Only one toast notification fires per order (prevents duplicate alerts)
+**Psychological Optimization (v12):**
+- **Identity Overlay**: Reframed for exclusivity ("WHERE SHOULD WE SEND YOUR DROP?").
+- **Trust Row**: Injected "Friction-Killers" (FREE SHIPPING, NO RESTOCKS, 36H DISPATCH) near buy buttons.
+- **Prepaid VIP**: Prepaid orders get "PRIORITY DISPATCH" ⚡ branding and skip-the-queue messaging.
+- **FOMO Counters**: Dynamic inventory badges ("Low Stock: [X] left", "CRITICAL: ONLY [X] LEFT").
+- **Sold-Out Preservation**: Product pages remain live with "VAULTED: SOLD OUT" badges and "NOTIFY ME" CTAs to capture intent.
+- **COD Friction**: Rebranded as "Logistics Heavy" with subject-to-verification warnings.
 
 ### Resend Email Notifications
 - **Prepaid success** → "Drop Secured!" email to customer
@@ -62,13 +65,13 @@
 | Table | Purpose |
 |-------|---------|
 | `users` | Synced from Supabase Auth; stores email, name, picture, auth_provider |
-| `products` | Product catalog (id, slug, name, price, images, sizes, category) |
+| `products` | Product catalog + SEO fields (seo_title, seo_description) + stock_count JSONB |
 | `orders` | Full order data: customer_phone, customer_email, items JSON, shipping_address JSON, payment_method, cod_fee, status |
 | `store_credits` | Store credit ledger |
 | `legal_pages` | Dynamic legal content (terms, returns, privacy, shipping) |
 | `size_chart` | Size measurements (XS-XXL, chest/length in inches) |
 | `subscribers` | "Notify Me" email signups |
-| `store_settings` | Admin toggles (USE_MAGIC_CHECKOUT, MANAGER_EMAIL, COD_FEE, INSTAGRAM_FEED_ENABLED) |
+| `store_settings` | Admin toggles (USE_MAGIC_CHECKOUT, FOMO_THRESHOLD_LOW, FOMO_THRESHOLD_CRITICAL, etc.) |
 | `instagram_feed` | Admin-managed Instagram feed images |
 
 **Run `supabase/schema.sql` in Supabase SQL Editor** to create/migrate all tables.
@@ -164,7 +167,7 @@ npx wrangler pages secret put RAZORPAY_WEBHOOK_SECRET --project-name intru-in
 ## Deployment
 - **Platform**: Cloudflare Pages
 - **Status**: ✅ Active
-- **Last Updated**: 2026-03-07 (v11) - Robust Maintenance Mode (Zero-JS Flash), Enhanced Konami Code, and AI Stylist Bug Fixes.
+- **Last Updated**: 2026-03-09 (v12) — Psychological Optimization & SEO Infrastructure.
 
 ## Full System Documentation
 

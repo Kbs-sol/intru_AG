@@ -7,6 +7,46 @@ import { STORE_CONFIG, type Product, type LegalPage, SEED_LEGAL_PAGES } from '..
  * - COD: Rs.99 Convenience/Shipping Fee
  * - Address Persistence: data saved to localStorage on successful COD
  */
+export function buildHead(title: string, desc: string, opt: { og?: string, url?: string, canonical?: string } = {}): string {
+  const url = opt.url || 'https://intru.in';
+  const og = opt.og || 'https://intru.in/og-default.jpg';
+  const canonical = opt.canonical || url;
+  return `
+<title>${title}</title>
+<meta name="description" content="${desc}">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="${canonical}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${desc}">
+<meta property="og:image" content="${og}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="${url}">
+<meta property="og:site_name" content="intru.in">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@intru_in">
+<meta name="twitter:title" content="${title}">
+<meta name="twitter:description" content="${desc}">
+<meta name="twitter:image" content="${og}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "intru.in",
+  "url": "https://intru.in",
+  "logo": "https://intru.in/logo.png",
+  "description": "${STORE_CONFIG.description}",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Hyderabad",
+    "addressRegion": "Telangana",
+    "addressCountry": "IN"
+  }
+}
+</script>`;
+}
+
 export function shell(
   title: string,
   desc: string,
@@ -21,7 +61,7 @@ export function shell(
     storeSettings?: Record<string, string>;
   }
 ): string {
-  const og = opt?.og || 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=1200&h=630&fit=crop&q=80';
+  const og = opt?.og || 'https://intru.in/og-default.jpg';
   const url = opt?.url || 'https://intru.in';
   const rpKey = opt?.razorpayKeyId || STORE_CONFIG.razorpayKeyId;
   const gKey = opt?.googleClientId || STORE_CONFIG.googleClientId;
@@ -38,26 +78,7 @@ export function shell(
 
   return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>${title}</title><meta name="description" content="${desc}">
-<meta name="robots" content="index,follow"><link rel="canonical" href="${url}">
-<meta property="og:type" content="website"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}"><meta property="og:image" content="${og}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:url" content="${url}"><meta property="og:site_name" content="intru.in">
-<meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@intru_in"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${desc}"><meta name="twitter:image" content="${og}">
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "intru.in",
-  "url": "https://intru.in",
-  "logo": "https://intru.in/logo.png",
-  "description": "${STORE_CONFIG.description}",
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": "Hyderabad",
-    "addressRegion": "Telangana",
-    "addressCountry": "IN"
-  }
-}
-</script>
+${buildHead(title, desc, { og, url })}
 ${opt?.schema ? '<script type="application/ld+json">' + opt.schema + '</script>' : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Archivo+Black&display=swap" rel="stylesheet">
@@ -265,16 +286,16 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <!-- Payment Mode Selector (only when NOT magic checkout) -->
 <div class="cmode" id="cmode" style="display:none;margin-top:8px">
 <div class="cmode-opt prepaid act" onclick="setPayMode('prepaid')" id="cm_prepaid">
-<span class="cmode-badge" style="background:#dcfce7;color:#166534">&#9889; SAVE Rs.99 / FREE SHIPPING</span>
+<span class="cmode-badge" style="background:#dcfce7;color:#166534">VIP TREATMENT: PRIORITY DISPATCH</span>
 <span class="cmode-label">Prepaid</span>
 <span class="cmode-price" style="color:var(--green);font-weight:700">FREE Shipping</span>
-<div class="prepaid-perk" id="prepaidPerk" style="display:block">✓ Fast-Tracked: Priority Dispatch</div>
+<div class="prepaid-perk" id="prepaidPerk" style="display:block">⚡ Skip the queue. We ship prepaid orders first.</div>
 </div>
 <div class="cmode-opt cod" onclick="setPayMode('cod')" id="cm_cod">
-<span class="cmode-badge" style="background:var(--g100);color:var(--g500)">Rs.99 Convenience Fee added</span>
+<span class="cmode-badge" style="background:var(--g100);color:var(--g500)">LOGISTICS HEAVY (Rs.99 FEE)</span>
 <span class="cmode-label">Cash on Delivery</span>
 <span class="cmode-price">+Rs.99 COD fee</span>
-<div class="risk-calc" id="riskCalc">⚠️ Calculating risk for your area...</div>
+<div class="risk-calc" id="riskCalc">⚠️ Subject to area verification. Takes 2+ days longer to process.</div>
 </div>
 </div>
 <!-- COD Address Form -->
@@ -297,10 +318,10 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <div class="id-box">
 <button class="id-close" onclick="closeIdentify()"><i class="fas fa-times"></i></button>
 <div id="idLoginView">
-  <h3>Identify Yourself</h3>
-  <p>Enter your email to view your orders and checkout faster. ✌️</p>
-  <input class="id-inp" id="id_email" type="email" placeholder="your@email.com" autocomplete="email">
-  <button class="id-btn" id="idBtn" onclick="submitIdentity()">Continue</button>
+  <h3>WHERE SHOULD WE SEND YOUR DROP?</h3>
+  <p>Enter your email to secure your spot in the next limited release. No spam, just heat.</p>
+  <input class="id-inp" id="id_email" type="email" placeholder="yourname@email.com" autocomplete="email">
+  <button class="id-btn" id="idBtn" onclick="submitIdentity()">SECURE ACCESS</button>
   <div class="id-or">or</div>
   <button class="id-gcta" id="idGoogleBtn" onclick="triggerGoogleIdentify()">
     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
@@ -547,7 +568,7 @@ function updateAccountBtn(){
   if(!btn)return;
   btn.textContent=identifiedEmail?'Orders':'Login';
   var idBtn=document.getElementById('idBtn');
-  if(idBtn)idBtn.textContent=identifiedEmail?'Continue as '+identifiedEmail.split('@')[0].toUpperCase():'Continue';
+  if(idBtn)idBtn.textContent=identifiedEmail?'Continue as '+identifiedEmail.split('@')[0].toUpperCase():'SECURE ACCESS';
 }
 
 /* Process Google auth token (used by redirect callback page) */
@@ -699,10 +720,10 @@ function setPayMode(mode){
   if(mode === 'cod') {
     var rc = document.getElementById('riskCalc');
     if(rc){
-      rc.style.display = 'block'; rc.textContent = '⚠️ Calculating risk for your area...';
+      rc.style.display = 'block'; rc.textContent = '⚠️ Verifying logistics availability...';
       try { paySounds.cod.play(); } catch(e){}
       setTimeout(function(){
-        rc.textContent = '❌ High-Risk identified. Rs.99 Fee added.';
+        rc.textContent = '❌ Non-Priority Logistics. +Rs.99 convenience fee applied.';
         applyPayMode(mode);
       }, 400);
       return;
