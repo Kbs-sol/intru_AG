@@ -1,15 +1,13 @@
--- =============================================================
--- intru.in Supabase Schema (v6 — Unified Checkout + IG Toggle)
+-- intru.in Supabase Schema (v12 — Psychological Conversion)
 -- Run this in Supabase SQL Editor: Dashboard > SQL Editor
 --
 -- SAFE TO RE-RUN: Uses IF NOT EXISTS / IF EXISTS everywhere
--- Handles both fresh installs AND migrations from v4/v5
+-- Handles both fresh installs AND migrations from previous versions
 --
--- v6 changes:
--- - INSTAGRAM_FEED_ENABLED store_setting for homepage toggle
--- - COD email subjects updated to "Action Required" format
--- - Footer/legal jurisdiction: Hyderabad, Telangana
--- - Unified checkout: Buy Now → Hybrid Payment Selection UI
+-- v12 changes:
+-- - Added stock_count and total_units to products (FOMO counters)
+-- - Added FOMO_THRESHOLD_LOW and FOMO_THRESHOLD_CRITICAL settings
+-- - Added stock_count input field guidance for admin
 -- =============================================================
 
 
@@ -136,10 +134,26 @@ CREATE TABLE IF NOT EXISTS products (
   sizes JSONB DEFAULT '[]'::jsonb,
   category TEXT,
   in_stock BOOLEAN DEFAULT true,
+  stock_count INTEGER DEFAULT NULL,
+  total_units INTEGER DEFAULT NULL,
   featured BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration: add stock_count and total_units if missing
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='stock_count') THEN
+    ALTER TABLE products ADD COLUMN stock_count INTEGER DEFAULT NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='total_units') THEN
+    ALTER TABLE products ADD COLUMN total_units INTEGER DEFAULT NULL;
+  END IF;
+END $$;
+
+COMMENT ON COLUMN products.stock_count IS 'Current inventory count. NULL=untracked, 0=sold out, 1-10=FOMO logic.';
+COMMENT ON COLUMN products.total_units IS 'Original drop quantity for "X/Y left" display.';
 
 DO $$
 BEGIN
@@ -495,7 +509,9 @@ INSERT INTO store_settings (key, value) VALUES
   ('MANAGER_EMAIL', 'shop@intru.in'),
   ('COD_FEE', '99'),
   ('INSTAGRAM_FEED_ENABLED', 'true'),
-  ('SIZE_GUIDE_ENABLED', 'true')
+  ('SIZE_GUIDE_ENABLED', 'true'),
+  ('FOMO_THRESHOLD_LOW', '10'),
+  ('FOMO_THRESHOLD_CRITICAL', '3')
 ON CONFLICT (key) DO NOTHING;
 
 

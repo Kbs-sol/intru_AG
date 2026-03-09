@@ -57,6 +57,9 @@ export function homePage(opts: {
 .pcprice .cur{font-size:15px;font-weight:700}
 .pcprice .cmp{font-size:12px;color:var(--g300);text-decoration:line-through}
 .pcprice .sv{font-size:10px;font-weight:700;color:#16a34a;background:#f0fdf4;padding:2px 6px;border-radius:3px}
+.pc-stock{display:block;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-top:8px}
+.pc-stock.low{color:#f59e0b}
+.pc-stock.crit{color:var(--red);animation:pulseTimer 2s infinite}
 .feats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;max-width:1280px;margin:0 auto;padding:80px 24px;border-top:1px solid var(--g100)}
 .feat{text-align:center;padding:28px 12px}
 .ficon{width:52px;height:52px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--g200);border-radius:50%;font-size:18px;color:var(--g500)}
@@ -113,6 +116,17 @@ ${Array(4).fill('<span class="mqi">Limited Stock Only</span><span class="mqi mqd
 ${products.map((p, i) => {
     const d = p.comparePrice ? Math.round((1 - p.price / p.comparePrice) * 100) : 0;
     const sizes = p.sizes || ['S', 'M', 'L', 'XL'];
+    const stockObj = p.stockCount || {};
+    const totalStock = Object.values(stockObj).reduce((a: number, b: number) => a + b, 0);
+    const lowRes = parseInt(opts.storeSettings?.FOMO_THRESHOLD_LOW || '10');
+    const critRes = parseInt(opts.storeSettings?.FOMO_THRESHOLD_CRITICAL || '3');
+    let stockHtml = '';
+    if (totalStock <= critRes && totalStock > 0) {
+      stockHtml = `<div class="pc-stock crit">CRITICAL: ONLY ${totalStock} LEFT</div>`;
+    } else if (totalStock <= lowRes && totalStock > 0) {
+      stockHtml = `<div class="pc-stock low">Low Stock: ${totalStock} left</div>`;
+    }
+
     return `<a href="/product/${p.slug}" class="pcard anim d${(i % 4) + 1}">
 <div class="pcimg">
 <img src="${p.images[0]}" alt="INTRU.IN ${p.name} - Premium Streetwear ${p.category}" loading="${i < 4 ? 'eager' : 'lazy'}" width="400" height="533">
@@ -136,7 +150,9 @@ ${d > 0 ? '<span class="pcbadge">Save ' + d + '%</span>' : ''}
 <span class="cur">${STORE_CONFIG.currencySymbol}${p.price.toLocaleString('en-IN')}</span>
 ${p.comparePrice ? '<span class="cmp">' + STORE_CONFIG.currencySymbol + p.comparePrice.toLocaleString('en-IN') + '</span>' : ''}
 ${d > 0 ? '<span class="sv">' + d + '% OFF</span>' : ''}
-</div></div></a>`;
+</div>
+${stockHtml}
+</div></a>`;
   }).join('\n')}
 </div></section>
 
@@ -213,8 +229,8 @@ function subscribeEmail(form){
 </script>`;
 
   return shell(
-    'INTRU.IN — Premium Streetwear India | Oversized Tees & Limited Edition Fashion',
-    'Discover INTRU.IN: India\\\'s premier destination for limited-edition streetwear. Shop oversized tees, exclusive drops, and premium basics. No restocks, ever. Free delivery on all prepaid orders.',
+    'Streetwear India — INTRU.IN | Limited Drops & No Restocks',
+    'Discover INTRU.IN: India\'s premier destination for limited-edition streetwear. Shop oversized tees, exclusive drops, and premium basics. Free shipping on all prepaid orders.',
     body,
     { url: 'https://intru.in', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: !!opts.useMagicCheckout, maintenanceConfig: opts.maintenanceConfig, storeSettings: opts.storeSettings }
   );

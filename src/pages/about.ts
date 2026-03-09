@@ -106,8 +106,8 @@ export function aboutPage(opts: {
 </div>`;
 
   return shell(
-    'About — INTRU.IN | Exclusive Streetwear India | Our Story',
-    'The story behind intru.in — exclusive streetwear India by two best friends tired of mass-produced fashion. Limited edition, authentic boutique clothing made with love.',
+    'Our Story — INTRU.IN | Premium Indian Streetwear',
+    'The story of INTRU.IN: Two friends, one mission. High-quality, limited-edition streetwear made with love in India.',
     body,
     { url: 'https://intru.in/about', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: !!opts.useMagicCheckout, maintenanceConfig: opts.maintenanceConfig, storeSettings: opts.storeSettings }
   );

@@ -13,6 +13,20 @@ export function productPage(product: Product, opts: {
   const products = opts.products;
   const legalPages = opts.legalPages;
   const storeSettings = opts.storeSettings || {};
+  const stockObj = product.stockCount || {};
+  const totalStock = Object.values(stockObj).reduce((a, b) => a + b, 0);
+  const lowRes = parseInt(storeSettings.FOMO_THRESHOLD_LOW || '10');
+  const critRes = parseInt(storeSettings.FOMO_THRESHOLD_CRITICAL || '3');
+
+  let stockHtml = '';
+  if (totalStock === 0) {
+    stockHtml = `<div class="sold-out-badge"><i class="fas fa-lock"></i> VAULTED: SOLD OUT</div>`;
+  } else if (totalStock <= critRes) {
+    stockHtml = `<div class="pc-stock crit">CRITICAL: ONLY ${totalStock} LEFT</div>`;
+  } else if (totalStock <= lowRes) {
+    stockHtml = `<div class="pc-stock low">Low Stock: ${totalStock} left</div>`;
+  }
+
   const disc = product.comparePrice ? Math.round((1 - product.price / product.comparePrice) * 100) : 0;
   const related = products.filter(p => p.id !== product.id).slice(0, 3);
   const schema = JSON.stringify({ "@context": "https://schema.org", "@type": "Product", "name": product.name, "description": product.description, "image": product.images, "brand": { "@type": "Brand", "name": "intru.in" }, "offers": { "@type": "Offer", "url": "https://intru.in/product/" + product.slug, "priceCurrency": "INR", "price": product.price, "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" }, "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "43" } });
@@ -67,6 +81,10 @@ export function productPage(product: Product, opts: {
 .atc-btn{flex:1;padding:17px 24px;background:var(--bk);color:var(--wh);border:none;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:all .3s var(--ease)}.atc-btn:hover{background:var(--g600);transform:translateY(-1px)}.atc-btn:disabled{background:var(--g300);cursor:not-allowed;transform:none}
 .bn-btn{flex:1;padding:17px 24px;background:var(--wh);color:var(--bk);border:2px solid var(--bk);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:all .3s var(--ease)}.bn-btn:hover{background:var(--bk);color:var(--wh)}.bn-btn:disabled{opacity:.5;cursor:not-allowed}
 .wl-btn{width:50px;height:50px;border:1.5px solid var(--g200);background:none;border-radius:4px;font-size:16px;transition:all .2s;display:flex;align-items:center;justify-content:center}.wl-btn:hover{border-color:var(--bk)}.wl-btn.act{color:var(--red);border-color:var(--red)}
+.trust-row{display:flex;justify-content:space-between;padding:16px 0;border-top:1.5px solid var(--g50);margin-top:24px;gap:8px}
+.trust-item{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;text-align:center}
+.trust-item i{font-size:16px;color:var(--bk)}
+.trust-item span{font-size:9px;font-weight:700;letter-spacing:1px;color:var(--g400);text-transform:uppercase}
 .sc-info{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--g400);margin-bottom:24px;padding:10px 14px;background:var(--g50);border-radius:6px;line-height:1.5}
 .sc-info .tip{position:relative;cursor:help}
 .sc-info .tip .tiptext{visibility:hidden;width:260px;background:var(--bk);color:var(--wh);padding:12px 16px;border-radius:6px;font-size:11px;line-height:1.6;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);z-index:10;box-shadow:0 4px 20px rgba(0,0,0,.3);pointer-events:none;opacity:0;transition:opacity .2s}
@@ -97,6 +115,10 @@ export function productPage(product: Product, opts: {
 .pcprice .cmp{font-size:12px;color:var(--g300);text-decoration:line-through}
 @media(max-width:900px){.pdpl{grid-template-columns:1fr;gap:28px}.gal{position:static}.ggrid{display:none}.gcar{display:block}.relgrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.relgrid{grid-template-columns:1fr;max-width:380px;margin:40px auto 0}.pactions{flex-direction:column}}
+.pc-stock{display:block;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-top:8px}
+.pc-stock.low{color:#f59e0b}
+.pc-stock.crit{color:var(--red);animation:pulseTimer 2s infinite}
+.sold-out-badge{display:inline-flex;align-items:center;gap:8px;background:var(--bk);color:var(--wh);border-radius:6px;padding:10px 16px;margin-bottom:20px;font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
 </style>
 
 <div class="pdp">
@@ -128,6 +150,7 @@ ${product.comparePrice ? '<span class="pcmp">' + STORE_CONFIG.currencySymbol + p
 ${disc > 0 ? '<span class="psave">' + disc + '% OFF</span>' : ''}
 </div>
 <div class="dispatch-badge"><i class="fas fa-rocket"></i> Fast Dispatch: Orders processed within 36 hours</div>
+${stockHtml}
 <p class="pdesc">${product.description}</p>
 <hr class="pdiv">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
@@ -152,9 +175,19 @@ ${storeSettings.SIZE_GUIDE_ENABLED !== 'false' ? `<div id="sgModal" style="posit
 </div>
 </div>` : ''}
 <div class="pactions">
+${totalStock > 0 ? `
 <button class="atc-btn" id="atcBtn" onclick="handleATC()"><i class="fas fa-shopping-bag" style="margin-right:8px"></i>Add to Bag</button>
 <button class="bn-btn" id="bnBtn" onclick="handleBuyNow()"><i class="fas fa-bolt" style="margin-right:8px"></i>Buy Now</button>
+` : `
+<button class="atc-btn" style="background:var(--g300);cursor:not-allowed" disabled>SOLD OUT</button>
+<button class="bn-btn" onclick="openIdentify()">NOTIFY ME</button>
+`}
 <button class="wl-btn" onclick="this.classList.toggle('act');this.querySelector('i').classList.toggle('fas');this.querySelector('i').classList.toggle('far')"><i class="far fa-heart"></i></button>
+</div>
+<div class="trust-row anim">
+  <div class="trust-item"><i class="fas fa-truck-fast"></i> <span>FREE SHIPPING</span></div>
+  <div class="trust-item"><i class="fas fa-ban"></i> <span>NO RESTOCKS</span></div>
+  <div class="trust-item"><i class="fas fa-bolt"></i> <span>36H DISPATCH</span></div>
 </div>
 <div class="sc-info">
 <i class="fas fa-info-circle"></i>
@@ -278,9 +311,12 @@ function openSizeGuide(){
 function closeSizeGuide(){document.getElementById('sgModal').style.display='none';document.body.style.overflow=''}
 </script>`;
 
+  const seoTitle = product.seoTitle || (product.name + ' — INTRU.IN | ' + STORE_CONFIG.currencySymbol + product.price.toLocaleString('en-IN'));
+  const seoDesc = product.seoDescription || (product.description.substring(0, 155) + '...');
+
   return shell(
-    product.name + ' — INTRU.IN | ' + STORE_CONFIG.currencySymbol + product.price.toLocaleString('en-IN'),
-    product.description.substring(0, 155) + '...',
+    seoTitle,
+    seoDesc,
     body,
     { og: product.images[0], url: 'https://intru.in/product/' + product.slug, schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: !!opts.useMagicCheckout, maintenanceConfig: opts.maintenanceConfig, storeSettings: opts.storeSettings }
   );
