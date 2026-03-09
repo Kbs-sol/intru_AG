@@ -14,12 +14,14 @@ export function stylistPage(opts: {
 <style>
   /* Phase 3: Immersive Layout - Hide global nav and footer */
   #nb, .ftr, .ftrbt { display: none !important; }
+  main { padding-top: 0 !important; height: 100dvh; display: flex; flex-direction: column; }
   body { background: var(--bk); margin: 0; padding: 0; overflow: hidden; }
 
   .adv-wrapper {
     display: flex;
     flex-direction: column;
-    height: 100vh; /* Full viewport height */
+    flex: 1;
+    width: 100%;
     max-width: 640px;
     margin: 0 auto;
     background: var(--g50);
