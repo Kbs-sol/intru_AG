@@ -287,7 +287,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <!-- Payment Mode Selector (only when NOT magic checkout) -->
 <div class="cmode" id="cmode" style="display:none;margin-top:8px">
 <div class="cmode-opt prepaid act" onclick="setPayMode('prepaid')" id="cm_prepaid">
-<span class="cmode-badge" style="background:#dcfce7;color:#166534">VIP TREATMENT: PRIORITY DISPATCH</span>
+<span class="cmode-badge" style="background:#dcfce7;color:#166534">PRIORITY DISPATCH</span>
 <span class="cmode-label">Prepaid</span>
 <span class="cmode-price" style="color:var(--green);font-weight:700">FREE Shipping</span>
 <div class="prepaid-perk" id="prepaidPerk" style="display:block">⚡ Skip the queue. We ship prepaid orders first.</div>
