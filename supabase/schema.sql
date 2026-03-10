@@ -1,13 +1,13 @@
--- intru.in Supabase Schema (v12 — Psychological Conversion)
+-- intru.in Supabase Schema (v14 — Cashfree COD + OTP + RTO)
 -- Run this in Supabase SQL Editor: Dashboard > SQL Editor
 --
 -- SAFE TO RE-RUN: Uses IF NOT EXISTS / IF EXISTS everywhere
 -- Handles both fresh installs AND migrations from previous versions
 --
--- v12 changes:
--- - Added stock_count and total_units to products (FOMO counters)
--- - Added FOMO_THRESHOLD_LOW and FOMO_THRESHOLD_CRITICAL settings
--- - Added stock_count input field guidance for admin
+-- v14 changes:
+-- - Added cod_otp_sessions table (Cashfree OTP verification sessions)
+-- - Added cf_order_id, cf_payment_id, cod_mode columns to orders
+-- - Added COD_MODE store setting (manual | cashfree)
 -- =============================================================
 
 
@@ -190,6 +190,9 @@ CREATE TABLE IF NOT EXISTS orders (
   razorpay_order_id TEXT UNIQUE,
   razorpay_payment_id TEXT,
   razorpay_signature TEXT,
+  cashfree_order_id TEXT,          -- Cashfree order ID (CF-COD-...)
+  cashfree_payment_id TEXT,         -- Cashfree payment ID after success
+  cod_mode TEXT DEFAULT 'manual',   -- 'manual' | 'cashfree'
   customer_name TEXT,
   customer_email TEXT,
   customer_phone TEXT,
@@ -245,6 +248,22 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='rto_risk_level') THEN
     ALTER TABLE orders ADD COLUMN rto_risk_level TEXT DEFAULT 'unknown';
   END IF;
+  -- Add COD management columns to orders table
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='cod_masked') THEN
+    ALTER TABLE orders ADD COLUMN cod_masked BOOLEAN DEFAULT FALSE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='cod_upfront_type') THEN
+    ALTER TABLE orders ADD COLUMN cod_upfront_type TEXT DEFAULT 'none'; -- 'none', 'partial', 'full'
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='cod_upfront_amount') THEN
+    ALTER TABLE orders ADD COLUMN cod_upfront_amount NUMERIC DEFAULT 0; -- flat amount in INR
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='cod_upfront_percent') THEN
+    ALTER TABLE orders ADD COLUMN cod_upfront_percent NUMERIC DEFAULT 0; -- percentage of total
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='cod_risk_score') THEN
+    ALTER TABLE orders ADD COLUMN cod_risk_score INTEGER; -- store RTO risk score for analytics
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='shipping_address_line1') THEN
     ALTER TABLE orders ADD COLUMN shipping_address_line1 TEXT;
   END IF;
@@ -298,6 +317,16 @@ BEGIN
     EXCEPTION WHEN duplicate_object THEN NULL;
     END;
   END IF;
+  -- Cashfree columns (v13)
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='cashfree_order_id') THEN
+    ALTER TABLE orders ADD COLUMN cashfree_order_id TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='cashfree_payment_id') THEN
+    ALTER TABLE orders ADD COLUMN cashfree_payment_id TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='cod_mode') THEN
+    ALTER TABLE orders ADD COLUMN cod_mode TEXT DEFAULT 'manual';
+  END IF;
 END $$;
 
 -- FIX: If the constraint already exists but is missing 'placed', drop and recreate
@@ -307,6 +336,7 @@ END $$;
 --   CHECK (status IN ('pending','placed','paid','payment_failed','processing','shipped','delivered','cancelled','refunded'));
 
 CREATE INDEX IF NOT EXISTS idx_orders_razorpay_order_id ON orders(razorpay_order_id);
+CREATE INDEX IF NOT EXISTS idx_orders_cashfree_order_id ON orders(cashfree_order_id);
 CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
@@ -420,6 +450,24 @@ CREATE INDEX IF NOT EXISTS idx_instagram_feed_sort ON instagram_feed(sort_order)
 
 
 -- =============================================================
+-- 10. COD OTP SESSIONS TABLE (v14 — Cashfree OTP verification)
+-- Stores temporary OTP session state for COD orders.
+-- Sessions logically expire after 15 minutes (enforced in API).
+-- Lifecycle: created on send-otp → updated to verified=true on verify-otp
+--            → DELETED after COD order placed (one-time use only)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS cod_otp_sessions (
+  id         UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+  phone      TEXT        NOT NULL,
+  verified   BOOLEAN     DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Fast lookup by phone (called on every COD checkout attempt)
+CREATE INDEX IF NOT EXISTS idx_cod_otp_sessions_phone ON cod_otp_sessions(phone);
+
+
+-- =============================================================
 -- ROW LEVEL SECURITY (RLS)
 -- =============================================================
 
@@ -432,6 +480,7 @@ ALTER TABLE size_chart ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscribers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE store_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE instagram_feed ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cod_otp_sessions ENABLE ROW LEVEL SECURITY;
 
 -- Drop old policies
 DROP POLICY IF EXISTS "Products are viewable by everyone" ON products;
@@ -488,6 +537,12 @@ CREATE POLICY "Service role has full access to users" ON users FOR ALL USING (au
 -- SUBSCRIBERS
 CREATE POLICY "Service role has full access to subscribers" ON subscribers FOR ALL USING (auth.role() = 'service_role');
 
+-- COD OTP SESSIONS (service role only — backend uses SUPABASE_SERVICE_KEY)
+DROP POLICY IF EXISTS "Service role full access" ON cod_otp_sessions;
+CREATE POLICY "Service role full access" ON cod_otp_sessions
+  FOR ALL USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
 
 -- =============================================================
 -- SEED DATA: Size Chart (XS-L)
@@ -508,11 +563,17 @@ INSERT INTO store_settings (key, value) VALUES
   ('USE_MAGIC_CHECKOUT', 'false'),
   ('MANAGER_EMAIL', 'shop@intru.in'),
   ('COD_FEE', '99'),
+  ('COD_MODE', 'manual'),
   ('INSTAGRAM_FEED_ENABLED', 'true'),
   ('SIZE_GUIDE_ENABLED', 'true'),
   ('FOMO_THRESHOLD_LOW', '10'),
   ('FOMO_THRESHOLD_CRITICAL', '3')
 ON CONFLICT (key) DO NOTHING;
+
+-- Store settings for COD fee configuration
+INSERT INTO store_settings (key, value) VALUES ('COD_UPFRONT_MODE', 'none') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+INSERT INTO store_settings (key, value) VALUES ('COD_UPFRONT_VALUE', '0') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+INSERT INTO store_settings (key, value) VALUES ('COD_UPFRONT_PERCENT', '0') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
 
 -- =============================================================

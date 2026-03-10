@@ -211,6 +211,29 @@ export function adminPage(opts: {
 </div>
 </div>
 <div class="sett-card">
+<h4>COD Mode &mdash; RTO Guard</h4>
+<p>Choose how Cash on Delivery orders are verified to reduce Return-to-Origin (RTO) fraud.</p>
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+  <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;padding:12px;border:1.5px solid var(--g100);border-radius:6px;transition:border-color .2s" id="codModeManualCard">
+    <input type="radio" name="codMode" id="codModeManual" value="manual" onchange="setCodMode('manual')" style="margin-top:3px;flex-shrink:0">
+    <div>
+      <div style="font-size:13px;font-weight:700">Standard (No Fee Upfront)</div>
+      <div style="font-size:11px;color:var(--g500);margin-top:2px;line-height:1.5">Customer fills address form, confirms order via email link. Rs.99 COD fee collected on delivery. No spam filter &mdash; relies on trust.</div>
+    </div>
+  </label>
+  <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;padding:12px;border:1.5px solid var(--g100);border-radius:6px;transition:border-color .2s" id="codModeCashfreeCard">
+    <input type="radio" name="codMode" id="codModeCashfree" value="cashfree" onchange="setCodMode('cashfree')" style="margin-top:3px;flex-shrink:0">
+    <div>
+      <div style="font-size:13px;font-weight:700">Cashfree RTO Guard <span style="background:#dcfce7;color:#166534;font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;margin-left:6px;letter-spacing:.5px">RTO SHIELD</span></div>
+      <div style="font-size:11px;color:var(--g500);margin-top:2px;line-height:1.5">Customer pays Rs.COD_FEE upfront as a security deposit via Cashfree (UPI/Card). This proves real intent and eliminates fake/spam orders. Deposit is collected before we ship. Requires CASHFREE_APP_ID &amp; CASHFREE_SECRET_KEY in Cloudflare secrets.</div>
+    </div>
+  </label>
+</div>
+<div id="codModeCashfreeWarning" style="display:none;margin-top:10px;padding:10px 14px;background:#fef9c3;border:1px solid #fde047;border-radius:6px;font-size:11px;color:#713f12;line-height:1.6">
+  ⚠️ <strong>Cashfree RTO Guard is active.</strong> Customers must pay the COD service fee upfront via Cashfree before their order is confirmed. Make sure CASHFREE_APP_ID and CASHFREE_SECRET_KEY are set in Cloudflare Secrets, and CASHFREE_ENV is set to <code>production</code> for live orders.
+</div>
+</div>
+<div class="sett-card">
 <h4>Size Guide Visibility</h4>
 <p>Toggle the Size Guide button ON/OFF on product pages.</p>
 <div class="sett-toggle">
@@ -572,12 +595,29 @@ function loadSettings(){
     document.getElementById('settIgFeed').checked=s.INSTAGRAM_FEED_ENABLED!=='false';
     const settSizeGuide = document.getElementById('settSizeGuide');
     if (settSizeGuide) settSizeGuide.checked=s.SIZE_GUIDE_ENABLED!=='false';
+    // COD Mode
+    var codMode = s.COD_MODE || 'manual';
+    var radios = document.querySelectorAll('input[name="codMode"]');
+    radios.forEach(function(r){r.checked = r.value === codMode;});
+    updateCodModeUI(codMode);
     // Maintenance
     var mm=document.getElementById('settMaintMode'); if(mm) mm.value=s.MAINTENANCE_MODE||'off';
     var mMsg=document.getElementById('settMaintMsg'); if(mMsg) mMsg.value=s.MAINTENANCE_MESSAGE||'';
     var mEta=document.getElementById('settMaintEta'); if(mEta) mEta.value=s.MAINTENANCE_ETA||'';
     if(typeof updateMaintBadge === 'function') updateMaintBadge(s.MAINTENANCE_MODE||'off');
   }).catch(function(){});
+}
+function setCodMode(mode){
+  saveSetting('COD_MODE', mode);
+  updateCodModeUI(mode);
+}
+function updateCodModeUI(mode){
+  var warn = document.getElementById('codModeCashfreeWarning');
+  var manualCard = document.getElementById('codModeManualCard');
+  var cfCard = document.getElementById('codModeCashfreeCard');
+  if(warn) warn.style.display = mode === 'cashfree' ? 'block' : 'none';
+  if(manualCard) manualCard.style.borderColor = mode === 'manual' ? 'var(--bk)' : 'var(--g100)';
+  if(cfCard) cfCard.style.borderColor = mode === 'cashfree' ? 'var(--green)' : 'var(--g100)';
 }
 function saveSetting(key,val){
   fetch('/api/admin/settings/'+encodeURIComponent(key),{method:'PUT',headers:{'Content-Type':'application/json','x-admin-token':sessionStorage.getItem('iadm_t')},body:JSON.stringify({value:val})})
