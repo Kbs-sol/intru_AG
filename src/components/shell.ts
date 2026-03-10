@@ -56,7 +56,7 @@ export function shell(
     razorpayKeyId?: string; googleClientId?: string;
     products?: Product[];
     legalPages?: LegalPage[];
-    useMagicCheckout?: boolean;
+    useMagicCheckout: boolean;
     maintenanceConfig?: { mode?: string; message?: string; eta?: string };
     storeSettings?: Record<string, string>;
   }
@@ -74,8 +74,7 @@ export function shell(
   const mcEta = mc.eta || '';
 
   const pm = JSON.stringify(Object.fromEntries(products.map(p => [p.id, { id: p.id, n: p.name, s: p.slug, p: p.price, i: p.images, sz: p.sizes }])));
-  const codMode = opt?.storeSettings?.COD_MODE || 'manual';
-  const sj = JSON.stringify({ cs: STORE_CONFIG.currencySymbol, ft: STORE_CONFIG.freeShippingThreshold, sc: STORE_CONFIG.shippingCost, rk: rpKey, magic: useMagic, codMode: codMode });
+  const sj = JSON.stringify({ cs: STORE_CONFIG.currencySymbol, ft: STORE_CONFIG.freeShippingThreshold, sc: STORE_CONFIG.shippingCost, rk: rpKey, magic: useMagic });
 
   return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -910,7 +909,7 @@ function doPrepaidCheckout(){
   .then(function(data){
     if(data.error){throw new Error(data.error)}
     if(!data.razorpayOrderId){toast('Order: '+fmt(data.total)+'. Configure Razorpay.','err');resetBtn();return}
-    if(typeof Razorpay==='undefined'){toast('Payment SDK failed. Refresh.','err');fallbackToCashfreePrepaid();return}
+    if(typeof Razorpay==='undefined'){toast('Payment SDK failed. Refresh.','err');resetBtn();return}
     var options={key:S.rk,order_id:data.razorpayOrderId,name:'intru.in',
       prefill:{email:identifiedEmail,contact:localStorage.getItem('intru_user_phone')||''},
       theme:{color:'#0a0a0a',backdrop_color:'rgba(0,0,0,0.6)'},
@@ -925,67 +924,11 @@ function doPrepaidCheckout(){
         }).catch(function(e){toast('Error: '+e.message,'err')}).finally(function(){resetBtn()});
       }
     };
-    try{
-      var rzp=new Razorpay(options);
-      rzp.on('payment.failed',function(r){
-        console.error('Razorpay failed:',r);
-        fallbackToCashfreePrepaid();
-      });
-      rzp.open();
-    }catch(err){
-      console.error('Razorpay init failed:',err);
-      fallbackToCashfreePrepaid();
-    }
+    var rzp=new Razorpay(options);
+    rzp.on('payment.failed',function(r){toast('Payment failed: '+(r.error&&r.error.description||''),'err');resetBtn()});
+    rzp.open();
   }).catch(function(e){toast('Error: '+e.message,'err');resetBtn()});
 }
-
-function fallbackToCashfreePrepaid(){
-  toast('Retrying payment...','ok-green');
-  /* Lazy-load Cashfree SDK only when needed */
-  var cfEnvMode=S.codMode==='production'?'production':'sandbox';
-  var sdkUrl=cfEnvMode==='production'
-    ?'https://sdk.cashfree.com/js/ui/2.0.0/cashfree.prod.js'
-    :'https://sdk.cashfree.com/js/ui/2.0.0/cashfree.sandbox.js';
-
-  function openCfCheckout(data){
-    if(typeof Cashfree==='undefined'){toast('Payment system unavailable. Please try again.','err');resetBtn();return;}
-    var cashfree=Cashfree({mode:cfEnvMode});
-    cashfree.checkout({paymentSessionId:data.payment_session_id}).then(function(result){
-      if(result.error){toast('Payment failed. Please try again.','err');resetBtn();}
-      else if(result.paymentDetails||result.redirect){cart=[];saveCart();toggleCart();renderCart();showSuccessUI(data.orderId||data.order_id,'prepaid');}
-    }).catch(function(e){toast('Error: '+e.message,'err');resetBtn();});
-  }
-
-  function callCfPrepaid(){
-    fetch('/api/payment/prepaid/cashfree',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      items:cart.map(function(i){return{productId:i.p,size:i.s,quantity:i.q}}),
-      userEmail:identifiedEmail,userName:identifiedName,
-      userPhone:localStorage.getItem('intru_user_phone')||'',
-    })})
-    .then(function(r){return r.json()})
-    .then(function(d){
-      if(d.error){toast('Payment unavailable: '+d.error,'err');resetBtn();return}
-      openCfCheckout(d);
-    }).catch(function(e){toast('Error: '+e.message,'err');resetBtn();});
-  }
-
-  /* Only load SDK if not already loaded */
-  if(typeof Cashfree!=='undefined'){
-    callCfPrepaid();
-  } else {
-    var script=document.createElement('script');
-    script.src=sdkUrl;
-    script.onload=function(){callCfPrepaid();};
-    script.onerror=function(){toast('Payment system unavailable. Try again later.','err');resetBtn();};
-    document.head.appendChild(script);
-  }
-}
-
-/* ====== COD: 3-STEP OTP FLOW (Cashfree) ====== */
-/* State */
-var otpVerifiedPhone = ''; // set after OTP verify succeeds
-var otpRtoScore = 0;        // RTO score from Cashfree
-var otpCountdown = null;    // setInterval handle for resend timer
 
 function doCodCheckout(){
   var name=document.getElementById('cod_name').value.trim();
@@ -998,179 +941,25 @@ function doCodCheckout(){
   if(!/^[0-9]{10}$/.test(phone)){toast('Enter valid 10-digit phone','err');resetBtn();return}
   if(!/^[0-9]{6}$/.test(pincode)){toast('Enter valid 6-digit pincode','err');resetBtn();return}
 
-  /* Persistence */
-  localStorage.setItem('intru_name',name);localStorage.setItem('intru_phone',phone);
-  localStorage.setItem('intru_pincode',pincode);localStorage.setItem('intru_addr',addr);
-  localStorage.setItem('intru_city',city);localStorage.setItem('intru_state',state);
+  /* Persistence: Save to local storage [AG] */
+  localStorage.setItem('intru_name', name);
+  localStorage.setItem('intru_phone', phone);
+  localStorage.setItem('intru_pincode', pincode);
+  localStorage.setItem('intru_addr', addr);
+  localStorage.setItem('intru_city', city);
+  localStorage.setItem('intru_state', state);
 
-  var address={name:name,phone:phone,pincode:pincode,line1:addr,city:city,state:state,country:'India'};
-  var payload={
+  fetch('/api/checkout/cod',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     items:cart.map(function(i){return{productId:i.p,size:i.s,quantity:i.q}}),
-    userEmail:identifiedEmail,userName:name,userPhone:phone,address:address,
-    codMode:S.codMode,rtoScore:otpRtoScore,
-  };
-
-  if(S.codMode === 'cashfree'){
-    /* In Cashfree mode: OTP must be verified first */
-    if(otpVerifiedPhone !== phone){
-      toast('Please verify your phone number with OTP first.','err');
-      resetBtn();
-      showOtpPanel(phone);
-      return;
-    }
-    /* OTP verified — proceed to place order */
-    placeCodOrder(payload);
-  } else {
-    /* Standard manual COD */
-    placeCodOrder(payload);
-  }
-}
-
-function placeCodOrder(payload){
-  fetch('/api/checkout/cod',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    userEmail:identifiedEmail,userName:name,userPhone:phone,
+    address:{name:name,phone:phone,pincode:pincode,line1:addr,city:city,state:state,country:'India'}
+  })})
   .then(function(r){return r.json()})
   .then(function(d){
     if(d.success){cart=[];saveCart();toggleCart();renderCart();showSuccessUI(d.orderId,'cod')}
-    else if(d.error&&d.error.includes('OTP verification')){
-      toast('Session expired. Please verify OTP again.','err');
-      otpVerifiedPhone='';
-    } else{toast(d.error||'COD failed','err')}
+    else{toast(d.error||'COD failed','err')}
   }).catch(function(e){toast('Error: '+e.message,'err')})
   .finally(function(){resetBtn()});
-}
-
-function showOtpPanel(phone){
-  /* Show OTP verification panel in the cart drawer */
-  var existing=document.getElementById('otpPanel');
-  if(existing)existing.remove();
-  var codForm=document.getElementById('codForm');
-  if(!codForm)return;
-  var panel=document.createElement('div');
-  panel.id='otpPanel';
-  panel.style='background:#f0fdf4;border:1.5px solid #16a34a;border-radius:8px;padding:16px;margin-bottom:16px';
-  panel.innerHTML='"
-    <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#166534;margin-bottom:8px">📱 Phone Verification</div>'
-    +'<div style="font-size:12px;color:#374151;margin-bottom:12px">Verify your phone to prevent order fraud and protect your delivery.</div>'
-    +'<div style="display:flex;gap:8px;margin-bottom:10px">'
-    +'<input type="tel" id="otpPhoneInput" value="'+(phone||'')+'" placeholder="10-digit phone" style="flex:1;padding:10px 12px;border:1.5px solid #d1fae5;border-radius:6px;font-size:13px;font-family:inherit;outline:none" maxlength="10">'
-    +'<button onclick="sendCodOtp()" id="otpSendBtn" style="padding:10px 14px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;white-space:nowrap">SEND OTP</button>'
-    +'</div>'
-    +'<div id="otpEntryDiv" style="display:none">'
-    +'<div style="display:flex;gap:8px;margin-bottom:8px">'
-    +'<input type="text" id="otpInput" placeholder="6-digit OTP" maxlength="6" style="flex:1;padding:10px 12px;border:1.5px solid #d1fae5;border-radius:6px;font-size:18px;letter-spacing:6px;text-align:center;font-family:monospace;outline:none">'
-    +'<button onclick="verifyCodOtp()" id="otpVerifyBtn" style="padding:10px 14px;background:#0a0a0a;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer">VERIFY</button>'
-    +'</div>'
-    +'<div id="otpTimer" style="font-size:11px;color:#6b7280;text-align:center"></div>'
-    +'</div>';
-  // The inline '' trick avoids TS template literal issues; use string concat
-  panel.innerHTML = ''
-    +'<div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#166534;margin-bottom:8px">&#128241; Phone Verification</div>'
-    +'<div style="font-size:12px;color:#374151;margin-bottom:12px">Verify your phone to confirm delivery intent and prevent spam orders.</div>'
-    +'<div style="display:flex;gap:8px;margin-bottom:10px">'
-    +'<input type="tel" id="otpPhoneInput" placeholder="10-digit phone" value="'+(phone||'')+'"
-     style="flex:1;padding:10px 12px;border:1.5px solid #d1fae5;border-radius:6px;font-size:13px;font-family:inherit;outline:none" maxlength="10">'
-    +'<button onclick="sendCodOtp()" id="otpSendBtn" style="padding:10px 14px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;white-space:nowrap">SEND OTP</button>'
-    +'</div>'
-    +'<div id="otpEntryDiv" style="display:none">'
-    +'<div style="display:flex;gap:8px;margin-bottom:8px">'
-    +'<input type="text" id="otpInput" placeholder="6-digit OTP" maxlength="6" style="flex:1;padding:10px 12px;border:1.5px solid #d1fae5;border-radius:6px;font-size:18px;letter-spacing:6px;text-align:center;font-family:monospace;outline:none">'
-    +'<button onclick="verifyCodOtp()" id="otpVerifyBtn" style="padding:10px 14px;background:#0a0a0a;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer">VERIFY</button>'
-    +'</div>'
-    +'<div id="otpTimer" style="font-size:11px;color:#6b7280;text-align:center"></div>'
-    +'</div>';
-  codForm.insertAdjacentElement('beforebegin', panel);
-}
-
-function sendCodOtp(){
-  var phoneEl=document.getElementById('otpPhoneInput');
-  var sendBtn=document.getElementById('otpSendBtn');
-  if(!phoneEl||!sendBtn)return;
-  var phone=phoneEl.value.trim();
-  if(!/^[0-9]{10}$/.test(phone)){toast('Enter valid 10-digit phone','err');return}
-  sendBtn.disabled=true;sendBtn.textContent='SENDING...';
-  fetch('/api/payment/cod/send-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:phone})})
-  .then(function(r){return r.json()})
-  .then(function(d){
-    if(d.success){
-      toast(d.message||'OTP sent!','ok-green');
-      var entryDiv=document.getElementById('otpEntryDiv');
-      if(entryDiv)entryDiv.style.display='block';
-      sendBtn.textContent='RESEND OTP';
-      startOtpCountdown(60);
-    } else {
-      toast(d.error||'Failed to send OTP','err');
-      sendBtn.disabled=false;sendBtn.textContent='SEND OTP';
-    }
-  }).catch(function(e){
-    toast('Error: '+e.message,'err');
-    sendBtn.disabled=false;sendBtn.textContent='SEND OTP';
-  });
-}
-
-function startOtpCountdown(secs){
-  if(otpCountdown)clearInterval(otpCountdown);
-  var timerEl=document.getElementById('otpTimer');
-  var sendBtn=document.getElementById('otpSendBtn');
-  var remaining=secs;
-  if(timerEl)timerEl.textContent='Resend available in '+remaining+'s';
-  if(sendBtn)sendBtn.disabled=true;
-  otpCountdown=setInterval(function(){
-    remaining--;
-    if(timerEl)timerEl.textContent=remaining>0?'Resend available in '+remaining+'s':'';
-    if(remaining<=0){
-      clearInterval(otpCountdown);
-      if(sendBtn){sendBtn.disabled=false;}
-    }
-  },1000);
-}
-
-function verifyCodOtp(){
-  var phoneEl=document.getElementById('otpPhoneInput');
-  var otpEl=document.getElementById('otpInput');
-  var verifyBtn=document.getElementById('otpVerifyBtn');
-  if(!phoneEl||!otpEl||!verifyBtn)return;
-  var phone=phoneEl.value.trim();
-  var otp=otpEl.value.trim();
-  if(!otp||otp.length<6){toast('Enter the 6-digit OTP','err');return}
-  verifyBtn.disabled=true;verifyBtn.textContent='VERIFYING...';
-
-  var t=getCartTotals();
-  var pincode=(document.getElementById('cod_pincode')&&document.getElementById('cod_pincode').value.trim())||'500001';
-
-  fetch('/api/payment/cod/verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({phone:phone,otp:otp,orderAmount:t.total,pincode:pincode,email:identifiedEmail})})
-  .then(function(r){return r.json()})
-  .then(function(d){
-    if(d.verified){
-      otpRtoScore=d.rto_score||0;
-      if(d.cod_allowed){
-        otpVerifiedPhone=phone;
-        /* Remove OTP panel, show success indicator */
-        var panel=document.getElementById('otpPanel');
-        if(panel){
-          panel.style.borderColor='#16a34a';
-          panel.innerHTML='<div style="font-size:12px;font-weight:700;color:#166534">&#10003; Phone verified! Fill your address and place order.</div>';
-        }
-        toast('Phone verified! Fill address and place your order.','ok-green');
-      } else {
-        /* RTO score too high — COD blocked */
-        var panel=document.getElementById('otpPanel');
-        if(panel)panel.remove();
-        toast('COD unavailable for this delivery address. Please pay online.','err');
-        /* Auto-switch to prepaid */
-        setTimeout(function(){
-          setPayMode('prepaid');
-          doPrepaidCheckout();
-        }, 1500);
-      }
-    } else {
-      toast(d.error||'Invalid OTP. Try again.','err');
-      verifyBtn.disabled=false;verifyBtn.textContent='VERIFY';
-    }
-  }).catch(function(e){
-    toast('Error: '+e.message,'err');
-    verifyBtn.disabled=false;verifyBtn.textContent='VERIFY';
-  });
 }
 
 function doMagicCheckout(){
@@ -1221,8 +1010,8 @@ function showSuccessUI(orderId, type){
     html += '<p style="font-size:16px;opacity:0.8;margin-bottom:32px">Payment verified. Your pack is being prepared.</p>';
   } else {
     html += '<div style="width:64px;height:64px;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;opacity:0.6"><i class="fas fa-envelope" style="font-size:24px"></i></div>';
-    html += '<h2 style="font-family:Archivo Black;font-size:24px;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">' + (type === 'cod-cf' ? '✅ COD CONFIRMED' : 'ORDER RECEIVED') + '</h2>';
-    html += '<p style="font-size:14px;opacity:0.8;margin-bottom:32px;line-height:1.6">' + (type === 'cod-cf' ? 'Your COD verification fee was paid successfully.<br><strong style="color:#86efac">Your order is confirmed</strong> — we will ship it within 36 hours.' : 'Check your email now.<br><strong style="color:#fcd34d">Verify your order</strong> to move it into production.') + '</p>';
+    html += '<h2 style="font-family:Archivo Black;font-size:24px;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">ORDER RECEIVED</h2>';
+    html += '<p style="font-size:14px;opacity:0.8;margin-bottom:32px;line-height:1.6">Check your email now.<br><strong style="color:#fcd34d">Verify your order</strong> to move it into production.</p>';
   }
   
   html += '<div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;margin-bottom:32px;border:1px solid rgba(255,255,255,0.1)">';

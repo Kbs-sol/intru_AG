@@ -21,9 +21,6 @@ export interface Env {
   RAZORPAY_KEY_ID: string;
   RAZORPAY_KEY_SECRET: string;
   RAZORPAY_WEBHOOK_SECRET: string;
-  CASHFREE_APP_ID: string;
-  CASHFREE_SECRET_KEY: string;
-  CASHFREE_ENV: string;         // 'sandbox' | 'production'
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   SUPABASE_SERVICE_KEY: string;
@@ -673,42 +670,6 @@ export async function fetchStoreSetting(sbUrl: string, sbKey: string, key: strin
   } catch { return null; }
 }
 
-/**
- * Fetch COD fee configuration from store_settings.
- * Returns { mode, flat, percent } where mode is 'none' | 'partial' | 'full'.
- */
-export async function fetchCodConfig(sbUrl: string, sbKey: string): Promise<{ mode: string; flat: number; percent: number }> {
-  const mode = await fetchStoreSetting(sbUrl, sbKey, 'COD_UPFRONT_MODE') || 'none';
-  const flatStr = await fetchStoreSetting(sbUrl, sbKey, 'COD_UPFRONT_VALUE') || '0';
-  const percentStr = await fetchStoreSetting(sbUrl, sbKey, 'COD_UPFRONT_PERCENT') || '0';
-  return { mode, flat: Number(flatStr), percent: Number(percentStr) };
-}
-
-/**
- * Determine whether COD should be masked based on risk score.
- * Default threshold is 70 (configurable via store setting COD_MASKING_THRESHOLD if needed).
- */
-export function shouldMaskCod(riskScore: number, maskThreshold = 70): boolean {
-  return riskScore > maskThreshold;
-}
-
-/**
- * Compute the upfront COD fee based on configuration and order total.
- */
-export function computeCodUpfrontFee(config: { mode: string; flat: number; percent: number }, total: number): { type: string; amount: number } {
-  if (config.mode === 'full') {
-    return { type: 'full', amount: total };
-  }
-  if (config.mode === 'partial') {
-    const amount = config.flat > 0 ? config.flat : Math.round((config.percent / 100) * total);
-    return { type: 'partial', amount };
-  }
-  return { type: 'none', amount: 0 };
-}
-
-
-
-
 export async function fetchAllStoreSettings(sbUrl: string, sbKey: string): Promise<Record<string, string>> {
   if (!sbUrl || !sbKey) return {};
   try {
@@ -739,60 +700,6 @@ export async function fetchAllStoreSettings(sbUrl: string, sbKey: string): Promi
       return acc;
     }, {} as Record<string, string>);
   } catch { return {}; }
-}
-
-// ============ Cashfree helpers ============
-
-/**
- * Base Cashfree API caller — automatically uses sandbox or production base URL.
- * All Cashfree endpoints (OTP, RTO, PG orders) use this.
- */
-export async function cashfreeRequest(env: Env, path: string, body: object): Promise<any> {
-  const base = (env.CASHFREE_ENV === 'production')
-    ? 'https://api.cashfree.com'
-    : 'https://sandbox.cashfree.com';
-  try {
-    const res = await fetch(`${base}${path}`, {
-      method: 'POST',
-      headers: {
-        'x-client-id': env.CASHFREE_APP_ID,
-        'x-client-secret': env.CASHFREE_SECRET_KEY,
-        'Content-Type': 'application/json',
-        'x-api-version': '2023-08-01',
-      },
-      body: JSON.stringify(body),
-    });
-    return res.json();
-  } catch (e: any) {
-    throw new Error(`Cashfree API error (${path}): ${e.message}`);
-  }
-}
-
-/**
- * Cashfree RTO Intelligence check.
- * Returns { score: 0–100, allowed: boolean }
- * COD is blocked when score > 70.
- */
-export async function checkRTORisk(env: Env, params: {
-  orderAmount: number;
-  phone: string;
-  email: string;
-  pincode: string;
-}): Promise<{ score: number; allowed: boolean }> {
-  try {
-    const data = await cashfreeRequest(env, '/api/v2/ord/rto', {
-      order_amount: params.orderAmount,
-      customer_phone: params.phone.startsWith('91') ? params.phone : `91${params.phone}`,
-      customer_email: params.email || 'noreply@intru.in',
-      shipping_pincode: params.pincode,
-    });
-    const score = typeof data?.rto_risk_score === 'number' ? data.rto_risk_score : 0;
-    return { score, allowed: score <= 70 };
-  } catch (e: any) {
-    console.error('RTO check error:', e.message);
-    // On error: default to allowed (don't block customer due to API failure)
-    return { score: 0, allowed: true };
-  }
 }
 
 // ============ Image Upload helper ============
