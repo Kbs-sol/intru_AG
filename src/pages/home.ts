@@ -87,7 +87,7 @@ export function homePage(opts: {
 <section class="hero">
 <div class="noise"></div>
 <p class="hero-over anim">Est. 2025 &mdash; Premium Indian Streetwear</p>
-<h1 class="hero-title anim d1">LIMITED DROPS.<br>NO RESTOCKS.</h1>
+<h1 class="hero-title anim d1">LIMITED DROPS<br>NO RESTOCKS</h1>
 <p class="hero-sub anim d2">${STORE_CONFIG.description}</p>
 <div class="anim d3" style="margin-bottom:32px;font-size:10px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:var(--green)">⚡ 100% Cotton &bull; Oversized Fit &bull; Made in India</div>
 <a href="#products" class="hero-cta anim d4">Discover the Drop <i class="fas fa-arrow-right"></i></a>
