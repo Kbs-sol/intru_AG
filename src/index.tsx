@@ -363,6 +363,10 @@ app.post('/api/checkout', async (c) => {
       if (!item.size || !product.sizes.includes(item.size))
         return c.json({ error: `Size "${item.size}" not available for ${product.name}` }, 400);
 
+      // Zero-stock size protection: reject if sizeStock tracks this size as 0
+      if (product.sizeStock && product.sizeStock[item.size] !== undefined && product.sizeStock[item.size] <= 0)
+        return c.json({ error: `Size "${item.size}" is sold out for ${product.name}` }, 400);
+
       const qty = Math.max(1, Math.min(10, parseInt(item.quantity) || 1));
       const lineTotal = product.price * qty;
       subtotal += lineTotal;
@@ -457,6 +461,10 @@ app.post('/api/checkout/cod', async (c) => {
       if (!product.inStock) return c.json({ error: `${product.name} is out of stock` }, 400);
       if (!item.size || !product.sizes.includes(item.size))
         return c.json({ error: `Size "${item.size}" not available for ${product.name}` }, 400);
+
+      // Zero-stock size protection: reject if sizeStock tracks this size as 0
+      if (product.sizeStock && product.sizeStock[item.size] !== undefined && product.sizeStock[item.size] <= 0)
+        return c.json({ error: `Size "${item.size}" is sold out for ${product.name}` }, 400);
 
       const qty = Math.max(1, Math.min(10, parseInt(item.quantity) || 1));
       const lineTotal = product.price * qty;
@@ -1194,6 +1202,7 @@ app.post('/api/ai/chat', async (c) => {
 
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
+  const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
 
   // 1. Fetch AI Config from DB
   const [orKey, orModel, gqKey, gqModel, gmKey, sysPrompt] = await Promise.all([
@@ -1205,10 +1214,18 @@ app.post('/api/ai/chat', async (c) => {
     fetchStoreSetting(sbUrl, sbKey, 'AI_SYSTEM_PROMPT'),
   ]);
 
-  // 2. Build Context Aware Prompt
-  const productContext = SEED_PRODUCTS.map(p => `- ${p.name} (Rs.${p.price}): ${p.tagline}. Slug: ${p.slug}. Sizes: ${p.sizes.join(',')}`).join('\n');
-  const fullSystemPrompt = (sysPrompt || `You are the official INTRU.IN AI Stylist...`)
-    + `\n\nCORE BRAND INFO:\n- Store Name: ${STORE_CONFIG.name}\n- Style: Premium Streetwear, No Restocks, Limited Drops.\n- Current Inventory:\n${productContext}\n\nRULES:\n- Be stylish, helpful, and concise.\n- Always recommend specific products from the inventory above using the format [PRODUCT:slug].\n- STRICT RULE: You are a Stylist, NOT a developer or support agent. DO NOT answer technical questions, DO NOT accept bug reports, and DO NOT claim you can "pass it to the team".\n- If a user reports a bug or technical issue, APOLOGIZE and tell them to email shop@intru.in for technical support.`;
+  // 2. Fetch LIVE product catalog for context
+  const { products: liveProducts } = await fetchProducts(sbUrl, sbKey, sbAnon);
+  const productContext = liveProducts.map(p => {
+    const stockInfo = p.sizeStock ? Object.entries(p.sizeStock).map(([sz, qty]) => `${sz}:${qty}`).join(', ') : 'untracked';
+    const totalStock = p.stockCount ? Object.values(p.stockCount).reduce((a: number, b: number) => a + b, 0) : null;
+    const availability = !p.inStock ? 'SOLD OUT' : (totalStock !== null && totalStock <= 0 ? 'SOLD OUT' : 'In Stock');
+    return `- ${p.name} (Rs.${p.price}): ${p.tagline}. Slug: ${p.slug}. Sizes: ${p.sizes.join(',')}. Stock: ${stockInfo}. Status: ${availability}`;
+  }).join('\n');
+
+  // 3. Build Context Aware Prompt — use %%PRODUCT_CARD:slug%% markers
+  const fullSystemPrompt = (sysPrompt || `You are the official INTRU.IN AI Stylist — a premium streetwear advisor.`)
+    + `\n\nCORE BRAND INFO:\n- Store Name: ${STORE_CONFIG.name}\n- Style: Premium Streetwear, No Restocks, Limited Drops.\n- Current Live Inventory:\n${productContext}\n\nRULES:\n- Be stylish, helpful, and concise.\n- Always recommend specific products from the live inventory above.\n- When recommending a product, include the marker %%PRODUCT_CARD:slug%% on its own line (replace "slug" with the actual product slug).\n- STRICT RULE: You are a Stylist, NOT a developer or support agent. DO NOT answer technical questions.\n- If a user reports a bug, APOLOGIZE and tell them to email shop@intru.in for technical support.\n- Never recommend sold out products unless asked about them specifically.`;
 
   const payload = {
     model: orModel || 'google/gemini-2.0-flash-001',

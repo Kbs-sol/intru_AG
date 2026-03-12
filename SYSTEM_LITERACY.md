@@ -1,5 +1,5 @@
 # INTRU.IN — Full System Literacy & Architecture Reference
-**Version**: v13 | **Date**: March 9, 2026 | **Production**: https://intru-genz.pages.dev (staging for intru.in) [AG]
+**Version**: v14 | **Date**: March 12, 2026 | **Production**: https://intru-genz.pages.dev (staging for intru.in) [AG]
 
 > This document is designed to be read by manager of e-commerce website AND used as a context prompt for AI assistants. It contains everything needed to understand, debug, fix, or extend the intru.in codebase.
 
@@ -192,7 +192,8 @@ ALTER TABLE orders ADD CONSTRAINT orders_status_check
 | category | TEXT | 'T-Shirts', 'Shirts' |
 | in_stock | BOOLEAN | |
 | featured | BOOLEAN | |
-| stock_count | JSONB | Inventory per size e.g. {"S": 10} |
+| stock_count | JSONB | Inventory per size e.g. {"S": 10} for FOMO display |
+| size_stock | JSONB | Per-size stock gating {"S":10,"M":5,"L":0}. 0=disabled. |
 | seo_title | TEXT | Custom SEO Title |
 | seo_description | TEXT | Custom SEO Description |
 | updated_at | TIMESTAMPTZ | Automatic timestamp |
@@ -230,7 +231,7 @@ ALTER TABLE orders ADD CONSTRAINT orders_status_check
 
 #### Other Tables:
 - **`legal_pages`**: slug (PK), title, content (HTML), updated_at
-- **`size_chart`**: size_label (PK), chest, length, sort_order
+- **`size_chart`**: size_label (PK), chest, length, shoulder, sleeve, product_category, sort_order
 - **`subscribers`**: email (UNIQUE), source, subscribed_at
 - **`instagram_feed`**: image_url, link_url, caption, sort_order, active
 - **`store_credits`**: email, amount, reason, order_id
@@ -499,7 +500,7 @@ RESEND_API_KEY=re_xxx
 **Root Cause**: Legacy `keyCode` was unreliable; sequence reset on modifier keys (like Shift).
 **Fix**: Migrated to `e.key`, added `e.repeat` protection, and added a whitelist for modifier keys to prevent accidental resets during capital 'b' and 'a'.
 
-### Version 12+13 — Psychological Optimization & SEO Infrastructure [AG v12]
+### Version 12+13+14 — Psychological Optimization, SEO, & Stock Management [AG v14]
 **Enhancements (Conversion & Organic Traffic)**: 
 - **Psychological Conversion Engine**: Rebranded identity overlay as an exclusive "Secure Access" portal to increase opt-in velocity.
 - **Friction Elimination**: Injected "Trust Row" elements directly surrounding the buy buttons to neutralize hesitation.
@@ -507,6 +508,11 @@ RESEND_API_KEY=re_xxx
 - **Demand Capture**: Sold-out preservation logic with "Notify Me" capture.
 - **AI Salesperson Funnel**: Immersive "INTRU ADVISOR" chat with psychological pacing, Quick Reply chips, and massive "SECURE NOW" product anchors.
 - **SEO Infrastructure**: Zero-JS server rendering, dynamic `buildHead`, `robots.txt`, and automated `sitemap.xml` with automatic timestamps. Bulk SEO semantic keyword injection into the catalog.
+- **Per-Size Stock Management (v14)**: `size_stock` JSONB column tracks inventory per size. Sizes with stock=0 are greyed out on product pages and rejected server-side in checkout APIs.
+- **Zero-Stock Protection (v14)**: Frontend `addToCart()` guards against sold-out sizes. Both `/api/checkout` and `/api/checkout/cod` reject orders for zero-stock sizes.
+- **AI Stylist Live Catalog (v14)**: `/api/ai/chat` now fetches live products from Supabase (not static SEED_PRODUCTS), builds a dynamic catalog string, and injects it into the system prompt. Supports `%%PRODUCT_CARD:slug%%` markers for rich product card rendering.
+- **AI Product Cards (v14)**: `buildProductCard()` renders product cards with image, name, price, available sizes, stock badge, and CTA/sold-out state. Both shell.ts widget and stylist.ts full-page use the same rendering logic.
+- **New Quick-Action Chips (v14)**: "🔥 What's dropping now?", "📦 Help me pick a size", "🎁 Best gift under Rs.1,000".
 
 ---
 

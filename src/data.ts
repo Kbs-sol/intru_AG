@@ -8,6 +8,7 @@ export interface Product {
   id: string; slug: string; name: string; tagline: string; description: string;
   price: number; comparePrice?: number; currency: string; images: string[];
   sizes: string[]; category: string; inStock: boolean; featured: boolean;
+  sizeStock?: Record<string, number>;
   stockCount?: Record<string, number>;
   seoTitle?: string; seoDescription?: string;
   updatedAt?: string;
@@ -389,7 +390,8 @@ function mapDbProduct(row: any): Product {
     category: row.category || '',
     inStock: row.in_stock !== false,
     featured: row.featured === true,
-    stockCount: typeof row.stock_count === 'object' ? row.stock_count : (typeof row.stock_count === 'string' ? JSON.parse(row.stock_count) : {}),
+    sizeStock: typeof row.size_stock === 'object' && row.size_stock !== null ? row.size_stock : (typeof row.size_stock === 'string' ? JSON.parse(row.size_stock) : undefined),
+    stockCount: typeof row.stock_count === 'object' && row.stock_count !== null ? row.stock_count : (typeof row.stock_count === 'string' ? JSON.parse(row.stock_count) : {}),
     seoTitle: row.seo_title || '',
     seoDescription: row.seo_description || '',
     updatedAt: row.updated_at || '',

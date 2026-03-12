@@ -73,7 +73,7 @@ export function shell(
   const mcMsg = mc.message || '';
   const mcEta = mc.eta || '';
 
-  const pm = JSON.stringify(Object.fromEntries(products.map(p => [p.id, { id: p.id, n: p.name, s: p.slug, p: p.price, i: p.images, sz: p.sizes }])));
+  const pm = JSON.stringify(Object.fromEntries(products.map(p => [p.id, { id: p.id, n: p.name, s: p.slug, p: p.price, i: p.images, sz: p.sizes, ss: p.sizeStock || {} }])));
   const sj = JSON.stringify({ cs: STORE_CONFIG.currencySymbol, ft: STORE_CONFIG.freeShippingThreshold, sc: STORE_CONFIG.shippingCost, rk: rpKey, magic: useMagic });
 
   return `<!DOCTYPE html><html lang="en"><head>
@@ -667,6 +667,8 @@ function addToCart(productId,size,qty){
   if(!productId||!size){toast('Please select a size','err');return false}
   var p=PM[productId];if(!p){toast('Product not found','err');return false}
   if(p.sz&&p.sz.indexOf(size)===-1){toast('Invalid size selected','err');return false}
+  /* Zero-stock size guard */
+  if(p.ss&&p.ss[size]!==undefined&&p.ss[size]<=0){toast('Size '+size+' is sold out','err');return false}
   qty=qty||1;
   var existing=cart.find(function(i){return i.p===productId&&i.s===size});
   if(existing){if(existing.q+qty>10){toast('Max 10 per item','err');return false}existing.q+=qty}
@@ -844,17 +846,38 @@ function toggleAIChat(){
 
 function formatMsg(txt) {
   if (!txt) return '';
-  /* Convert [PRODUCT:slug] to card */
-  return txt.replace(/\\[PRODUCT:([a-z0-9-]+)\\]/g, function(match, slug) {
-    var p = window.STORE_PRODUCTS ? window.STORE_PRODUCTS.find(function(x) { return x.slug === slug; }) : null;
-    if (!p) return '<a href="/product/' + slug + '" style="color:var(--bk);font-weight:700;text-decoration:underline">View Product: ' + slug + '</a>';
-    return '<a href="/product/' + p.slug + '" style="display:block;background:var(--wh);border:1px solid rgba(0,0,0,.05);border-radius:8px;overflow:hidden;margin-top:8px;text-decoration:none;color:inherit">' +
-           '<div style="aspect-ratio:3/4;overflow:hidden;background:var(--g50)"><img src="' + p.images[0] + '" alt="' + p.name + '" style="width:100%;height:100%;object-fit:cover"></div>' +
-           '<div style="padding:10px">' +
-           '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">' + p.name + '</div>' +
-           '<div style="font-size:12px;font-weight:700;color:var(--bk)">Rs.' + p.price.toLocaleString('en-IN') + '</div>' +
-           '</div></a>';
+  /* Build product card from %%PRODUCT_CARD:slug%% markers */
+  txt = txt.replace(/%%PRODUCT_CARD:([a-z0-9-]+)%%/g, function(match, slug) {
+    return buildProductCard(slug);
   });
+  /* Also support legacy [PRODUCT:slug] format */
+  txt = txt.replace(/\\[PRODUCT:([a-z0-9-]+)\\]/g, function(match, slug) {
+    return buildProductCard(slug);
+  });
+  return txt;
+}
+function buildProductCard(slug) {
+  var p = window.STORE_PRODUCTS ? window.STORE_PRODUCTS.find(function(x) { return x.slug === slug; }) : null;
+  if (!p) return '<a href="/product/' + slug + '" style="color:var(--bk);font-weight:700;text-decoration:underline">View Product: ' + slug + '</a>';
+  var availSizes = (p.sizes || []).filter(function(sz) { return !p.sizeStock || p.sizeStock[sz] === undefined || p.sizeStock[sz] > 0; });
+  var totalStock = p.stockCount ? Object.values(p.stockCount).reduce(function(a,b){return a+b},0) : null;
+  var isSoldOut = !p.inStock || (totalStock !== null && totalStock <= 0);
+  var stockBadge = isSoldOut ? '<span style="background:var(--red);color:#fff;font-size:8px;font-weight:800;padding:3px 8px;border-radius:2px;letter-spacing:1px;text-transform:uppercase">SOLD OUT</span>'
+    : (totalStock !== null && totalStock <= 5 ? '<span style="background:#f59e0b;color:#fff;font-size:8px;font-weight:800;padding:3px 8px;border-radius:2px;letter-spacing:1px;text-transform:uppercase">Only ' + totalStock + ' left</span>' : '');
+  var sizesHtml = availSizes.length > 0 ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">' + availSizes.map(function(sz){return '<span style="padding:2px 8px;border:1px solid var(--g200);font-size:10px;font-weight:700;border-radius:2px">'+sz+'</span>'}).join('') + '</div>' : '';
+  var btnHtml = isSoldOut
+    ? '<div style="width:100%;padding:12px;background:var(--g200);color:var(--g400);text-align:center;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-radius:4px">SOLD OUT</div>'
+    : '<div style="width:100%;padding:12px;background:var(--bk);color:var(--wh);text-align:center;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-radius:4px;transition:background .2s">SECURE NOW →</div>';
+  return '<a href="/product/' + p.slug + '" style="display:block;background:var(--wh);border:1px solid rgba(0,0,0,.05);border-radius:8px;overflow:hidden;margin-top:8px;text-decoration:none;color:inherit;box-shadow:0 4px 12px rgba(0,0,0,.04)">'
+    + '<div style="aspect-ratio:4/5;overflow:hidden;background:var(--g50);position:relative"><img src="' + p.images[0] + '" alt="' + p.name + '" style="width:100%;height:100%;object-fit:cover">'
+    + (stockBadge ? '<div style="position:absolute;top:8px;left:8px">' + stockBadge + '</div>' : '')
+    + '</div>'
+    + '<div style="padding:12px">'
+    + '<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;font-family:var(--head)">' + p.name + '</div>'
+    + '<div style="font-size:13px;font-weight:700;color:var(--bk);margin-bottom:8px">Rs.' + p.price.toLocaleString('en-IN') + '</div>'
+    + sizesHtml
+    + btnHtml
+    + '</div></a>';
 }
 function renderAIChat(){
   var b=document.getElementById('aiBody');

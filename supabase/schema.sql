@@ -1,13 +1,16 @@
--- intru.in Supabase Schema (v12 — Psychological Conversion)
+-- intru.in Supabase Schema (v14 — Per-Size Stock, SEO Fields, Size Chart Expansion)
 -- Run this in Supabase SQL Editor: Dashboard > SQL Editor
 --
 -- SAFE TO RE-RUN: Uses IF NOT EXISTS / IF EXISTS everywhere
 -- Handles both fresh installs AND migrations from previous versions
 --
--- v12 changes:
--- - Added stock_count and total_units to products (FOMO counters)
--- - Added FOMO_THRESHOLD_LOW and FOMO_THRESHOLD_CRITICAL settings
--- - Added stock_count input field guidance for admin
+-- v14 changes:
+-- - Added size_stock JSONB to products (per-size inventory {"S":10,"M":5})
+-- - Changed stock_count to JSONB for per-size stock (was INTEGER)
+-- - Added seo_title and seo_description TEXT to products
+-- - Added shoulder, sleeve, product_category to size_chart
+-- - Added FOMO_THRESHOLD_LOW and FOMO_THRESHOLD_CRITICAL store_settings
+-- - SEO title/description for all 6 seed products
 -- =============================================================
 
 
@@ -134,26 +137,41 @@ CREATE TABLE IF NOT EXISTS products (
   sizes JSONB DEFAULT '[]'::jsonb,
   category TEXT,
   in_stock BOOLEAN DEFAULT true,
-  stock_count INTEGER DEFAULT NULL,
+  size_stock JSONB DEFAULT NULL,
+  stock_count JSONB DEFAULT NULL,
   total_units INTEGER DEFAULT NULL,
+  seo_title TEXT,
+  seo_description TEXT,
   featured BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Migration: add stock_count and total_units if missing
+-- Migration: add new columns if missing
 DO $$
 BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='size_stock') THEN
+    ALTER TABLE products ADD COLUMN size_stock JSONB DEFAULT NULL;
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='stock_count') THEN
-    ALTER TABLE products ADD COLUMN stock_count INTEGER DEFAULT NULL;
+    ALTER TABLE products ADD COLUMN stock_count JSONB DEFAULT NULL;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='total_units') THEN
     ALTER TABLE products ADD COLUMN total_units INTEGER DEFAULT NULL;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='seo_title') THEN
+    ALTER TABLE products ADD COLUMN seo_title TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='seo_description') THEN
+    ALTER TABLE products ADD COLUMN seo_description TEXT;
+  END IF;
 END $$;
 
-COMMENT ON COLUMN products.stock_count IS 'Current inventory count. NULL=untracked, 0=sold out, 1-10=FOMO logic.';
+COMMENT ON COLUMN products.size_stock IS 'Per-size inventory JSONB e.g. {"S":10,"M":5,"L":0}. NULL=untracked.';
+COMMENT ON COLUMN products.stock_count IS 'Per-size stock JSONB for FOMO counters. NULL=untracked, sums to total.';
 COMMENT ON COLUMN products.total_units IS 'Original drop quantity for "X/Y left" display.';
+COMMENT ON COLUMN products.seo_title IS 'Custom SEO title for product pages. NULL=auto-generated.';
+COMMENT ON COLUMN products.seo_description IS 'Custom SEO meta description. NULL=auto-generated.';
 
 DO $$
 BEGIN
@@ -366,6 +384,9 @@ CREATE TABLE IF NOT EXISTS size_chart (
   size_label TEXT PRIMARY KEY,
   chest NUMERIC NOT NULL,
   length NUMERIC NOT NULL,
+  shoulder NUMERIC,
+  sleeve NUMERIC,
+  product_category TEXT DEFAULT 'T-Shirts',
   sort_order INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -375,6 +396,15 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='size_chart' AND column_name='sort_order') THEN
     ALTER TABLE size_chart ADD COLUMN sort_order INTEGER DEFAULT 0;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='size_chart' AND column_name='shoulder') THEN
+    ALTER TABLE size_chart ADD COLUMN shoulder NUMERIC;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='size_chart' AND column_name='sleeve') THEN
+    ALTER TABLE size_chart ADD COLUMN sleeve NUMERIC;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='size_chart' AND column_name='product_category') THEN
+    ALTER TABLE size_chart ADD COLUMN product_category TEXT DEFAULT 'T-Shirts';
   END IF;
 END $$;
 
@@ -518,43 +548,56 @@ ON CONFLICT (key) DO NOTHING;
 -- =============================================================
 -- SEED DATA: Products (p1-p6)
 -- =============================================================
-INSERT INTO products (id, slug, name, tagline, description, price, compare_price, currency, images, sizes, category, in_stock, featured) VALUES
+INSERT INTO products (id, slug, name, tagline, description, price, compare_price, currency, images, sizes, category, in_stock, featured, seo_title, seo_description) VALUES
   ('p1', 'doodles-t-shirt', 'Doodles T-Shirt', 'Warmth and joy',
    'Playful doodle-art printed tee that radiates warmth. Crafted from premium cotton with puff-print detailing. Pre-shrunk, garment-dyed, and designed to feel like it was made just for you.',
    999, 1499, 'INR',
    '["https://intru.in/cdn/shop/files/3.png?v=1748692106&width=1946","https://intru.in/cdn/shop/files/3.png?v=1748692106&width=1000","https://intru.in/cdn/shop/files/3.png?v=1748692106&width=800","https://intru.in/cdn/shop/files/3.png?v=1748692106&width=600"]'::jsonb,
-   '["XS","S","M","L"]'::jsonb, 'T-Shirts', true, true),
+   '["S","M","L","XL","XXL"]'::jsonb, 'T-Shirts', true, true,
+   'Doodles T-Shirt — Limited Edition Puff-Print Streetwear | INTRU.IN',
+   'Shop the exclusive Doodles T-Shirt. Premium cotton, playful puff-print art, and an oversized fit. Limited drop, no restocks. Get yours at INTRU.IN.'),
   ('p2', 'no-risk-porsche', 'No Risk Porsche', 'Bold edge',
    'A statement tee for those who move without hesitation. Bold graphic print, premium cotton, and a fit that commands attention. No risk, no reward.',
    999, 1499, 'INR',
    '["https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=1920","https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=1000","https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=800","https://intru.in/cdn/shop/files/F51687B9-2BF2-43E0-988A-30272833B19E.jpg?v=1756359581&width=600"]'::jsonb,
-   '["XS","S","M","L"]'::jsonb, 'T-Shirts', true, true),
+   '["S","M","L","XL","XXL"]'::jsonb, 'T-Shirts', true, true,
+   'No Risk Porsche T-Shirt — Bold Graphic Oversized Tee | INTRU.IN',
+   'Elevate your streetwear with the No Risk Porsche tee. High-density graphic print on premium heavy cotton. Designed for those who move without hesitation.'),
   ('p3', 'orange-puff-printed-t-shirt', 'Orange Puff', 'Caffeine-core',
    'Orange puff-printed tee with a texture you can feel. Caffeine-core energy meets streetwear minimalism. Premium cotton, relaxed fit, limited run.',
    899, 1499, 'INR',
    '["https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=1445","https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=1000","https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=800","https://intru.in/cdn/shop/files/1_3de916a1-a217-41ee-9b2e-9e2c3130c4d6.png?v=1748190442&width=600"]'::jsonb,
-   '["XS","S","M","L"]'::jsonb, 'T-Shirts', true, true),
+   '["S","M","L","XL"]'::jsonb, 'T-Shirts', true, true,
+   'Orange Puff Printed T-Shirt — Caffeine-Core Streetwear | INTRU.IN',
+   'Feel the texture with our Orange Puff Printed Tee. Relaxed fit, premium comfort, and vibrant caffeine-core energy. A streetwear essential from INTRU.IN.'),
   ('p4', 'romanticise-crop-tee', 'Romanticise Crop', 'Breezy ease',
    'Cropped silhouette meets everyday comfort. Soft cotton, clean cut, and an effortless vibe. Designed over two months because we refused to rush perfection.',
    699, 999, 'INR',
    '["https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=1946","https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=1000","https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=800","https://intru.in/cdn/shop/files/4_f2aa413e-6e91-49bd-8f16-2efd41b4d6ea.png?v=1748190572&width=600"]'::jsonb,
-   '["XS","S","M","L"]'::jsonb, 'T-Shirts', true, true),
+   '["XS","S","M","L"]'::jsonb, 'T-Shirts', true, true,
+   'Romanticise Crop Tee — Premium Cotton Cropped Streetwear | INTRU.IN',
+   'Effortless breezy style meets streetwear. The Romanticise Crop Tee features soft cotton and a perfect relaxed silhouette. Limited edition, never restocked.'),
   ('p5', 'stripe-18-shirt', 'Stripe 18 Shirt', 'Cool tones',
    'Cool-toned striped shirt with a structured collar and relaxed body. Premium woven fabric, mother-of-pearl buttons, and a fit that bridges casual and smart.',
    1099, 1699, 'INR',
    '["https://intru.in/cdn/shop/files/99.png?v=1748173436&width=1946","https://intru.in/cdn/shop/files/99.png?v=1748173436&width=1000","https://intru.in/cdn/shop/files/99.png?v=1748173436&width=800","https://intru.in/cdn/shop/files/99.png?v=1748173436&width=600"]'::jsonb,
-   '["XS","S","M","L"]'::jsonb, 'Shirts', true, true),
+   '["S","M","L","XL","XXL"]'::jsonb, 'Shirts', true, true,
+   'Stripe 18 Shirt — Structured Woven Streetwear | INTRU.IN',
+   'Cool-toned and structured. The Stripe 18 Shirt features premium woven fabric and mother-of-pearl buttons. The perfect smart-casual layer for any fit.'),
   ('p6', 'summer-shirt', 'Summer Shirt', 'Sunshine staple',
    'Your go-to summer layer. Lightweight, breathable, and effortlessly styled. Made for golden-hour walks and spontaneous weekend plans.',
    999, 1599, 'INR',
    '["https://intru.in/cdn/shop/files/03.png?v=1756359941&width=1946","https://intru.in/cdn/shop/files/03.png?v=1756359941&width=1000","https://intru.in/cdn/shop/files/03.png?v=1756359941&width=800","https://intru.in/cdn/shop/files/03.png?v=1756359941&width=600"]'::jsonb,
-   '["XS","S","M","L"]'::jsonb, 'Shirts', true, true)
+   '["S","M","L","XL"]'::jsonb, 'Shirts', true, true,
+   'Summer Shirt — Lightweight & Breathable Layer | INTRU.IN',
+   'The ultimate sunshine staple. Lightweight, breathable, and designed for golden-hour vibes. Shop our limited-run Summer Shirt at INTRU.IN.')
 ON CONFLICT (id) DO UPDATE SET
   slug = EXCLUDED.slug, name = EXCLUDED.name, tagline = EXCLUDED.tagline,
   description = EXCLUDED.description, price = EXCLUDED.price,
   compare_price = EXCLUDED.compare_price, images = EXCLUDED.images,
   sizes = EXCLUDED.sizes, category = EXCLUDED.category,
-  in_stock = EXCLUDED.in_stock, featured = EXCLUDED.featured;
+  in_stock = EXCLUDED.in_stock, featured = EXCLUDED.featured,
+  seo_title = EXCLUDED.seo_title, seo_description = EXCLUDED.seo_description;
 
 
 -- =============================================================

@@ -250,9 +250,9 @@ export function stylistPage(opts: {
   <div class="chat-messages" id="chatMsgs"></div>
 
   <div class="quick-chips" id="quickChips">
-    <button class="q-chip" onclick="sendStylistMsg('What is selling out fast?')">🔥 Trending Drops</button>
-    <button class="q-chip" onclick="sendStylistMsg('Show me oversized tees')">👕 Oversized Tees</button>
-    <button class="q-chip" onclick="sendStylistMsg('Do you have anything in Black?')">🖤 Black Fits</button>
+    <button class="q-chip" onclick="sendStylistMsg('What\\'s dropping now?')">🔥 What's dropping now?</button>
+    <button class="q-chip" onclick="sendStylistMsg('Help me pick a size')">📦 Help me pick a size</button>
+    <button class="q-chip" onclick="sendStylistMsg('Best gift under Rs.1,000')">🎁 Best gift under Rs.1,000</button>
   </div>
 
   <div class="chat-input-area">
@@ -294,20 +294,35 @@ export function stylistPage(opts: {
     txt = txt.replace(/[*]{2}(.*?)[*]{2}/g, '<b>$1</b>');
     txt = txt.replace(/_(.*?)_/g, '<i>$1</i>');
 
-    return txt.replace(/\\[PRODUCT:([a-z0-9-]+)\\]/g, function(match, slug) {
-      var p = window.STORE_PRODUCTS ? window.STORE_PRODUCTS.find(x => x.slug === slug) : null;
-      if (!p) return '<a href="/product/' + slug + '" style="color:var(--bk);font-weight:700;text-decoration:underline">View Product: ' + slug + '</a>';
-      return '<a href="/product/' + p.slug + '" class="ai-pcard">' +
-             '<div class="ai-pimg">' +
-             '<span class="ai-pbadge">Fast Selling</span>' +
-             '<img src="' + p.images[0] + '" alt="' + p.name + '">' +
-             '</div>' +
-             '<div class="ai-pinfo">' +
-             '<div class="ai-pname">' + p.name + '</div>' +
-             '<div class="ai-pprice">Rs.' + p.price.toLocaleString(\'en-IN\') + '</div>' +
-             '<div class="ai-pbtn">Secure Now</div>' +
-             '</div></a>';
+    /* Handle %%PRODUCT_CARD:slug%% markers */
+    txt = txt.replace(/%%PRODUCT_CARD:([a-z0-9-]+)%%/g, function(match, slug) {
+      return buildStylistCard(slug);
     });
+    /* Also handle legacy [PRODUCT:slug] format */
+    txt = txt.replace(/\\[PRODUCT:([a-z0-9-]+)\\]/g, function(match, slug) {
+      return buildStylistCard(slug);
+    });
+    return txt;
+  }
+  function buildStylistCard(slug) {
+    var p = window.STORE_PRODUCTS ? window.STORE_PRODUCTS.find(x => x.slug === slug) : null;
+    if (!p) return '<a href="/product/' + slug + '" style="color:var(--bk);font-weight:700;text-decoration:underline">View Product: ' + slug + '</a>';
+    var availSizes = (p.sizes || []).filter(function(sz) { return !p.sizeStock || p.sizeStock[sz] === undefined || p.sizeStock[sz] > 0; });
+    var totalStock = p.stockCount ? Object.values(p.stockCount).reduce(function(a,b){return a+b},0) : null;
+    var isSoldOut = !p.inStock || (totalStock !== null && totalStock <= 0);
+    var stockBadge = isSoldOut ? 'SOLD OUT' : (totalStock !== null && totalStock <= 5 ? 'Only ' + totalStock + ' left' : 'Fast Selling');
+    var sizesHtml = availSizes.length > 0 ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">' + availSizes.map(function(sz){return '<span style="padding:2px 8px;border:1px solid var(--g200);font-size:10px;font-weight:700;border-radius:2px">'+sz+'</span>'}).join('') + '</div>' : '';
+    return '<a href="/product/' + p.slug + '" class="ai-pcard">' +
+           '<div class="ai-pimg">' +
+           '<span class="ai-pbadge">' + stockBadge + '</span>' +
+           '<img src="' + p.images[0] + '" alt="' + p.name + '">' +
+           '</div>' +
+           '<div class="ai-pinfo">' +
+           '<div class="ai-pname">' + p.name + '</div>' +
+           '<div class="ai-pprice">Rs.' + p.price.toLocaleString('en-IN') + '</div>' +
+           sizesHtml +
+           '<div class="ai-pbtn">' + (isSoldOut ? 'SOLD OUT' : 'Secure Now') + '</div>' +
+           '</div></a>';
   }
 
   function sendStylistMsg(textParam) {

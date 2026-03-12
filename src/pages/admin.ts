@@ -14,7 +14,7 @@ export function adminPage(opts: {
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline,
     price: p.price, comparePrice: p.comparePrice,
     images: p.images, sizes: p.sizes, inStock: p.inStock,
-    stockCount: p.stockCount, seoTitle: p.seoTitle, seoDescription: p.seoDescription
+    sizeStock: p.sizeStock, stockCount: p.stockCount, seoTitle: p.seoTitle, seoDescription: p.seoDescription
   })));
   const lj = JSON.stringify(legalPages.map(l => ({
     slug: l.slug, title: l.title, content: l.content, updatedAt: l.updatedAt
@@ -460,15 +460,17 @@ function loadProducts(){
 function renderProdCards(){
   var h='';prods.forEach(function(p,idx){
     var imgs=p.images||[];while(imgs.length<4)imgs.push('');
+    var sizeStockStr = JSON.stringify(p.sizeStock || {}, null, 2);
     var stockStr = JSON.stringify(p.stockCount || {}, null, 2);
     h+='<div class="apc"><h3>'+p.name+' <span style="font-size:10px;color:var(--g400);font-weight:400">'+p.id+'</span></h3>';
     h+='<div class="apc-imgs">';for(var i=0;i<4;i++){h+='<div><img src="'+(imgs[i]||'')+'" alt="" id="pimg_'+idx+'_'+i+'" onerror="this.src=\\x27\\x27"><input value="'+(imgs[i]||'')+'" onchange="updImg('+idx+','+i+',this.value)" placeholder="Image '+(i+1)+'"></div>'}h+='</div>';
     h+='<div class="apc-row"><div style="flex:1"><label>Name</label><input value="'+p.name+'" id="pname_'+idx+'"></div></div>';
     h+='<div class="apc-row"><div style="flex:1"><label>Price</label><input type="number" value="'+p.price+'" id="pprice_'+idx+'"></div><div style="flex:1"><label>Compare</label><input type="number" value="'+(p.comparePrice||'')+'" id="pcmp_'+idx+'"></div></div>';
+    h+='<div class="apc-row"><div style="flex:1"><label>Per-Size Stock (JSON: {"S":10, "M":5, "L":0})</label><textarea id="psizestock_'+idx+'" style="width:100%;height:60px;font-family:monospace;font-size:11px;padding:8px;border:1.5px solid var(--g200);border-radius:3px">'+sizeStockStr+'</textarea></div></div>';
+    h+='<div class="apc-row"><div style="flex:1"><label>Total Stock Count (JSON: {"S":10, "M":5})</label><textarea id="pstockobj_'+idx+'" style="width:100%;height:60px;font-family:monospace;font-size:11px;padding:8px;border:1.5px solid var(--g200);border-radius:3px">'+stockStr+'</textarea></div></div>';
     h+='<details style="margin:16px 0;border:1px solid var(--g200);padding:12px;border-radius:4px"><summary style="cursor:pointer;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--g500)">SEO (Optional)</summary>';
     h+='<div style="margin-top:12px"><div class="apc-row"><div style="flex:1"><label>SEO Title <span style="font-size:10px;color:var(--g400)">(Leave blank to auto-generate)</span></label><input value="'+(p.seoTitle||'')+'" id="pseotitle_'+idx+'"></div></div>';
     h+='<div class="apc-row"><div style="flex:1"><label>SEO Description <span style="font-size:10px;color:var(--g400)">(Leave blank to auto-generate)</span></label><input value="'+(p.seoDescription||'')+'" id="pseodesc_'+idx+'"></div></div></div></details>';
-    h+='<div class="apc-row"><div style="flex:1"><label>Stock Count (JSON: {"S":10, "M":5})</label><textarea id="pstockobj_'+idx+'" style="width:100%;height:60px;font-family:monospace;font-size:11px;padding:8px;border:1.5px solid var(--g200);border-radius:3px">'+stockStr+'</textarea></div></div>';
     h+='<div class="atog"><input type="checkbox" id="pstock_'+idx+'" '+(p.inStock!==false?'checked':'')+' ><span>Active/In Stock</span></div>';
     h+='<button class="asave" onclick="saveProd('+idx+')">Save Product</button></div>';
   });document.getElementById('apcards').innerHTML=h;
@@ -478,9 +480,10 @@ function saveProd(idx){
   var p=prods[idx];var name=document.getElementById('pname_'+idx).value;var price=parseInt(document.getElementById('pprice_'+idx).value)||p.price;
   var cmp=parseInt(document.getElementById('pcmp_'+idx).value)||null;var inStock=document.getElementById('pstock_'+idx).checked;
   var seoTitle=document.getElementById('pseotitle_'+idx).value;var seoDesc=document.getElementById('pseodesc_'+idx).value;
+  var sizeStockObj={};try{sizeStockObj=JSON.parse(document.getElementById('psizestock_'+idx).value)}catch(e){toast('Invalid Size Stock JSON','err');return}
   var stockObj={};try{stockObj=JSON.parse(document.getElementById('pstockobj_'+idx).value)}catch(e){toast('Invalid Stock JSON','err');return}
   var imgs=(p.images||[]).filter(function(u){return u&&u.trim()});
-  fetch('/api/admin/products/'+p.id,{method:'PATCH',headers:{'Content-Type':'application/json','x-admin-token':sessionStorage.getItem('iadm_t')},body:JSON.stringify({name:name,price:price,compare_price:cmp,in_stock:inStock,images:imgs,seo_title:seoTitle,seo_description:seoDesc,stock_count:stockObj})})
+  fetch('/api/admin/products/'+p.id,{method:'PATCH',headers:{'Content-Type':'application/json','x-admin-token':sessionStorage.getItem('iadm_t')},body:JSON.stringify({name:name,price:price,compare_price:cmp,in_stock:inStock,images:imgs,seo_title:seoTitle,seo_description:seoDesc,size_stock:sizeStockObj,stock_count:stockObj})})
   .then(function(r){return r.json()}).then(function(d){if(d.success){toast('"'+name+'" saved','ok-green')}else{toast(d.error||'Failed','err')}}).catch(function(e){toast('Error: '+e.message,'err')});
 }
 

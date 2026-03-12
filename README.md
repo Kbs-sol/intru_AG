@@ -4,7 +4,7 @@
 - **Name**: intru.in
 - **Goal**: Engineered for High Organic Traffic (SEO) and High Conversion (using deep direct-response psychology)
 - **Stack**: Hono + TypeScript + Cloudflare Pages + Supabase + Razorpay + Resend
-- **Version**: v13 (Date: March 12, 2026) — Conversion & SEO Optimization Complete
+- **Version**: v14 (Date: March 12, 2026) — Per-Size Stock, AI Stylist Live Catalog, Zero-Stock Protection
 
 ## URLs
 - **Production**: https://intru-genz.pages.dev (staging) → https://intru.in (custom domain pending)
@@ -75,7 +75,7 @@ Beyond conversion, intru.in is engineered for aggressive organic search dominanc
 | Table | Purpose |
 |-------|---------|
 | `users` | Synced from Supabase Auth; stores email, name, picture, auth_provider |
-| `products` | Product catalog + SEO fields (seo_title, seo_description) + stock_count JSONB |
+| `products` | Product catalog + SEO fields (seo_title, seo_description) + size_stock JSONB (per-size inventory) + stock_count JSONB (FOMO display) |
 | `orders` | Full order data: customer_phone, customer_email, items JSON, shipping_address JSON, payment_method, cod_fee, status |
 | `store_credits` | Store credit ledger |
 | `legal_pages` | Dynamic legal content (terms, returns, privacy, shipping) |
@@ -91,7 +91,7 @@ Beyond conversion, intru.in is engineered for aggressive organic search dominanc
 | Tab | Features |
 |-----|----------|
 | **Orders** | COD rows highlighted yellow, customer name/phone/email, payment method badge, "Copy for Shiprocket" button |
-| **Products** | Image URL editor (4 slots), price/compare-price, in-stock toggle |
+| **Products** | Image URL editor (4 slots), price/compare-price, in-stock toggle, per-size stock editor (size_stock JSON), total stock (stock_count JSON), collapsible SEO section |
 | **Legal** | HTML editor with live preview for all legal pages |
 | **Size Chart** | Full CRUD for chest/length measurements |
 | **IG Feed** | ON/OFF toggle (hides homepage section when OFF), add/edit/delete images, instant UI updates |
@@ -219,7 +219,7 @@ npx wrangler pages secret put RAZORPAY_WEBHOOK_SECRET --project-name intru-in
 ## Deployment
 - **Platform**: Cloudflare Pages
 - **Status**: ✅ Active
-- **Last Updated**: 2026-03-12 (v13) — Complete Conversion & SEO Overhaul: Cart redesign (B&W only, no red), FOMO counters, per-size stock gating, per-product size charts, sold-out preservation pages, SEO fields in admin.
+- **Last Updated**: 2026-03-12 (v14) — Per-size stock management (size_stock JSONB), zero-stock size protection (UI + server-side), AI Stylist live catalog with %%PRODUCT_CARD%% rendering, new quick-action chips, admin per-size stock editor, schema v14 migration.
 
 ## Full System Documentation
 
