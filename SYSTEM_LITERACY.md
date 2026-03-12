@@ -399,9 +399,9 @@ RESEND_API_KEY=re_xxx
 - Fonts: Archivo Black (headings), Space Grotesk (body)
 
 ### Cart System (in-memory + localStorage):
-- Cart stored as `ic` in localStorage: `[{p: "p1", s: "M", q: 1}]`
-- Product data pre-loaded as `PM` object (id → {name, slug, price, images, sizes})
-- Cart totals recalculated on every render
+- **Cart Architecture**: Uses a flexbox-based side-drawer. The `.cbdy` (body) has `min-height: 0` and `overflow-y: auto` to ensure scrolling, while `.cftr` (footer) has `flex-shrink: 0` to remain sticky at the bottom, ensuring the checkout CTA is always visible even when the COD form expands.
+- **Cart Logic**: Stored as `ic` in localStorage: `[{p: "p1", s: "M", q: 1}]`. Product data pre-loaded as `PM` object. Totals recalculated on every render.
+- **Conversion Psychology**: Features dynamic progress bars, trust-injected icons, and VIP prepaid badges.
 
 ### Important JS Variables (in shell.ts):
 | Variable | Type | Purpose |

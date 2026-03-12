@@ -4,7 +4,7 @@
 - **Name**: intru.in
 - **Goal**: Engineered for High Organic Traffic (SEO) and High Conversion (using deep direct-response psychology)
 - **Stack**: Hono + TypeScript + Cloudflare Pages + Supabase + Razorpay + Resend
-- **Version**: v14 (Date: March 12, 2026) — Per-Size Stock, AI Stylist Live Catalog, Zero-Stock Protection
+- **Version**: v14.1 (Date: March 13, 2026) — Cart Layout Fixes, Sticky Footer, UI Enhancements
 
 ## URLs
 - **Production**: https://intru-genz.pages.dev (staging) → https://intru.in (custom domain pending)
@@ -216,10 +216,20 @@ npx wrangler pages secret put RAZORPAY_WEBHOOK_SECRET --project-name intru-in
 - **Footer Links**: "Returns & Credit" → "Exchanges"
 - **Cart Legal**: "Store-Credit-only Refund Policy" → "Exchange Policy"
 
+## v14 Changes (March 12, 2026)
+- **AI Stylist Live Catalog**: The AI assistant now knows exactly what is in stock and provides deep-links to products.
+- **Per-Size Stock Gating**: Server-side and client-side protection against overselling sizes.
+
+## v14.1 Changes (March 13, 2026)
+### Cart Layout & Checkout Visibility Fix
+- **Sticky Footer Fix**: Implemented `min-height: 0` on `.cbdy` and `flex-shrink: 0` on `.cftr` to ensure the checkout button never gets pushed out of view when the COD address form expands.
+- **Cart UI Enhancement**: Visual progress bar for free shipping and iconic trust row.
+- **COD Visibility**: Fixed high-contrast input styling for light-mode cart.
+
 ## Deployment
 - **Platform**: Cloudflare Pages
 - **Status**: ✅ Active
-- **Last Updated**: 2026-03-12 (v14) — Per-size stock management (size_stock JSONB), zero-stock size protection (UI + server-side), AI Stylist live catalog with %%PRODUCT_CARD%% rendering, new quick-action chips, admin per-size stock editor, schema v14 migration.
+- **Last Updated**: 2026-03-13 (v14.1) — Cart layout fixes, sticky footer, and UI enhancements.
 
 ## Full System Documentation
 
