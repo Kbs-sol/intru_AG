@@ -744,7 +744,7 @@ function setPayMode(mode){
   }
   if(btnText) btnText.textContent = mode==='cod' ? 'Place Your Order →' : 'Secure Your Drop →';
   
-  renderCart(); // Re-render to show/hide the form inside the scrollable body
+  var codForm=document.getElementById('codForm');   if(codForm){codForm.style.display=mode==='cod'?'block':'none';}   renderCartTotals();
 }
 
 function applyPayMode(mode){
