@@ -399,7 +399,9 @@ RESEND_API_KEY=re_xxx
 - Fonts: Archivo Black (headings), Space Grotesk (body)
 
 ### Cart System (in-memory + localStorage):
-- **Cart Architecture**: Uses a flexbox-based side-drawer. The `.cbdy` (body) has `min-height: 0` and `overflow-y: auto` to ensure scrolling, while `.cftr` (footer) has `flex-shrink: 0` to remain sticky at the bottom, ensuring the checkout CTA is always visible even when the COD form expands.
+- **Cart Architecture**: Uses a flexbox-based side-drawer. The `.cbdy` (body) has `min-height: 0` and `overflow-y: auto` to ensure scrolling. 
+- **Sticky Footer & Visibility**: The `.cftr` (footer) is ultra-compact (padding reduced by 50%) and uses `flex-shrink: 0` to remain sticky. The COD Address Form is moved INSIDE the scrollable `.cbdy` to ensure input fields are visible even on small screens without being obscured by the checkout button.
+- **Data Persistence**: Address fields in the cart are auto-populated from `localStorage` (`intru_name`, `intru_phone`, etc.) to reduce friction.
 - **Cart Logic**: Stored as `ic` in localStorage: `[{p: "p1", s: "M", q: 1}]`. Product data pre-loaded as `PM` object. Totals recalculated on every render.
 - **Conversion Psychology**: Features dynamic progress bars, trust-injected icons, and VIP prepaid badges.
 

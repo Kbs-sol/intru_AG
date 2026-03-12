@@ -160,11 +160,11 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .ai-tooltip::after{content:'';position:absolute;bottom:-6px;right:25px;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid var(--bk)}
 @media(max-width:480px){.ai-pop{width:calc(100vw - 32px);height:440px;bottom:64px;right:-8px}}
 .covl{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s}.covl.open{opacity:1;pointer-events:all}
-.cdrw{position:fixed;top:0;right:0;bottom:0;z-index:201;width:440px;max-width:100vw;background:rgba(255,255,255,.8);backdrop-filter:blur(32px);transform:translateX(100%);transition:transform .5s var(--eo);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.15)}.cdrw.open{transform:translateX(0)}
+.cdrw{position:fixed;top:0;right:0;bottom:0;z-index:201;width:440px;max-width:100vw;background:var(--wh);transform:translateX(100%);transition:transform .5s var(--eo);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.15)}.cdrw.open{transform:translateX(0)}
 .chdr{display:flex;align-items:center;justify-content:space-between;padding:24px 32px;border-bottom:1px solid rgba(0,0,0,.04)}
 .chdr h3{font-family:var(--head);font-size:13px;letter-spacing:3px;text-transform:uppercase}
 .ccls{background:none;border:none;font-size:20px;color:var(--g400);padding:8px;transition:color .2s}.ccls:hover{color:var(--bk)}
-.cbdy{flex:1;overflow-y:auto;padding:16px 24px;min-height:0}
+.cbdy{flex:1;overflow-y:auto;padding:16px 24px;min-height:0;display:flex;flex-direction:column}
 .cemp{text-align:center;padding:60px 0;color:var(--g400)}.cemp i{font-size:40px;margin-bottom:16px;display:block}
 .citm{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--g100)}
 .cimg{width:76px;height:95px;object-fit:cover;border-radius:6px;background:var(--g50)}
@@ -172,36 +172,25 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .cqty{display:flex;align-items:center;gap:10px;margin-top:6px}
 .qb{width:26px;height:26px;border:1px solid var(--g200);background:none;border-radius:3px;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .2s}.qb:hover{background:var(--bk);color:var(--wh);border-color:var(--bk)}
 .crm{background:none;border:none;color:var(--g300);font-size:11px;margin-top:4px;padding:0;transition:color .2s;text-transform:uppercase;letter-spacing:.5px}.crm:hover{color:var(--red)}
-.cftr{padding:20px 24px;border-top:1px solid var(--g100);background:var(--g50);flex-shrink:0}
-.cst{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
-.csh{display:flex;justify-content:space-between;font-size:11px;color:var(--g400);margin-bottom:12px}
-.ctl{display:flex;justify-content:space-between;font-size:18px;font-weight:700;padding-top:12px;border-top:1px solid var(--g200)}
-/* Checkout mode selector - Step 6 Redesign */
-.cmode{display:flex;gap:12px;margin-bottom:14px;margin-top:20px}
-.cmode-opt{flex:1;padding:14px 12px;border:1.5px solid var(--g200);background:var(--wh);border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;position:relative;display:flex;flex-direction:column;gap:6px}
-.cmode-opt.act.prepaid{border-color:var(--bk);background:var(--bk);color:var(--wh)}
-.cmode-opt.act.cod{border-color:var(--bk);background:var(--wh);color:var(--bk)}
-.cmode-opt:not(.act){opacity:0.6}
-.cmode-opt:not(.act):hover{border-color:var(--g400);opacity:1}
-.cmode-badge{position:absolute;top:-8px;right:8px;font-family:var(--head);font-size:8px;font-weight:900;letter-spacing:1px;text-transform:uppercase;padding:4px 8px;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
-.cmode-opt.prepaid .cmode-badge{background:var(--green);color:#fff}
-.cmode-label{font-family:var(--head);font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;display:block}
-.cmode-line1{font-size:12px;font-weight:700;display:block}
-.cmode-line2{font-size:10px;opacity:0.7;display:block}
-.cmode-nudge{font-size:11px;font-weight:600;text-align:center;color:var(--g500);margin-top:6px;margin-bottom:14px;display:none;padding:8px;background:rgba(0,0,0,0.03);border-radius:4px}
-.cmode-nudge.show{display:block}
-.ccbtn{width:100%;margin-top:16px;padding:17px;background:#fafafa;color:#0a0a0a;border:none;font-family:var(--head);font-size:11px;font-weight:900;letter-spacing:4px;text-transform:uppercase;transition:all .3s;border-radius:0}.ccbtn:hover{opacity:0.9}.ccbtn:active{transform:scale(0.99)}.ccbtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
-.trust-row-cart{display:flex;align-items:center;justify-content:center;gap:8px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.22);padding:12px 0;border-top:1px solid rgba(255,255,255,0.07);border-bottom:1px solid rgba(255,255,255,0.07);margin:16px 0;flex-wrap:wrap}
-.trust-row-cart span:not([aria-hidden]){white-space:nowrap}
-.ccbtn{width:100%;margin-top:16px;padding:16px;background:var(--bk);color:var(--wh);border:none;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:all .3s}.ccbtn:hover{background:var(--g600);transform:translateY(-1px)}.ccbtn:disabled{background:var(--g300);cursor:not-allowed;transform:none}
-.cpolicy{font-size:10px;color:var(--g400);text-align:center;margin-top:12px;line-height:1.5}
+.cftr{padding:12px 20px;border-top:1px solid var(--g100);background:var(--wh);flex-shrink:0}
+.cst,.csh{font-size:11px;margin-bottom:2px}
+.ctl{font-size:14px;font-weight:700;padding-top:8px;border-top:1px solid var(--g100);margin-bottom:8px}
+.cmode{display:flex;gap:8px;margin-bottom:8px;margin-top:8px}
+.cmode-opt{flex:1;padding:8px;border:1px solid var(--g200);background:var(--wh);border-radius:4px;cursor:pointer;text-align:center;transition:all .2s;display:flex;flex-direction:column;gap:2px}
+.cmode-label{font-size:9px;font-weight:900;letter-spacing:1px;text-transform:uppercase}
+.cmode-line1{font-size:10px;font-weight:700}
+.cmode-line2{display:none}
+.cmode-nudge{font-size:10px;text-align:center;color:var(--g500);margin-bottom:8px;padding:4px;background:var(--g50);border-radius:2px;display:none}
+.trust-row-cart{display:none}
+.ccbtn{width:100%;padding:14px;background:var(--bk);color:var(--wh);border:none;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;transition:all .2s;border-radius:4px}
+.cpolicy{font-size:9px;color:var(--g400);text-align:center;margin-top:8px}
 .cpolicy a{text-decoration:underline}
 /* High-Conversion Psychology  */
 .cart-timer{background:#fff9eb;border:1px solid #ffecb3;padding:10px;margin:0 24px 16px;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;font-weight:700;color:#92400e;animation:pulseTimer 2s infinite}
 @keyframes pulseTimer{0%{opacity:1}50%{opacity:0.7}100%{opacity:1}}
 @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.cod-form{display:none;animation:slideIn 200ms ease forwards;margin-top:16px;padding:16px;background:rgba(0,0,0,0.03);border-radius:8px}
-.cod-form.show{display:block}
+.cod-form{display:none;margin-top:16px;padding:16px;background:rgba(0,0,0,0.03);border-radius:8px}
+.cod-form.show{display:flex !important;flex-direction:column;animation:slideIn 200ms ease forwards}
 .cod-inp-group{position:relative;margin-bottom:12px}
 .cod-inp{width:100%;padding:14px 12px;background:var(--wh);border:1px solid var(--g200);font-size:13px;color:var(--bk);font-family:inherit;outline:none;transition:all .2s;border-radius:4px}
 .cod-inp:focus{border-color:var(--bk);box-shadow:0 0 0 2px rgba(0,0,0,0.05)}
@@ -287,9 +276,21 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <div class="covl" id="co" onclick="closeAllDrawers()"></div>
 <div class="cdrw" id="cd">
 <div class="chdr"><h3>Your Bag</h3><button class="ccls" onclick="toggleCart()"><i class="fas fa-times"></i></button></div>
-<div class="cbdy" id="cby"><div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div></div>
-<div id="cartTimer" class="cart-timer" style="display:none"><i class="fas fa-clock"></i> <span>Cart reserved for <span id="timerClock">05:00</span> minutes</span></div>
-<div id="fsProgress" style="display:none;margin:0 24px 16px;padding:12px;background:var(--g50);border-radius:6px;text-align:center;font-size:11px;font-weight:700"></div>
+<div class="cbdy" id="cby">
+  <div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div>
+  <!-- COD Address Form moved INSIDE scrollable body -->
+  <div class="cod-form" id="codForm" style="display:none;margin-top:20px;padding:20px;background:var(--g50);border-radius:8px;border:1px solid var(--g100)">
+    <div style="font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;color:var(--bk)">Delivery Address</div>
+    <div class="cod-inp-group"><input class="cod-inp" id="cod_name" type="text" placeholder="Full Name" required></div>
+    <div class="cod-inp-group"><input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone Number" required pattern="[0-9]{10}"></div>
+    <div class="cod-inp-group"><input class="cod-inp" id="cod_addr" type="text" placeholder="Address (House No, Building, Street)" required></div>
+    <div class="cod-row">
+      <div class="cod-inp-group"><input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode" required pattern="[0-9]{6}"></div>
+      <div class="cod-inp-group"><input class="cod-inp" id="cod_city" type="text" placeholder="City" required></div>
+    </div>
+    <div class="cod-inp-group"><input class="cod-inp" id="cod_state" type="text" placeholder="State" required></div>
+  </div>
+</div>
 <div class="cftr" id="cf" style="display:none">
 <div class="cst"><span>Subtotal</span><span id="csub">${STORE_CONFIG.currencySymbol}0</span></div>
 <div class="csh"><span>Shipping</span><span id="cshp">Calculated</span></div>
@@ -309,18 +310,6 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 </div>
 </div>
 <div class="cmode-nudge" id="cmodeNudge"></div>
-<!-- COD Address Form -->
-<div class="cod-form" id="codForm">
-  <div style="font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;color:var(--g500)">Delivery Address</div>
-  <div class="cod-inp-group"><input class="cod-inp" id="cod_name" type="text" placeholder="Full Name" required></div>
-  <div class="cod-inp-group"><input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone Number" required pattern="[0-9]{10}"></div>
-  <div class="cod-inp-group"><input class="cod-inp" id="cod_addr" type="text" placeholder="Address (House No, Building, Street)" required></div>
-  <div class="cod-row">
-    <div class="cod-inp-group"><input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode" required pattern="[0-9]{6}"></div>
-    <div class="cod-inp-group"><input class="cod-inp" id="cod_city" type="text" placeholder="City" required></div>
-  </div>
-  <div class="cod-inp-group"><input class="cod-inp" id="cod_state" type="text" placeholder="State" required></div>
-</div>
 <!-- Trust Row -->
 <div class="trust-row-cart">
   <span>⚡ 3–5 Day Dispatch</span>
@@ -741,21 +730,21 @@ function startCartTimer(){
 
 function setPayMode(mode){
   payMode=mode;
-  document.getElementById('cm_prepaid').classList.toggle('act',mode==='prepaid');
-  document.getElementById('cm_cod').classList.toggle('act',mode==='cod');
-  var codForm = document.getElementById('codForm');
+  var p=document.getElementById('cm_prepaid');
+  var c=document.getElementById('cm_cod');
+  if(p)p.classList.toggle('act',mode==='prepaid');
+  if(c)c.classList.toggle('act',mode==='cod');
+  
   var nudge = document.getElementById('cmodeNudge');
   var btnText = document.getElementById('checkoutBtnText');
-  if(mode === 'cod') {
-    if(codForm) codForm.classList.add('show');
-    if(nudge) { nudge.classList.add('show'); nudge.textContent = 'Switch to Prepaid to save Rs.99 and ship faster'; }
-    if(btnText) btnText.textContent = 'Place Your Order →';
-  } else {
-    if(codForm) codForm.classList.remove('show');
-    if(nudge) { nudge.classList.add('show'); nudge.textContent = '⚡ Free shipping · Your order ships before COD batch'; }
-    if(btnText) btnText.textContent = 'Secure Your Drop →';
+  
+  if(nudge) {
+    nudge.classList.add('show');
+    nudge.textContent = mode==='cod' ? 'Switch to Prepaid to save Rs.99 and ship faster' : '⚡ Free shipping · Your order ships before COD batch';
   }
-  renderCartTotals();
+  if(btnText) btnText.textContent = mode==='cod' ? 'Place Your Order →' : 'Secure Your Drop →';
+  
+  renderCart(); // Re-render to show/hide the form inside the scrollable body
 }
 
 function applyPayMode(mode){
@@ -769,50 +758,41 @@ function renderCartTotals(){
   if(payMode==='cod'){shText='Rs.99 Shipping/COD Fee'}
   document.getElementById('cshp').textContent=shText||'Free';
   document.getElementById('ctot').textContent=fmt(t.total);
-
-  var fsp = document.getElementById('fsProgress');
-  if(fsp) {
-    if(t.subtotal === 0) {
-      fsp.style.display = 'none';
-    } else if (payMode === 'prepaid') {
-      fsp.style.display = 'block';
-      fsp.innerHTML = '<i class="fas fa-bolt" style="color:var(--green);margin-right:6px"></i><b>Dispatch Unlocked!</b> <span style="font-weight:500;color:var(--g500)">(Free Shipping)</span>';
-      fsp.style.background = '#dcfce7';
-      fsp.style.color = '#166534';
-      fsp.style.border = '1px solid #bbf7d0';
-    } else {
-      var threshold = S.ft || 1999;
-      var rem = threshold - t.subtotal;
-      fsp.style.display = 'block';
-      if(rem > 0) {
-        fsp.innerHTML = 'Add <span style="color:var(--red)">' + fmt(rem) + '</span> more for <b>FREE COD Delivery</b>';
-        fsp.style.background = 'var(--g50)';
-        fsp.style.color = 'var(--bk)';
-        fsp.style.border = '1px solid var(--g200)';
-      } else {
-        fsp.innerHTML = '<i class="fas fa-check-circle" style="color:var(--green);margin-right:6px"></i><b>FREE COD Delivery Unlocked!</b>';
-        fsp.style.background = '#dcfce7';
-        fsp.style.color = '#166534';
-        fsp.style.border = '1px solid #bbf7d0';
-      }
-    }
-  }
 }
 
 function renderCart(){
   var badge=document.getElementById('cb');var body=document.getElementById('cby');var footer=document.getElementById('cf');
   var count=cart.reduce(function(a,i){return a+i.q},0);
   badge.textContent=count;badge.classList.toggle('vis',count>0);
-  if(!cart.length){body.innerHTML='<div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div>';footer.style.display='none';return}
+  
+  if(!cart.length){
+    body.innerHTML='<div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div>';
+    footer.style.display='none';
+    return;
+  }
+  
   footer.style.display='block';
-  /* Show payment mode selector only if NOT magic checkout */
   document.getElementById('cmode').style.display=S.magic?'none':'flex';
-  if(S.magic){document.getElementById('codForm').classList.remove('show')}
+  
   var html='';
   cart.forEach(function(item){
     var p=PM[item.p];if(!p)return;
-    html+='<div class="citm"><img class="cimg" src="'+p.i[0]+'" alt="'+p.n+'"><div class="cinf"><div class="cnm">'+p.n+'</div><div class="cmt">Size: '+item.s+'</div><div class="cpr">'+fmt(p.p*item.q)+'</div><div class="cqty"><button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,-1)">&minus;</button><span>'+item.q+'</span><button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,1)">+</button></div><button class="crm" onclick="removeFromCart(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27)">Remove</button></div></div>';
+    html+='<div class="citm"><img class="cimg" src="'+p.i[0]+'" alt="'+p.n+'" style="width:50px;height:62px"><div class="cinf"><div class="cnm" style="font-size:11px">'+p.n+'</div><div class="cmt" style="font-size:9px">Size: '+item.s+'</div><div class="cpr" style="font-size:12px">'+fmt(p.p*item.q)+'</div><div class="cqty" style="margin-top:4px"><button class="qb" style="width:20px;height:20px" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,-1)">&minus;</button><span style="font-size:11px">'+item.q+'</span><button class="qb" style="width:20px;height:20px" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,1)">+</button></div></div></div>';
   });
+  
+  if(payMode==='cod'){
+    html += '<div class="cod-form" id="codForm" style="display:flex !important;flex-direction:column;margin-top:12px;padding:12px;background:var(--g50);border-radius:4px;border:1px solid var(--g100)">'
+      + '<div style="font-size:9px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;color:var(--bk)">Delivery Details</div>'
+      + '<input class="cod-inp" id="cod_name" type="text" placeholder="Name" value="'+(localStorage.getItem('intru_name')||'')+'" style="padding:10px;font-size:12px;margin-bottom:8px">'
+      + '<input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone" value="'+(localStorage.getItem('intru_phone')||'')+'" style="padding:10px;font-size:12px;margin-bottom:8px">'
+      + '<input class="cod-inp" id="cod_addr" type="text" placeholder="Address" value="'+(localStorage.getItem('intru_addr')||'')+'" style="padding:10px;font-size:12px;margin-bottom:8px">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+      + '<input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode" value="'+(localStorage.getItem('intru_pincode')||'')+'" style="padding:10px;font-size:12px">'
+      + '<input class="cod-inp" id="cod_city" type="text" placeholder="City" value="'+(localStorage.getItem('intru_city')||'')+'" style="padding:10px;font-size:12px">'
+      + '</div>'
+      + '</div>';
+  }
+    
   body.innerHTML=html;
   renderCartTotals();
 }

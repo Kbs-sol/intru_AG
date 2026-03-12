@@ -221,10 +221,12 @@ npx wrangler pages secret put RAZORPAY_WEBHOOK_SECRET --project-name intru-in
 - **Per-Size Stock Gating**: Server-side and client-side protection against overselling sizes.
 
 ## v14.1 Changes (March 13, 2026)
-### Cart Layout & Checkout Visibility Fix
-- **Sticky Footer Fix**: Implemented `min-height: 0` on `.cbdy` and `flex-shrink: 0` on `.cftr` to ensure the checkout button never gets pushed out of view when the COD address form expands.
-- **Cart UI Enhancement**: Visual progress bar for free shipping and iconic trust row.
-- **COD Visibility**: Fixed high-contrast input styling for light-mode cart.
+### v14.3 - Ultra-Compact Cart & Checkout Visibility Fix
+- **Sticky Footer Overhaul**: Drastically reduced footer height (50% reduction) and refined the primary checkout button to ensure maximum vertical space for address inputs.
+- **Scrollable COD Form**: Moved the COD Address Form into the scrollable cart body (`.cbdy`) to prevent it from being obscured by the checkout button on smaller screens.
+- **Simplified UI**: Removed the cart timer and free shipping progress bar to reduce visual noise and improve the checkout flow.
+- **Input Field Polish**: Optimized font sizes and paddings for mobile-first address entry.
+- **Documentation**: Updated `SYSTEM_LITERACY.md` to reflect the new sticky footer architecture.
 
 ## Deployment
 - **Platform**: Cloudflare Pages
