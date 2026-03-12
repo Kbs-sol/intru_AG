@@ -1,7 +1,7 @@
 import { STORE_CONFIG, type Product, type LegalPage, SEED_LEGAL_PAGES } from '../data'
 
 /**
- * Shell v6.1: Unified Checkout + Prepaid Free Shipping + Address Persistence [AG]
+ * Shell v6.1: Unified Checkout + Prepaid Free Shipping + Address Persistence 
  * - Unified Checkout: Buy Now & Checkout pull up payment selection
  * - Prepaid: ALWAYS FREE shipping + ⚡ SAVE Rs.99 nudge
  * - COD: Rs.99 Convenience/Shipping Fee
@@ -133,7 +133,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .pcbtns button{flex:1;padding:12px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;border:none;transition:all .2s}
 .pc-atc{background:var(--wh);color:var(--bk);border:1px solid var(--bk) !important}.pc-atc:hover{background:var(--g50)}
 .pc-bn{background:var(--bk);color:var(--wh)}.pc-bn:hover{background:var(--g600)}
-/* AI Stylist Widget [AG] */
+/* AI Stylist Widget  */
 .aiw{position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:16px;font-family:inherit}
 .ai-btn{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0a0a0a 0%,#2d2d2d 100%);color:var(--wh);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;box-shadow:0 8px 32px rgba(0,0,0,.3);transition:all .4s var(--eo);position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.1)}.ai-btn:hover{transform:scale(1.1) translateY(-4px);box-shadow:0 12px 48px rgba(0,0,0,.4)}
 .ai-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:translateX(-100%);animation:ai-shimmer 3s infinite}
@@ -178,16 +178,17 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .ctl{display:flex;justify-content:space-between;font-size:18px;font-weight:700;padding-top:12px;border-top:1px solid var(--g200)}
 /* Checkout mode selector - Step 6 Redesign */
 .cmode{display:flex;gap:12px;margin-bottom:14px;margin-top:20px}
-.cmode-opt{flex:1;padding:14px 12px;border:1px solid rgba(255,255,255,0.12);background:transparent;border-radius:0;cursor:pointer;text-align:center;transition:all .2s;position:relative;display:flex;flex-direction:column;gap:6px}
-.cmode-opt.act.prepaid{border-color:#fafafa;background:#fafafa;color:#0a0a0a}
-.cmode-opt.act.cod{border-color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.04);color:#fafafa}
-.cmode-opt:not(.act){border-color:rgba(255,255,255,0.12);background:transparent}
-.cmode-badge{position:absolute;top:8px;right:8px;font-family:var(--head);font-size:8px;font-weight:900;letter-spacing:2px;text-transform:uppercase;padding:4px 8px;border-radius:0}
-.cmode-opt.prepaid .cmode-badge{background:#0a0a0a;color:#fafafa}
-.cmode-label{font-family:var(--head);font-size:10px;font-weight:900;letter-spacing:3px;text-transform:uppercase;display:block}
+.cmode-opt{flex:1;padding:14px 12px;border:1.5px solid var(--g200);background:var(--wh);border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;position:relative;display:flex;flex-direction:column;gap:6px}
+.cmode-opt.act.prepaid{border-color:var(--bk);background:var(--bk);color:var(--wh)}
+.cmode-opt.act.cod{border-color:var(--bk);background:var(--wh);color:var(--bk)}
+.cmode-opt:not(.act){opacity:0.6}
+.cmode-opt:not(.act):hover{border-color:var(--g400);opacity:1}
+.cmode-badge{position:absolute;top:-8px;right:8px;font-family:var(--head);font-size:8px;font-weight:900;letter-spacing:1px;text-transform:uppercase;padding:4px 8px;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.cmode-opt.prepaid .cmode-badge{background:var(--green);color:#fff}
+.cmode-label{font-family:var(--head);font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;display:block}
 .cmode-line1{font-size:12px;font-weight:700;display:block}
-.cmode-line2{font-size:10px;opacity:0.6;display:block}
-.cmode-nudge{font-size:10px;text-align:center;color:rgba(255,255,255,0.22);margin-top:6px;margin-bottom:14px;display:none}
+.cmode-line2{font-size:10px;opacity:0.7;display:block}
+.cmode-nudge{font-size:11px;font-weight:600;text-align:center;color:var(--g500);margin-top:6px;margin-bottom:14px;display:none;padding:8px;background:rgba(0,0,0,0.03);border-radius:4px}
 .cmode-nudge.show{display:block}
 .ccbtn{width:100%;margin-top:16px;padding:17px;background:#fafafa;color:#0a0a0a;border:none;font-family:var(--head);font-size:11px;font-weight:900;letter-spacing:4px;text-transform:uppercase;transition:all .3s;border-radius:0}.ccbtn:hover{opacity:0.9}.ccbtn:active{transform:scale(0.99)}.ccbtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
 .trust-row-cart{display:flex;align-items:center;justify-content:center;gap:8px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.22);padding:12px 0;border-top:1px solid rgba(255,255,255,0.07);border-bottom:1px solid rgba(255,255,255,0.07);margin:16px 0;flex-wrap:wrap}
@@ -195,16 +196,17 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .ccbtn{width:100%;margin-top:16px;padding:16px;background:var(--bk);color:var(--wh);border:none;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:all .3s}.ccbtn:hover{background:var(--g600);transform:translateY(-1px)}.ccbtn:disabled{background:var(--g300);cursor:not-allowed;transform:none}
 .cpolicy{font-size:10px;color:var(--g400);text-align:center;margin-top:12px;line-height:1.5}
 .cpolicy a{text-decoration:underline}
-/* High-Conversion Psychology [AG] */
+/* High-Conversion Psychology  */
 .cart-timer{background:#fff9eb;border:1px solid #ffecb3;padding:10px;margin:0 24px 16px;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;font-weight:700;color:#92400e;animation:pulseTimer 2s infinite}
 @keyframes pulseTimer{0%{opacity:1}50%{opacity:0.7}100%{opacity:1}}
 @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.cod-form{display:none;animation:slideIn 200ms ease forwards}
+.cod-form{display:none;animation:slideIn 200ms ease forwards;margin-top:16px;padding:16px;background:rgba(0,0,0,0.03);border-radius:8px}
 .cod-form.show{display:block}
-.cod-inp{width:100%;padding:20px 12px 8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);font-size:12px;color:#fafafa;font-family:inherit;outline:none;margin-bottom:10px;transition:all .2s;border-radius:0;position:relative}
-.cod-inp:focus{border-color:rgba(255,255,255,0.35)}
-.cod-inp::placeholder{color:rgba(255,255,255,0.3);font-size:12px}
-.cod-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cod-inp-group{position:relative;margin-bottom:12px}
+.cod-inp{width:100%;padding:14px 12px;background:var(--wh);border:1px solid var(--g200);font-size:13px;color:var(--bk);font-family:inherit;outline:none;transition:all .2s;border-radius:4px}
+.cod-inp:focus{border-color:var(--bk);box-shadow:0 0 0 2px rgba(0,0,0,0.05)}
+.cod-inp::placeholder{color:var(--g300)}
+.cod-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 /* Silent Identity Overlay */
 .id-ovl{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px}
 .id-ovl.open{display:flex}
@@ -263,7 +265,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
   <button class="nbtn" onclick="openIdentifyOrOrders()" id="navAccountBtn">Login</button>
   <button class="ncart" onclick="toggleCart()" aria-label="Cart Bag"><i class="fas fa-shopping-bag"></i><span class="cbadge" id="cb">0</span></button>
 </div></div></nav>
-<!-- Soft Maintenance Banner [AG] -->
+<!-- Soft Maintenance Banner  -->
 <div id="mntBanner" style="${mcMode === 'soft' ? 'display:flex;' : 'display:none;'}background:var(--bk);color:var(--wh);font-family:var(--sans);font-size:13px;align-items:center;justify-content:space-between;padding:12px 24px;width:100%;margin-top:72px;z-index:90;position:relative">
   <div style="display:flex;align-items:center;gap:12px">
     <span style="font-size:18px">🛠️</span>
@@ -309,14 +311,15 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <div class="cmode-nudge" id="cmodeNudge"></div>
 <!-- COD Address Form -->
 <div class="cod-form" id="codForm">
-<input class="cod-inp" id="cod_name" type="text" placeholder="Full Name" required>
-<input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone Number" required pattern="[0-9]{10}">
-<input class="cod-inp" id="cod_addr" type="text" placeholder="Address" required>
-<div class="cod-row">
-<input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode" required pattern="[0-9]{6}">
-<input class="cod-inp" id="cod_city" type="text" placeholder="City" required>
-</div>
-<input class="cod-inp" id="cod_state" type="text" placeholder="State" required>
+  <div style="font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;color:var(--g500)">Delivery Address</div>
+  <div class="cod-inp-group"><input class="cod-inp" id="cod_name" type="text" placeholder="Full Name" required></div>
+  <div class="cod-inp-group"><input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone Number" required pattern="[0-9]{10}"></div>
+  <div class="cod-inp-group"><input class="cod-inp" id="cod_addr" type="text" placeholder="Address (House No, Building, Street)" required></div>
+  <div class="cod-row">
+    <div class="cod-inp-group"><input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode" required pattern="[0-9]{6}"></div>
+    <div class="cod-inp-group"><input class="cod-inp" id="cod_city" type="text" placeholder="City" required></div>
+  </div>
+  <div class="cod-inp-group"><input class="cod-inp" id="cod_state" type="text" placeholder="State" required></div>
 </div>
 <!-- Trust Row -->
 <div class="trust-row-cart">
@@ -358,7 +361,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 </div>
 </div>
 
-<!-- Soft Maintenance Modal [AG] -->
+<!-- Soft Maintenance Modal  -->
 <div class="id-ovl${mcMode === 'soft' ? ' open' : ''}" id="mntOvl" style="z-index:9999">
   <div class="id-box">
     <h3 style="margin-bottom:12px;display:flex;align-items:center;gap:10px"><span style="font-size:24px">🔒</span> Upgrading the Wardrobe</h3>
@@ -402,7 +405,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <div class="fsoc"><a href="https://instagram.com/${STORE_CONFIG.instagram}" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a></div>
 </div></footer>
 
-<!-- AI Stylist Widget [AG] -->
+<!-- AI Stylist Widget  -->
 <div class="aiw" id="aiStylist">
   <div class="ai-cta" id="aiCta">
     <i class="fas fa-sparkles" style="color:#eab308"></i>
@@ -433,7 +436,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <div class="tc" id="tc"></div>
 ${gKey !== 'YOUR_GOOGLE_CLIENT_ID' ? '<script src="https://accounts.google.com/gsi/client" async defer></script><div id="g_id_onload" data-client_id="' + gKey + '" data-context="signin" data-ux_mode="popup" data-callback="handleGoogleAuth" data-itp_support="true" data-auto_select="false" data-auto_prompt="false"></div>' : '<!-- Google One-Tap: Set GOOGLE_CLIENT_ID env var to enable -->'}
 <script>
-/* ====== MAINTENANCE INJECTION [AG] — isolated to survive any other script errors ====== */
+/* ====== MAINTENANCE INJECTION  — isolated to survive any other script errors ====== */
 window.__MAINTENANCE__ = ${JSON.stringify(mc)};
 function mntAcknowledge() {
   sessionStorage.setItem('intru_maintenance_ack', '1');
@@ -676,7 +679,7 @@ function addToCart(productId,size,qty){
   saveCart();toast(p.n+' ('+size+') added to bag','ok');openCartDrawer();return true;
 }
 
-/* Quick Action Helpers [AG] */
+/* Quick Action Helpers  */
 var cardSizes={}; 
 function selectQuickSize(e,productId,size){
   e.preventDefault();e.stopPropagation();
@@ -712,7 +715,7 @@ function getCartTotals(){
 
 function fmt(n){return S.cs+n.toLocaleString('en-IN')}
 
-/* ====== HIGH-CONVERSION PSYCHOLOGY [AG] ====== */
+/* ====== HIGH-CONVERSION PSYCHOLOGY  ====== */
 var paySounds = {
   prepaid: new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTtvT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19v'),
   cod: new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTtvT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19v'),
@@ -824,7 +827,7 @@ function closeAllDrawers(){
   document.body.style.overflow='';
 }
 
-/* ====== AI STYLIST LOGIC [AG] ====== */
+/* ====== AI STYLIST LOGIC  ====== */
 var aiMsgs=JSON.parse(localStorage.getItem('ai_chat')||'[]');
 /* AI CTA Delay Logic */
 setTimeout(function(){
@@ -977,7 +980,7 @@ function doCodCheckout(){
   if(!/^[0-9]{10}$/.test(phone)){toast('Enter valid 10-digit phone','err');resetBtn();return}
   if(!/^[0-9]{6}$/.test(pincode)){toast('Enter valid 6-digit pincode','err');resetBtn();return}
 
-  /* Persistence: Save to local storage [AG] */
+  /* Persistence: Save to local storage  */
   localStorage.setItem('intru_name', name);
   localStorage.setItem('intru_phone', phone);
   localStorage.setItem('intru_pincode', pincode);
@@ -1030,7 +1033,7 @@ function doMagicCheckout(){
 
 function resetBtn(){var btn=document.getElementById('checkoutBtn');if(btn){btn.disabled=false;btn.textContent='CHECKOUT'}}
 
-/* ====== TIERED SUCCESS UI [AG] ====== */
+/* ====== TIERED SUCCESS UI  ====== */
 function showSuccessUI(orderId, type){
   var ovl=document.createElement('div');
   ovl.style='position:fixed;inset:0;z-index:999;background:rgba(10,10,10,0.95);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;color:#fff;animation:fadeIn 0.5s ease both';
