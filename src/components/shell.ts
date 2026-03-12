@@ -897,7 +897,7 @@ function checkout(){
   /* Silent Identity: if not identified, show overlay */
   if(!identifiedEmail){pendingCheckout=true;openIdentify();return}
   var btn=document.getElementById('checkoutBtn');
-  if(btn){btn.disabled=true;btn.textContent='CREATING ORDER...';}
+  if(btn){     btn.disabled=true;     var bspan=document.getElementById('checkoutBtnText');     if(bspan){bspan.textContent='Creating Order...';}else{btn.textContent='Creating Order...';}   }
   orderToastFired=false;
 
   /* If Magic Checkout is ON, always use Razorpay Magic flow */
@@ -1011,7 +1011,7 @@ function doMagicCheckout(){
   }).catch(function(e){toast('Error: '+e.message,'err');resetBtn()});
 }
 
-function resetBtn(){var btn=document.getElementById('checkoutBtn');if(btn){btn.disabled=false;btn.textContent='CHECKOUT'}}
+function resetBtn(){   var btn=document.getElementById('checkoutBtn');   if(btn){     btn.disabled=false;     var span=document.getElementById('checkoutBtnText');     if(span){span.textContent=payMode==='cod'?'Place Your Order →':'Secure Your Drop →';}     else{btn.textContent=payMode==='cod'?'Place Your Order →':'Secure Your Drop →';}   } }
 
 /* ====== TIERED SUCCESS UI  ====== */
 function showSuccessUI(orderId, type){
