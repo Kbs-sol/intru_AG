@@ -1,7 +1,7 @@
 import { STORE_CONFIG, type Product, type LegalPage, SEED_LEGAL_PAGES } from '../data'
 
 /**
- * Shell v6.1: Unified Checkout + Prepaid Free Shipping + Address Persistence 
+ * Shell v6.1: Unified Checkout + Prepaid Free Shipping + Address Persistence [AG]
  * - Unified Checkout: Buy Now & Checkout pull up payment selection
  * - Prepaid: ALWAYS FREE shipping + ⚡ SAVE Rs.99 nudge
  * - COD: Rs.99 Convenience/Shipping Fee
@@ -73,7 +73,7 @@ export function shell(
   const mcMsg = mc.message || '';
   const mcEta = mc.eta || '';
 
-  const pm = JSON.stringify(Object.fromEntries(products.map(p => [p.id, { id: p.id, n: p.name, s: p.slug, p: p.price, i: p.images, sz: p.sizes, ss: p.sizeStock || {} }])));
+  const pm = JSON.stringify(Object.fromEntries(products.map(p => [p.id, { id: p.id, n: p.name, s: p.slug, p: p.price, i: p.images, sz: p.sizes }])));
   const sj = JSON.stringify({ cs: STORE_CONFIG.currencySymbol, ft: STORE_CONFIG.freeShippingThreshold, sc: STORE_CONFIG.shippingCost, rk: rpKey, magic: useMagic });
 
   return `<!DOCTYPE html><html lang="en"><head>
@@ -133,7 +133,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .pcbtns button{flex:1;padding:12px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;border:none;transition:all .2s}
 .pc-atc{background:var(--wh);color:var(--bk);border:1px solid var(--bk) !important}.pc-atc:hover{background:var(--g50)}
 .pc-bn{background:var(--bk);color:var(--wh)}.pc-bn:hover{background:var(--g600)}
-/* AI Stylist Widget  */
+/* AI Stylist Widget [AG] */
 .aiw{position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:16px;font-family:inherit}
 .ai-btn{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0a0a0a 0%,#2d2d2d 100%);color:var(--wh);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;box-shadow:0 8px 32px rgba(0,0,0,.3);transition:all .4s var(--eo);position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.1)}.ai-btn:hover{transform:scale(1.1) translateY(-4px);box-shadow:0 12px 48px rgba(0,0,0,.4)}
 .ai-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:translateX(-100%);animation:ai-shimmer 3s infinite}
@@ -160,11 +160,11 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .ai-tooltip::after{content:'';position:absolute;bottom:-6px;right:25px;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid var(--bk)}
 @media(max-width:480px){.ai-pop{width:calc(100vw - 32px);height:440px;bottom:64px;right:-8px}}
 .covl{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s}.covl.open{opacity:1;pointer-events:all}
-.cdrw{position:fixed;top:0;right:0;bottom:0;z-index:201;width:440px;max-width:100vw;background:var(--wh);transform:translateX(100%);transition:transform .5s var(--eo);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.15)}.cdrw.open{transform:translateX(0)}
+.cdrw{position:fixed;top:0;right:0;bottom:0;z-index:201;width:440px;max-width:100vw;background:rgba(255,255,255,.8);backdrop-filter:blur(32px);transform:translateX(100%);transition:transform .5s var(--eo);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.15)}.cdrw.open{transform:translateX(0)}
 .chdr{display:flex;align-items:center;justify-content:space-between;padding:24px 32px;border-bottom:1px solid rgba(0,0,0,.04)}
 .chdr h3{font-family:var(--head);font-size:13px;letter-spacing:3px;text-transform:uppercase}
 .ccls{background:none;border:none;font-size:20px;color:var(--g400);padding:8px;transition:color .2s}.ccls:hover{color:var(--bk)}
-.cbdy{flex:1;overflow-y:auto;padding:16px 24px;min-height:0;display:flex;flex-direction:column}
+.cbdy{flex:1;overflow-y:auto;padding:16px 24px}
 .cemp{text-align:center;padding:60px 0;color:var(--g400)}.cemp i{font-size:40px;margin-bottom:16px;display:block}
 .citm{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--g100)}
 .cimg{width:76px;height:95px;object-fit:cover;border-radius:6px;background:var(--g50)}
@@ -172,30 +172,30 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .cqty{display:flex;align-items:center;gap:10px;margin-top:6px}
 .qb{width:26px;height:26px;border:1px solid var(--g200);background:none;border-radius:3px;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .2s}.qb:hover{background:var(--bk);color:var(--wh);border-color:var(--bk)}
 .crm{background:none;border:none;color:var(--g300);font-size:11px;margin-top:4px;padding:0;transition:color .2s;text-transform:uppercase;letter-spacing:.5px}.crm:hover{color:var(--red)}
-.cftr{padding:12px 20px;border-top:1px solid var(--g100);background:var(--wh);flex-shrink:0}
-.cst,.csh{font-size:11px;margin-bottom:2px}
-.ctl{font-size:14px;font-weight:700;padding-top:8px;border-top:1px solid var(--g100);margin-bottom:8px}
-.cmode{display:flex;gap:8px;margin-bottom:8px;margin-top:8px}
-.cmode-opt{flex:1;padding:8px;border:1px solid var(--g200);background:var(--wh);border-radius:4px;cursor:pointer;text-align:center;transition:all .2s;display:flex;flex-direction:column;gap:2px}
-.cmode-label{font-size:9px;font-weight:900;letter-spacing:1px;text-transform:uppercase}
-.cmode-line1{font-size:10px;font-weight:700}
-.cmode-line2{display:none}
-.cmode-nudge{font-size:10px;text-align:center;color:var(--g500);margin-bottom:8px;padding:4px;background:var(--g50);border-radius:2px;display:none}
-.trust-row-cart{display:none}
-.ccbtn{width:100%;padding:14px;background:var(--bk);color:var(--wh);border:none;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;transition:all .2s;border-radius:4px}
-.cpolicy{font-size:9px;color:var(--g400);text-align:center;margin-top:8px}
+.cftr{padding:20px 24px;border-top:1px solid var(--g100);background:var(--g50)}
+.cst{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.csh{display:flex;justify-content:space-between;font-size:11px;color:var(--g400);margin-bottom:12px}
+.ctl{display:flex;justify-content:space-between;font-size:18px;font-weight:700;padding-top:12px;border-top:1px solid var(--g200)}
+/* Checkout mode selector */
+.cmode{display:flex;gap:8px;margin-bottom:14px}
+.cmode-opt{flex:1;padding:10px;border:2px solid var(--g200);border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;position:relative}
+.cmode-opt.act{border-color:var(--bk)}
+.cmode-opt.prepaid.act{border-color:var(--green)}
+.cmode-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;margin-bottom:4px}
+.cmode-opt.prepaid .cmode-badge{background:#dcfce7;color:#166534}
+.cmode-opt.cod .cmode-badge{background:var(--g100);color:var(--g500)}
+.cmode-label{font-size:12px;font-weight:700;display:block}
+.cmode-price{font-size:11px;color:var(--g400);margin-top:2px}
+.ccbtn{width:100%;margin-top:16px;padding:16px;background:var(--bk);color:var(--wh);border:none;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:all .3s}.ccbtn:hover{background:var(--g600);transform:translateY(-1px)}.ccbtn:disabled{background:var(--g300);cursor:not-allowed;transform:none}
+.cpolicy{font-size:10px;color:var(--g400);text-align:center;margin-top:12px;line-height:1.5}
 .cpolicy a{text-decoration:underline}
-/* High-Conversion Psychology  */
+/* High-Conversion Psychology [AG] */
 .cart-timer{background:#fff9eb;border:1px solid #ffecb3;padding:10px;margin:0 24px 16px;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;font-weight:700;color:#92400e;animation:pulseTimer 2s infinite}
 @keyframes pulseTimer{0%{opacity:1}50%{opacity:0.7}100%{opacity:1}}
-@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.cod-form{display:none;margin-top:16px;padding:16px;background:rgba(0,0,0,0.03);border-radius:8px}
-.cod-form.show{display:flex !important;flex-direction:column;animation:slideIn 200ms ease forwards}
-.cod-inp-group{position:relative;margin-bottom:12px}
-.cod-inp{width:100%;padding:14px 12px;background:var(--wh);border:1px solid var(--g200);font-size:13px;color:var(--bk);font-family:inherit;outline:none;transition:all .2s;border-radius:4px}
-.cod-inp:focus{border-color:var(--bk);box-shadow:0 0 0 2px rgba(0,0,0,0.05)}
-.cod-inp::placeholder{color:var(--g300)}
-.cod-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cmode-opt.prepaid.act{border-color:var(--green);box-shadow:0 0 15px rgba(34,197,94,0.2);background:rgba(34,197,94,0.02)}
+.cmode-opt.cod.act{border-color:var(--red) !important;background:rgba(239,68,68,0.02)}
+.risk-calc{font-size:10px;color:var(--red);font-weight:700;margin-top:4px;display:none;animation:fadeIn 0.3s ease}
+.prepaid-perk{font-size:10px;color:var(--green);font-weight:700;margin-top:4px;display:none;animation:fadeIn 0.3s ease}
 /* Silent Identity Overlay */
 .id-ovl{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px}
 .id-ovl.open{display:flex}
@@ -254,7 +254,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
   <button class="nbtn" onclick="openIdentifyOrOrders()" id="navAccountBtn">Login</button>
   <button class="ncart" onclick="toggleCart()" aria-label="Cart Bag"><i class="fas fa-shopping-bag"></i><span class="cbadge" id="cb">0</span></button>
 </div></div></nav>
-<!-- Soft Maintenance Banner  -->
+<!-- Soft Maintenance Banner [AG] -->
 <div id="mntBanner" style="${mcMode === 'soft' ? 'display:flex;' : 'display:none;'}background:var(--bk);color:var(--wh);font-family:var(--sans);font-size:13px;align-items:center;justify-content:space-between;padding:12px 24px;width:100%;margin-top:72px;z-index:90;position:relative">
   <div style="display:flex;align-items:center;gap:12px">
     <span style="font-size:18px">🛠️</span>
@@ -276,50 +276,42 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <div class="covl" id="co" onclick="closeAllDrawers()"></div>
 <div class="cdrw" id="cd">
 <div class="chdr"><h3>Your Bag</h3><button class="ccls" onclick="toggleCart()"><i class="fas fa-times"></i></button></div>
-<div class="cbdy" id="cby">
-  <div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div>
-  <!-- COD Address Form moved INSIDE scrollable body -->
-  <div class="cod-form" id="codForm" style="display:none;margin-top:20px;padding:20px;background:var(--g50);border-radius:8px;border:1px solid var(--g100)">
-    <div style="font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;color:var(--bk)">Delivery Address</div>
-    <div class="cod-inp-group"><input class="cod-inp" id="cod_name" type="text" placeholder="Full Name" required></div>
-    <div class="cod-inp-group"><input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone Number" required pattern="[0-9]{10}"></div>
-    <div class="cod-inp-group"><input class="cod-inp" id="cod_addr" type="text" placeholder="Address (House No, Building, Street)" required></div>
-    <div class="cod-row">
-      <div class="cod-inp-group"><input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode" required pattern="[0-9]{6}"></div>
-      <div class="cod-inp-group"><input class="cod-inp" id="cod_city" type="text" placeholder="City" required></div>
-    </div>
-    <div class="cod-inp-group"><input class="cod-inp" id="cod_state" type="text" placeholder="State" required></div>
-  </div>
-</div>
+<div class="cbdy" id="cby"><div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div></div>
+<div id="cartTimer" class="cart-timer" style="display:none"><i class="fas fa-clock"></i> <span>Cart reserved for <span id="timerClock">05:00</span> minutes</span></div>
+<div id="fsProgress" style="display:none;margin:0 24px 16px;padding:12px;background:var(--g50);border-radius:6px;text-align:center;font-size:11px;font-weight:700"></div>
 <div class="cftr" id="cf" style="display:none">
 <div class="cst"><span>Subtotal</span><span id="csub">${STORE_CONFIG.currencySymbol}0</span></div>
 <div class="csh"><span>Shipping</span><span id="cshp">Calculated</span></div>
 <div class="ctl"><span>Total</span><span id="ctot">${STORE_CONFIG.currencySymbol}0</span></div>
-<!-- Payment Mode Selector - Step 6 Redesign -->
-<div class="cmode" id="cmode" style="display:none">
-<div class="cmode-opt prepaid act" data-pay-mode="prepaid" onclick="setPayMode('prepaid')" id="cm_prepaid">
-<span class="cmode-badge">BEST</span>
+<div style="text-align:center"><span class="trust-badge"><i class="fas fa-shield-halved"></i> 100% Secure Checkout</span></div>
+<!-- Payment Mode Selector (only when NOT magic checkout) -->
+<div class="cmode" id="cmode" style="display:none;margin-top:8px">
+<div class="cmode-opt prepaid act" onclick="setPayMode('prepaid')" id="cm_prepaid">
+<span class="cmode-badge" style="background:#dcfce7;color:#166534">PRIORITY DISPATCH</span>
 <span class="cmode-label">Prepaid</span>
-<span class="cmode-line1">⚡ Free Shipping</span>
-<span class="cmode-line2">Ships first</span>
+<span class="cmode-price" style="color:var(--green);font-weight:700">FREE Shipping</span>
+<div class="prepaid-perk" id="prepaidPerk" style="display:block">⚡ Skip the queue. We ship prepaid orders first.</div>
 </div>
-<div class="cmode-opt cod" data-pay-mode="cod" onclick="setPayMode('cod')" id="cm_cod">
+<div class="cmode-opt cod" onclick="setPayMode('cod')" id="cm_cod">
+<span class="cmode-badge" style="background:var(--g100);color:var(--g500)">LOGISTICS HEAVY (Rs.99 FEE)</span>
 <span class="cmode-label">Cash on Delivery</span>
-<span class="cmode-line1">+Rs.99</span>
-<span class="cmode-line2">Pay on arrival</span>
+<span class="cmode-price">+Rs.99 COD fee</span>
+<div class="risk-calc" id="riskCalc">⚠️ Subject to area verification. Takes 2+ days longer to process.</div>
 </div>
 </div>
-<div class="cmode-nudge" id="cmodeNudge"></div>
-<!-- Trust Row -->
-<div class="trust-row-cart">
-  <span>⚡ 3–5 Day Dispatch</span>
-  <span aria-hidden="true">·</span>
-  <span>🔄 36h Exchange</span>
-  <span aria-hidden="true">·</span>
-  <span>🛡 Authentic</span>
+<!-- COD Address Form -->
+<div class="cod-form" id="codForm">
+<input class="cod-inp" id="cod_name" type="text" placeholder="Full Name *" required>
+<input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone Number *" required pattern="[0-9]{10}">
+<input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode *" required pattern="[0-9]{6}">
+<input class="cod-inp" id="cod_addr" type="text" placeholder="Full Address (House, Street, Area) *" required>
+<div class="cod-row">
+<input class="cod-inp" id="cod_city" type="text" placeholder="City">
+<input class="cod-inp" id="cod_state" type="text" placeholder="State">
 </div>
-<button class="ccbtn" id="checkoutBtn" onclick="checkout()"><span id="checkoutBtnText">Secure Your Drop →</span></button>
-<p class="cpolicy">By ordering you agree to our <a href="/p/terms">Terms</a> & <a href="/p/returns">Exchange Policy</a></p>
+</div>
+<button class="ccbtn" id="checkoutBtn" onclick="checkout()">Place Your Order <i class="fas fa-arrow-right" style="margin-left:8px;font-size:10px"></i></button>
+<p class="cpolicy">By placing an order, you agree to the intru.in <a href="/p/terms">Terms of Service</a> and our <a href="/p/returns">Store-Credit-only Refund Policy</a>.</p>
 </div></div>
 
 <!-- Silent Identity Overlay -->
@@ -330,8 +322,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
   <h3>WHERE SHOULD WE SEND YOUR DROP?</h3>
   <p>Enter your email to secure your spot in the next limited release. No spam, just heat.</p>
   <input class="id-inp" id="id_email" type="email" placeholder="yourname@email.com" autocomplete="email">
-  <button class="id-btn" id="idBtn" onclick="submitIdentity()">Get Access →</button>
-  <p style="font-size:12px;color:var(--g400);text-align:center;margin-top:12px">One tap. You're in.</p>
+  <button class="id-btn" id="idBtn" onclick="submitIdentity()">SECURE ACCESS</button>
   <div class="id-or">or</div>
   <button class="id-gcta" id="idGoogleBtn" onclick="triggerGoogleIdentify()">
     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
@@ -350,7 +341,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 </div>
 </div>
 
-<!-- Soft Maintenance Modal  -->
+<!-- Soft Maintenance Modal [AG] -->
 <div class="id-ovl${mcMode === 'soft' ? ' open' : ''}" id="mntOvl" style="z-index:9999">
   <div class="id-box">
     <h3 style="margin-bottom:12px;display:flex;align-items:center;gap:10px"><span style="font-size:24px">🔒</span> Upgrading the Wardrobe</h3>
@@ -380,7 +371,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <p style="margin-top:8px;font-size:11px;color:var(--g400);line-height:1.7"><strong style="color:var(--g300)">Grievance Officer:</strong><br><a href="mailto:shop@intru.in" style="color:var(--g300)">shop@intru.in</a><br><span style="font-size:10px">Per Consumer Protection (E-Commerce) Rules, 2020</span></p>
 </div>
 <div class="ftrc"><h4>Shop</h4><a href="/#products">All Drops</a><a href="/collections">Collections</a><a href="/about">About</a></div>
-<div class="ftrc"><h4>Help</h4><a href="/p/shipping">Shipping</a><a href="/p/returns">Exchanges</a><a href="mailto:shop@intru.in">Contact</a></div>
+<div class="ftrc"><h4>Help</h4><a href="/p/shipping">Shipping</a><a href="/p/returns">Returns &amp; Credit</a><a href="mailto:shop@intru.in">Contact</a></div>
 <div class="ftrc"><h4>Legal</h4>${legalPages.map(p => '<a href="/p/' + p.slug + '">' + p.title + '</a>').join('')}</div>
 </div>
 <div class="pay-icons">
@@ -394,7 +385,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <div class="fsoc"><a href="https://instagram.com/${STORE_CONFIG.instagram}" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a></div>
 </div></footer>
 
-<!-- AI Stylist Widget  -->
+<!-- AI Stylist Widget [AG] -->
 <div class="aiw" id="aiStylist">
   <div class="ai-cta" id="aiCta">
     <i class="fas fa-sparkles" style="color:#eab308"></i>
@@ -425,7 +416,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <div class="tc" id="tc"></div>
 ${gKey !== 'YOUR_GOOGLE_CLIENT_ID' ? '<script src="https://accounts.google.com/gsi/client" async defer></script><div id="g_id_onload" data-client_id="' + gKey + '" data-context="signin" data-ux_mode="popup" data-callback="handleGoogleAuth" data-itp_support="true" data-auto_select="false" data-auto_prompt="false"></div>' : '<!-- Google One-Tap: Set GOOGLE_CLIENT_ID env var to enable -->'}
 <script>
-/* ====== MAINTENANCE INJECTION  — isolated to survive any other script errors ====== */
+/* ====== MAINTENANCE INJECTION [AG] — isolated to survive any other script errors ====== */
 window.__MAINTENANCE__ = ${JSON.stringify(mc)};
 function mntAcknowledge() {
   sessionStorage.setItem('intru_maintenance_ack', '1');
@@ -659,8 +650,6 @@ function addToCart(productId,size,qty){
   if(!productId||!size){toast('Please select a size','err');return false}
   var p=PM[productId];if(!p){toast('Product not found','err');return false}
   if(p.sz&&p.sz.indexOf(size)===-1){toast('Invalid size selected','err');return false}
-  /* Zero-stock size guard */
-  if(p.ss&&p.ss[size]!==undefined&&p.ss[size]<=0){toast('Size '+size+' is sold out','err');return false}
   qty=qty||1;
   var existing=cart.find(function(i){return i.p===productId&&i.s===size});
   if(existing){if(existing.q+qty>10){toast('Max 10 per item','err');return false}existing.q+=qty}
@@ -668,7 +657,7 @@ function addToCart(productId,size,qty){
   saveCart();toast(p.n+' ('+size+') added to bag','ok');openCartDrawer();return true;
 }
 
-/* Quick Action Helpers  */
+/* Quick Action Helpers [AG] */
 var cardSizes={}; 
 function selectQuickSize(e,productId,size){
   e.preventDefault();e.stopPropagation();
@@ -704,7 +693,7 @@ function getCartTotals(){
 
 function fmt(n){return S.cs+n.toLocaleString('en-IN')}
 
-/* ====== HIGH-CONVERSION PSYCHOLOGY  ====== */
+/* ====== HIGH-CONVERSION PSYCHOLOGY [AG] ====== */
 var paySounds = {
   prepaid: new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTtvT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19v'),
   cod: new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTtvT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19vT19v'),
@@ -729,26 +718,30 @@ function startCartTimer(){
 }
 
 function setPayMode(mode){
-  payMode=mode;
-  var p=document.getElementById('cm_prepaid');
-  var c=document.getElementById('cm_cod');
-  if(p)p.classList.toggle('act',mode==='prepaid');
-  if(c)c.classList.toggle('act',mode==='cod');
-  
-  var nudge = document.getElementById('cmodeNudge');
-  var btnText = document.getElementById('checkoutBtnText');
-  
-  if(nudge) {
-    nudge.classList.add('show');
-    nudge.textContent = mode==='cod' ? 'Switch to Prepaid to save Rs.99 and ship faster' : '⚡ Free shipping · Your order ships before COD batch';
+  if(mode === 'cod') {
+    var rc = document.getElementById('riskCalc');
+    if(rc){
+      rc.style.display = 'block'; rc.textContent = '⚠️ Verifying logistics availability...';
+      try { paySounds.cod.play(); } catch(e){}
+      setTimeout(function(){
+        rc.textContent = '❌ Non-Priority Logistics. +Rs.99 convenience fee applied.';
+        applyPayMode(mode);
+      }, 400);
+      return;
+    }
   }
-  if(btnText) btnText.textContent = mode==='cod' ? 'Place Your Order →' : 'Secure Your Drop →';
-  
-  var codForm=document.getElementById('codForm');   if(codForm){codForm.style.display=mode==='cod'?'block':'none';}   renderCartTotals();
+  applyPayMode(mode);
 }
 
 function applyPayMode(mode){
-  setPayMode(mode);
+  payMode=mode;
+  if(mode === 'prepaid') { try { paySounds.prepaid.play(); } catch(e){} }
+  document.getElementById('cm_prepaid').classList.toggle('act',mode==='prepaid');
+  document.getElementById('cm_cod').classList.toggle('act',mode==='cod');
+  document.getElementById('codForm').classList.toggle('show',mode==='cod');
+  var perk = document.getElementById('prepaidPerk'); if(perk) perk.style.display = mode==='prepaid'?'block':'none';
+  var risk = document.getElementById('riskCalc'); if(risk && mode==='prepaid') risk.style.display = 'none';
+  renderCartTotals();
 }
 
 function renderCartTotals(){
@@ -758,41 +751,50 @@ function renderCartTotals(){
   if(payMode==='cod'){shText='Rs.99 Shipping/COD Fee'}
   document.getElementById('cshp').textContent=shText||'Free';
   document.getElementById('ctot').textContent=fmt(t.total);
+
+  var fsp = document.getElementById('fsProgress');
+  if(fsp) {
+    if(t.subtotal === 0) {
+      fsp.style.display = 'none';
+    } else if (payMode === 'prepaid') {
+      fsp.style.display = 'block';
+      fsp.innerHTML = '<i class="fas fa-bolt" style="color:var(--green);margin-right:6px"></i><b>Dispatch Unlocked!</b> <span style="font-weight:500;color:var(--g500)">(Free Shipping)</span>';
+      fsp.style.background = '#dcfce7';
+      fsp.style.color = '#166534';
+      fsp.style.border = '1px solid #bbf7d0';
+    } else {
+      var threshold = S.ft || 1999;
+      var rem = threshold - t.subtotal;
+      fsp.style.display = 'block';
+      if(rem > 0) {
+        fsp.innerHTML = 'Add <span style="color:var(--red)">' + fmt(rem) + '</span> more for <b>FREE COD Delivery</b>';
+        fsp.style.background = 'var(--g50)';
+        fsp.style.color = 'var(--bk)';
+        fsp.style.border = '1px solid var(--g200)';
+      } else {
+        fsp.innerHTML = '<i class="fas fa-check-circle" style="color:var(--green);margin-right:6px"></i><b>FREE COD Delivery Unlocked!</b>';
+        fsp.style.background = '#dcfce7';
+        fsp.style.color = '#166534';
+        fsp.style.border = '1px solid #bbf7d0';
+      }
+    }
+  }
 }
 
 function renderCart(){
   var badge=document.getElementById('cb');var body=document.getElementById('cby');var footer=document.getElementById('cf');
   var count=cart.reduce(function(a,i){return a+i.q},0);
   badge.textContent=count;badge.classList.toggle('vis',count>0);
-  
-  if(!cart.length){
-    body.innerHTML='<div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div>';
-    footer.style.display='none';
-    return;
-  }
-  
+  if(!cart.length){body.innerHTML='<div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div>';footer.style.display='none';return}
   footer.style.display='block';
+  /* Show payment mode selector only if NOT magic checkout */
   document.getElementById('cmode').style.display=S.magic?'none':'flex';
-  
+  if(S.magic){document.getElementById('codForm').classList.remove('show')}
   var html='';
   cart.forEach(function(item){
     var p=PM[item.p];if(!p)return;
-    html+='<div class="citm"><img class="cimg" src="'+p.i[0]+'" alt="'+p.n+'" style="width:50px;height:62px"><div class="cinf"><div class="cnm" style="font-size:11px">'+p.n+'</div><div class="cmt" style="font-size:9px">Size: '+item.s+'</div><div class="cpr" style="font-size:12px">'+fmt(p.p*item.q)+'</div><div class="cqty" style="margin-top:4px"><button class="qb" style="width:20px;height:20px" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,-1)">&minus;</button><span style="font-size:11px">'+item.q+'</span><button class="qb" style="width:20px;height:20px" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,1)">+</button></div></div></div>';
+    html+='<div class="citm"><img class="cimg" src="'+p.i[0]+'" alt="'+p.n+'"><div class="cinf"><div class="cnm">'+p.n+'</div><div class="cmt">Size: '+item.s+'</div><div class="cpr">'+fmt(p.p*item.q)+'</div><div class="cqty"><button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,-1)">&minus;</button><span>'+item.q+'</span><button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,1)">+</button></div><button class="crm" onclick="removeFromCart(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27)">Remove</button></div></div>';
   });
-  
-  if(payMode==='cod'){
-    html += '<div class="cod-form" id="codForm" style="display:flex !important;flex-direction:column;margin-top:12px;padding:12px;background:var(--g50);border-radius:4px;border:1px solid var(--g100)">'
-      + '<div style="font-size:9px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;color:var(--bk)">Delivery Details</div>'
-      + '<input class="cod-inp" id="cod_name" type="text" placeholder="Name" value="'+(localStorage.getItem('intru_name')||'')+'" style="padding:10px;font-size:12px;margin-bottom:8px">'
-      + '<input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone" value="'+(localStorage.getItem('intru_phone')||'')+'" style="padding:10px;font-size:12px;margin-bottom:8px">'
-      + '<input class="cod-inp" id="cod_addr" type="text" placeholder="Address" value="'+(localStorage.getItem('intru_addr')||'')+'" style="padding:10px;font-size:12px;margin-bottom:8px">'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-      + '<input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode" value="'+(localStorage.getItem('intru_pincode')||'')+'" style="padding:10px;font-size:12px">'
-      + '<input class="cod-inp" id="cod_city" type="text" placeholder="City" value="'+(localStorage.getItem('intru_city')||'')+'" style="padding:10px;font-size:12px">'
-      + '</div>'
-      + '</div>';
-  }
-    
   body.innerHTML=html;
   renderCartTotals();
 }
@@ -807,7 +809,7 @@ function closeAllDrawers(){
   document.body.style.overflow='';
 }
 
-/* ====== AI STYLIST LOGIC  ====== */
+/* ====== AI STYLIST LOGIC [AG] ====== */
 var aiMsgs=JSON.parse(localStorage.getItem('ai_chat')||'[]');
 /* AI CTA Delay Logic */
 setTimeout(function(){
@@ -829,38 +831,17 @@ function toggleAIChat(){
 
 function formatMsg(txt) {
   if (!txt) return '';
-  /* Build product card from %%PRODUCT_CARD:slug%% markers */
-  txt = txt.replace(/%%PRODUCT_CARD:([a-z0-9-]+)%%/g, function(match, slug) {
-    return buildProductCard(slug);
+  /* Convert [PRODUCT:slug] to card */
+  return txt.replace(/\\[PRODUCT:([a-z0-9-]+)\\]/g, function(match, slug) {
+    var p = window.STORE_PRODUCTS ? window.STORE_PRODUCTS.find(function(x) { return x.slug === slug; }) : null;
+    if (!p) return '<a href="/product/' + slug + '" style="color:var(--bk);font-weight:700;text-decoration:underline">View Product: ' + slug + '</a>';
+    return '<a href="/product/' + p.slug + '" style="display:block;background:var(--wh);border:1px solid rgba(0,0,0,.05);border-radius:8px;overflow:hidden;margin-top:8px;text-decoration:none;color:inherit">' +
+           '<div style="aspect-ratio:3/4;overflow:hidden;background:var(--g50)"><img src="' + p.images[0] + '" alt="' + p.name + '" style="width:100%;height:100%;object-fit:cover"></div>' +
+           '<div style="padding:10px">' +
+           '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">' + p.name + '</div>' +
+           '<div style="font-size:12px;font-weight:700;color:var(--bk)">Rs.' + p.price.toLocaleString('en-IN') + '</div>' +
+           '</div></a>';
   });
-  /* Also support legacy [PRODUCT:slug] format */
-  txt = txt.replace(/\\[PRODUCT:([a-z0-9-]+)\\]/g, function(match, slug) {
-    return buildProductCard(slug);
-  });
-  return txt;
-}
-function buildProductCard(slug) {
-  var p = window.STORE_PRODUCTS ? window.STORE_PRODUCTS.find(function(x) { return x.slug === slug; }) : null;
-  if (!p) return '<a href="/product/' + slug + '" style="color:var(--bk);font-weight:700;text-decoration:underline">View Product: ' + slug + '</a>';
-  var availSizes = (p.sizes || []).filter(function(sz) { return !p.sizeStock || p.sizeStock[sz] === undefined || p.sizeStock[sz] > 0; });
-  var totalStock = p.stockCount ? Object.values(p.stockCount).reduce(function(a,b){return a+b},0) : null;
-  var isSoldOut = !p.inStock || (totalStock !== null && totalStock <= 0);
-  var stockBadge = isSoldOut ? '<span style="background:var(--red);color:#fff;font-size:8px;font-weight:800;padding:3px 8px;border-radius:2px;letter-spacing:1px;text-transform:uppercase">SOLD OUT</span>'
-    : (totalStock !== null && totalStock <= 5 ? '<span style="background:#f59e0b;color:#fff;font-size:8px;font-weight:800;padding:3px 8px;border-radius:2px;letter-spacing:1px;text-transform:uppercase">Only ' + totalStock + ' left</span>' : '');
-  var sizesHtml = availSizes.length > 0 ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">' + availSizes.map(function(sz){return '<span style="padding:2px 8px;border:1px solid var(--g200);font-size:10px;font-weight:700;border-radius:2px">'+sz+'</span>'}).join('') + '</div>' : '';
-  var btnHtml = isSoldOut
-    ? '<div style="width:100%;padding:12px;background:var(--g200);color:var(--g400);text-align:center;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-radius:4px">SOLD OUT</div>'
-    : '<div style="width:100%;padding:12px;background:var(--bk);color:var(--wh);text-align:center;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-radius:4px;transition:background .2s">SECURE NOW →</div>';
-  return '<a href="/product/' + p.slug + '" style="display:block;background:var(--wh);border:1px solid rgba(0,0,0,.05);border-radius:8px;overflow:hidden;margin-top:8px;text-decoration:none;color:inherit;box-shadow:0 4px 12px rgba(0,0,0,.04)">'
-    + '<div style="aspect-ratio:4/5;overflow:hidden;background:var(--g50);position:relative"><img src="' + p.images[0] + '" alt="' + p.name + '" style="width:100%;height:100%;object-fit:cover">'
-    + (stockBadge ? '<div style="position:absolute;top:8px;left:8px">' + stockBadge + '</div>' : '')
-    + '</div>'
-    + '<div style="padding:12px">'
-    + '<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;font-family:var(--head)">' + p.name + '</div>'
-    + '<div style="font-size:13px;font-weight:700;color:var(--bk);margin-bottom:8px">Rs.' + p.price.toLocaleString('en-IN') + '</div>'
-    + sizesHtml
-    + btnHtml
-    + '</div></a>';
 }
 function renderAIChat(){
   var b=document.getElementById('aiBody');
@@ -897,7 +878,7 @@ function checkout(){
   /* Silent Identity: if not identified, show overlay */
   if(!identifiedEmail){pendingCheckout=true;openIdentify();return}
   var btn=document.getElementById('checkoutBtn');
-  if(btn){     btn.disabled=true;     var bspan=document.getElementById('checkoutBtnText');     if(bspan){bspan.textContent='Creating Order...';}else{btn.textContent='Creating Order...';}   }
+  if(btn){btn.disabled=true;btn.textContent='CREATING ORDER...';}
   orderToastFired=false;
 
   /* If Magic Checkout is ON, always use Razorpay Magic flow */
@@ -907,13 +888,13 @@ function checkout(){
   if(payMode==='prepaid'){doPrepaidCheckout()}
   else{
     /* Ensure COD form is visible and make sure user fills it */
-    var codFormEl = document.getElementById('codForm');
-if(!codFormEl){
-  toast('Please select COD and fill in your address','err');
-  resetBtn();
-  return;
-}
-doCodCheckout();
+    if(!document.getElementById('codForm').classList.contains('show')){
+      setPayMode('cod');
+      toast('Please fill in your delivery address for COD','err');
+      resetBtn();
+      return;
+    }
+    doCodCheckout()
   }
 }
 
@@ -960,7 +941,7 @@ function doCodCheckout(){
   if(!/^[0-9]{10}$/.test(phone)){toast('Enter valid 10-digit phone','err');resetBtn();return}
   if(!/^[0-9]{6}$/.test(pincode)){toast('Enter valid 6-digit pincode','err');resetBtn();return}
 
-  /* Persistence: Save to local storage  */
+  /* Persistence: Save to local storage [AG] */
   localStorage.setItem('intru_name', name);
   localStorage.setItem('intru_phone', phone);
   localStorage.setItem('intru_pincode', pincode);
@@ -1011,9 +992,9 @@ function doMagicCheckout(){
   }).catch(function(e){toast('Error: '+e.message,'err');resetBtn()});
 }
 
-function resetBtn(){   var btn=document.getElementById('checkoutBtn');   if(btn){     btn.disabled=false;     var span=document.getElementById('checkoutBtnText');     if(span){span.textContent=payMode==='cod'?'Place Your Order →':'Secure Your Drop →';}     else{btn.textContent=payMode==='cod'?'Place Your Order →':'Secure Your Drop →';}   } }
+function resetBtn(){var btn=document.getElementById('checkoutBtn');if(btn){btn.disabled=false;btn.textContent='CHECKOUT'}}
 
-/* ====== TIERED SUCCESS UI  ====== */
+/* ====== TIERED SUCCESS UI [AG] ====== */
 function showSuccessUI(orderId, type){
   var ovl=document.createElement('div');
   ovl.style='position:fixed;inset:0;z-index:999;background:rgba(10,10,10,0.95);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;color:#fff;animation:fadeIn 0.5s ease both';
