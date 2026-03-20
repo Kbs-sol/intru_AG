@@ -4,7 +4,7 @@
 - **Name**: intru.in
 - **Goal**: Engineered for High Organic Traffic (SEO) and High Conversion (using deep direct-response psychology)
 - **Stack**: Hono + TypeScript + Cloudflare Pages + Supabase + Razorpay + Resend
-- **Version**: v14.1 (Date: March 13, 2026) — Cart Layout Fixes, Sticky Footer, UI Enhancements
+- **Version**: v14.4 (Date: March 20, 2026) — Sequential Checkout, Prepaid Manager Alerts, UX Refactoring
 
 ## URLs
 - **Production**: https://intru-genz.pages.dev (staging) → https://intru.in (custom domain pending)
@@ -64,11 +64,10 @@ Beyond conversion, intru.in is engineered for aggressive organic search dominanc
 - **Lighthouse Dominance**: Lean CSS, aggressive caching, and minimal frontend JS architecture ensure near-perfect Core Web Vitals, a critical search ranking factor.
 
 ### Resend Email Notifications
-- **Prepaid success** → "Drop Secured!" email to customer
+- **Prepaid success** → "Drop Secured!" email to customer + Payment Alert to manager
 - **COD success** → "Action Required: Confirm your intru.in COD Order #[ID]" email to customer
 - **COD success** → "NEW COD ORDER - Action Required — [name] — Rs.[total]" email to manager
-- Emails triggered server-side; requires `RESEND_API_KEY` in Cloudflare secrets
-- Only sent when orderId exists (prevents empty email sends)
+- Emails triggered server-side (Resend); requires `RESEND_API_KEY` in secrets
 
 ## Supabase Schema (v6)
 
@@ -220,13 +219,16 @@ npx wrangler pages secret put RAZORPAY_WEBHOOK_SECRET --project-name intru-in
 - **AI Stylist Live Catalog**: The AI assistant now knows exactly what is in stock and provides deep-links to products.
 - **Per-Size Stock Gating**: Server-side and client-side protection against overselling sizes.
 
-## v14.1 Changes (March 13, 2026)
-### v14.3 - Ultra-Compact Cart & Checkout Visibility Fix
-- **Sticky Footer Overhaul**: Drastically reduced footer height (50% reduction) and refined the primary checkout button to ensure maximum vertical space for address inputs.
-- **Scrollable COD Form**: Moved the COD Address Form into the scrollable cart body (`.cbdy`) to prevent it from being obscured by the checkout button on smaller screens.
-- **Simplified UI**: Removed the cart timer and free shipping progress bar to reduce visual noise and improve the checkout flow.
-- **Input Field Polish**: Optimized font sizes and paddings for mobile-first address entry.
 - **Documentation**: Updated `SYSTEM_LITERACY.md` to reflect the new sticky footer architecture.
+
+## v14.4 Changes (March 20, 2026)
+### v14.4 - Sequential Checkout & Premium Payments
+- **Sequential Journey**: Customers must now confirm their shipping address before revealing payment options, ensuring zero-loss of data and a guided flow.
+- **Service-Level Payment Selection**: Reframed Prepaid vs COD as quality-of-service choices. Prepaid is branded as "Fastest Drop" (⚡) and COD as "Standard Delivery" (🚚).
+- **Manager Alert Parity**: Implemented immediate Resend alerts for all prepaid and magic checkout payments, ensuring the store manager is notified for every successful sale.
+- **Backend Consolidation**: Unified redundant Razorpay webhook handlers and centralized email notification logic in `index.tsx`.
+- **UX Sensitivity**: Removed all "penalty" and "scare" terminology (e.g., "Logistics Heavy", "COD Fee Warning") in favor of premium, benefit-driven language.
+- **Address Persistence**: Implemented `localStorage` caching for successful address entries to streamline the experience for repeat customers.
 
 ## Deployment
 - **Platform**: Cloudflare Pages

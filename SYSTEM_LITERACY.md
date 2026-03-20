@@ -1,5 +1,5 @@
 # INTRU.IN — Full System Literacy & Architecture Reference
-**Version**: v14 | **Date**: March 12, 2026 | **Production**: https://intru-genz.pages.dev (staging for intru.in) [AG]
+**Version**: v14.4 | **Date**: March 20, 2026 | **Production**: https://intru-genz.pages.dev (staging for intru.in) [AG]
 
 > This document is designed to be read by manager of e-commerce website AND used as a context prompt for AI assistants. It contains everything needed to understand, debug, fix, or extend the intru.in codebase.
 
@@ -140,7 +140,7 @@ webapp/
 3. Frontend opens Razorpay popup
 4. On payment success: frontend POST `/api/payment/verify` with signature
 5. Backend verifies HMAC signature, updates order to status='paid'
-6. Backend sends "Drop Secured!" email via Resend
+6. Backend sends "Drop Secured!" email to customer AND payment alert to manager via Resend
 
 ### COD Flow:
 1. Frontend POST `/api/checkout/cod` with items, address, phone, email
@@ -352,9 +352,8 @@ RESEND_API_KEY=re_xxx
 4. Emails sent from: `intru.in <noreply@intru.in>`
 
 ### Email Templates (defined in `data.ts`):
-| Template | Trigger | Recipient |
-|----------|---------|-----------|
 | `emailDropSecured()` | Prepaid payment verified | Customer |
+| `emailAdminPaymentAlert()` | Prepaid/Magic payment captured | Manager (MANAGER_EMAIL or fallback) |
 | `emailCodReceived()` | COD order placed | Customer |
 | `emailCodManagerAlert()` | COD order placed | Manager (MANAGER_EMAIL setting) |
 
@@ -515,6 +514,15 @@ RESEND_API_KEY=re_xxx
 - **AI Stylist Live Catalog (v14)**: `/api/ai/chat` now fetches live products from Supabase (not static SEED_PRODUCTS), builds a dynamic catalog string, and injects it into the system prompt. Supports `%%PRODUCT_CARD:slug%%` markers for rich product card rendering.
 - **AI Product Cards (v14)**: `buildProductCard()` renders product cards with image, name, price, available sizes, stock badge, and CTA/sold-out state. Both shell.ts widget and stylist.ts full-page use the same rendering logic.
 - **New Quick-Action Chips (v14)**: "🔥 What's dropping now?", "📦 Help me pick a size", "🎁 Best gift under Rs.1,000".
+
+### Version 14.4 — Sequential Checkout & Premium Payments [AG]
+- **Sequential User Journey**: Implemented a guiding flow where address confirmation is required before payment modes are revealed. This ensures data capture before decision-making.
+- **Payment Reframing (Psychology)**: Shifted terminology from penalty-based (Rs.99 Fee) to service-based. Prepaid is now "Fastest Drop" (⚡) and COD is "Standard Delivery" (🚚).
+- **Softer Visuals**: Removed alarming red symbols and warnings. Introduced subtle icons, clean layout cards, and benefit-driven badges.
+- **Address Persistence**: Frontend JS now auto-saves address data to `localStorage` on every successful COD order, providing one-click checkout for repeat users.
+- **Unified Webhook Architecture**: Consolidated redundant Razorpay webhook handlers into a single robust entry point (`/api/webhooks/razorpay`) in `index.tsx`.
+- **Manager Alert Integration**: Integrated Resend-powered manager notifications for all successful prepaid and magic checkout payments, ensuring parity with the COD alert flow.
+- **Zero-Friction Identity**: Replaced "Identity Overlay" with a more integrated "Secure Your Drop" portal that captures email/name seamlessly.
 
 ---
 

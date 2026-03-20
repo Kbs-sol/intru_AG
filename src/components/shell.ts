@@ -179,13 +179,13 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 /* Checkout mode selector */
 .cmode{display:flex;gap:8px;margin-bottom:14px}
 .cmode-opt{flex:1;padding:10px;border:2px solid var(--g200);border-radius:6px;cursor:pointer;text-align:center;transition:all .2s;position:relative}
-.cmode-opt.act{border-color:var(--bk)}
-.cmode-opt.prepaid.act{border-color:var(--green)}
-.cmode-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;margin-bottom:4px}
+.cmode-opt.act{border-color:var(--bk);background:rgba(0,0,0,0.02)}
+.cmode-opt.prepaid.act{border-color:var(--green);background:rgba(34,197,94,0.05)}
+.cmode-badge{display:inline-block;font-size:8px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:100px;margin-bottom:8px}
 .cmode-opt.prepaid .cmode-badge{background:#dcfce7;color:#166534}
-.cmode-opt.cod .cmode-badge{background:var(--g100);color:var(--g500)}
-.cmode-label{font-size:12px;font-weight:700;display:block}
-.cmode-price{font-size:11px;color:var(--g400);margin-top:2px}
+.cmode-opt.cod .cmode-badge{background:var(--g100);color:var(--g600)}
+.cmode-label{font-size:14px;font-weight:800;display:block;margin-bottom:2px}
+.cmode-price{font-size:12px;color:var(--g500);font-weight:600}
 .ccbtn{width:100%;margin-top:16px;padding:16px;background:var(--bk);color:var(--wh);border:none;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:all .3s}.ccbtn:hover{background:var(--g600);transform:translateY(-1px)}.ccbtn:disabled{background:var(--g300);cursor:not-allowed;transform:none}
 .cpolicy{font-size:10px;color:var(--g400);text-align:center;margin-top:12px;line-height:1.5}
 .cpolicy a{text-decoration:underline}
@@ -223,6 +223,16 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 .toast-err{background:var(--red);color:#fff}
 .toast-ok-green{background:#065f46;color:#fff}
 .sz-error{animation:shake .3s ease;border-color:var(--red) !important}
+.hidden{display:none !important}
+/* Sequential Checkout [AG] */
+.addr-summary{padding:16px;background:var(--wh);border:1px solid var(--g200);border-radius:8px;margin:16px 0;font-size:12px;position:relative;animation:fadeIn 0.3s ease;color:var(--bk)}
+.addr-edit{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;text-decoration:underline;cursor:pointer;color:var(--g400);text-transform:uppercase;letter-spacing:1px}
+.cod-form{display:none;flex-direction:column;gap:12px;margin:16px 0;animation:fadeIn 0.3s ease}
+.cod-form.show{display:flex}
+.cod-inp{width:100%;padding:16px 20px;border:1.5px solid var(--g100);background:var(--g50);font-size:14px;font-family:inherit;outline:none;transition:all .2s}.cod-inp:focus{border-color:var(--bk);background:var(--wh)}
+.cod-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.c-step-hdr{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--g400);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.c-step-hdr i{font-size:14px;color:var(--bk)}
 /* Maintenance modal & banner */
 .mnt-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .mnt-modal{background:var(--wh);max-width:440px;width:100%;padding:48px 40px;text-align:center;box-shadow:0 32px 64px rgba(0,0,0,.4);animation:scaleIn .3s var(--eo);border-radius:2px}
@@ -276,41 +286,61 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 <div class="covl" id="co" onclick="closeAllDrawers()"></div>
 <div class="cdrw" id="cd">
 <div class="chdr"><h3>Your Bag</h3><button class="ccls" onclick="toggleCart()"><i class="fas fa-times"></i></button></div>
-<div class="cbdy" id="cby"><div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div></div>
-<div id="cartTimer" class="cart-timer" style="display:none"><i class="fas fa-clock"></i> <span>Cart reserved for <span id="timerClock">05:00</span> minutes</span></div>
-<div id="fsProgress" style="display:none;margin:0 24px 16px;padding:12px;background:var(--g50);border-radius:6px;text-align:center;font-size:11px;font-weight:700"></div>
+<div class="cbdy" id="cby">
+  <!-- Empty State -->
+  <div id="cartEmpty" class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div>
+  
+  <!-- Content State -->
+  <div id="cartContent" class="hidden">
+    <div id="cartItems"></div>
+    <!-- Step 1: Address Collection -->
+    <div id="addressSection" class="hidden" style="margin-top:24px;border-top:1px solid var(--g100);padding-top:24px">
+      <div class="c-step-hdr"><i class="fas fa-map-marker-alt"></i> 1. Shipping Address</div>
+      <div class="cod-form show" id="addressForm">
+        <input class="cod-inp" id="cod_name" type="text" placeholder="Full Name *" required>
+        <input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone Number *" required pattern="[0-9]{10}">
+        <input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode *" required pattern="[0-9]{6}">
+        <input class="cod-inp" id="cod_addr" type="text" placeholder="Full Address (House, Street, Area) *" required>
+        <div class="cod-row">
+          <input class="cod-inp" id="cod_city" type="text" placeholder="City">
+          <input class="cod-inp" id="cod_state" type="text" placeholder="State">
+        </div>
+        <button class="ccbtn" id="confirmAddressBtn" onclick="confirmAddress()" style="margin-top:8px">Continue to Payment <i class="fas fa-chevron-right" style="margin-left:8px;font-size:10px"></i></button>
+      </div>
+      <div id="addressSummary" class="addr-summary hidden">
+        <div class="addr-edit" onclick="editAddress()">Edit</div>
+        <div style="font-weight:700;margin-bottom:4px" id="sumName"></div>
+        <div id="sumAddr" style="opacity:0.8;line-height:1.4"></div>
+      </div>
+    </div>
+
+    <!-- Step 2: Payment Selection -->
+    <div id="paymentSection" class="hidden" style="margin-top:28px;border-top:1px solid var(--g100);padding-top:24px">
+      <div class="c-step-hdr"><i class="fas fa-credit-card"></i> 2. Select Payment Mode</div>
+      <div class="cmode" id="cmode" style="display:flex;margin-top:12px">
+        <div class="cmode-opt prepaid act" onclick="setPayMode('prepaid')" id="cm_prepaid">
+          <span class="cmode-badge">Fastest Drop</span>
+          <span class="cmode-label"><i class="fas fa-bolt" style="margin-right:4px;color:#eab308"></i> Prepaid</span>
+          <span class="cmode-price" style="color:var(--green)">Free Shipping</span>
+          <div class="prepaid-perk" id="prepaidPerk" style="display:block;font-size:10px;margin-top:8px;color:var(--g500);font-weight:500">📦 Priority fulfillment. Dispatched within 24hrs.</div>
+        </div>
+        <div class="cmode-opt cod" onclick="setPayMode('cod')" id="cm_cod">
+          <span class="cmode-badge">Standard</span>
+          <span class="cmode-label"><i class="fas fa-truck" style="margin-right:4px;opacity:0.6"></i> COD</span>
+          <span class="cmode-price">+ ₹99 Shipping</span>
+          <div class="risk-calc" id="riskCalc" style="font-size:10px;margin-top:8px;color:var(--g400);font-weight:500;line-height:1.4">Standard delivery. Verification required(EMAIL).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="cftr" id="cf" style="display:none">
 <div class="cst"><span>Subtotal</span><span id="csub">${STORE_CONFIG.currencySymbol}0</span></div>
 <div class="csh"><span>Shipping</span><span id="cshp">Calculated</span></div>
 <div class="ctl"><span>Total</span><span id="ctot">${STORE_CONFIG.currencySymbol}0</span></div>
 <div style="text-align:center"><span class="trust-badge"><i class="fas fa-shield-halved"></i> 100% Secure Checkout</span></div>
-<!-- Payment Mode Selector (only when NOT magic checkout) -->
-<div class="cmode" id="cmode" style="display:none;margin-top:8px">
-<div class="cmode-opt prepaid act" onclick="setPayMode('prepaid')" id="cm_prepaid">
-<span class="cmode-badge" style="background:#dcfce7;color:#166534">PRIORITY DISPATCH</span>
-<span class="cmode-label">Prepaid</span>
-<span class="cmode-price" style="color:var(--green);font-weight:700">FREE Shipping</span>
-<div class="prepaid-perk" id="prepaidPerk" style="display:block">⚡ Skip the queue. We ship prepaid orders first.</div>
-</div>
-<div class="cmode-opt cod" onclick="setPayMode('cod')" id="cm_cod">
-<span class="cmode-badge" style="background:var(--g100);color:var(--g500)">LOGISTICS HEAVY (Rs.99 FEE)</span>
-<span class="cmode-label">Cash on Delivery</span>
-<span class="cmode-price">+Rs.99 COD fee</span>
-<div class="risk-calc" id="riskCalc">⚠️ Subject to area verification. Takes 2+ days longer to process.</div>
-</div>
-</div>
-<!-- COD Address Form -->
-<div class="cod-form" id="codForm">
-<input class="cod-inp" id="cod_name" type="text" placeholder="Full Name *" required>
-<input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone Number *" required pattern="[0-9]{10}">
-<input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode *" required pattern="[0-9]{6}">
-<input class="cod-inp" id="cod_addr" type="text" placeholder="Full Address (House, Street, Area) *" required>
-<div class="cod-row">
-<input class="cod-inp" id="cod_city" type="text" placeholder="City">
-<input class="cod-inp" id="cod_state" type="text" placeholder="State">
-</div>
-</div>
-<button class="ccbtn" id="checkoutBtn" onclick="checkout()">Place Your Order <i class="fas fa-arrow-right" style="margin-left:8px;font-size:10px"></i></button>
+<button class="ccbtn" id="checkoutBtn" onclick="checkout()" style="display:none">Place Your Order <i class="fas fa-arrow-right" style="margin-left:8px;font-size:10px"></i></button>
 <p class="cpolicy">By placing an order, you agree to the intru.in <a href="/p/terms">Terms of Service</a> and our <a href="/p/returns">Store-Credit-only Refund Policy</a>.</p>
 </div></div>
 
@@ -484,18 +514,6 @@ function handleGoogleAuth(r){
   }).catch(function(){toast('Auth failed','err')});
 }
 
-function triggerGoogleIdentify(){
-  /* Build Google OAuth 2.0 URL */
-  var clientId=S.googleClientId;
-  if(clientId==='YOUR_GOOGLE_CLIENT_ID'){toast('Google login not configured','err');return}
-  var redirectUri=window.location.origin+'/auth/google/callback';
-  var scope='email profile';
-  var url='https://accounts.google.com/o/oauth2/v2/auth?client_id='+clientId+'&redirect_uri='+encodeURIComponent(redirectUri)+'&response_type=token+id_token&scope='+encodeURIComponent(scope)+'&nonce='+Math.random().toString(36).substring(2);
-  /* Backup cart for restoration */
-  sessionStorage.setItem('intru_cart_backup',JSON.stringify(cart));
-  if(pendingCheckout)sessionStorage.setItem('intru_pending_checkout','1');
-  window.location.href=url;
-}
 
 function openIdentifyOrOrders(){
   if(identifiedEmail){openOrders()}else{openIdentify()}
@@ -718,29 +736,16 @@ function startCartTimer(){
 }
 
 function setPayMode(mode){
-  if(mode === 'cod') {
-    var rc = document.getElementById('riskCalc');
-    if(rc){
-      rc.style.display = 'block'; rc.textContent = '⚠️ Verifying logistics availability...';
-      try { paySounds.cod.play(); } catch(e){}
-      setTimeout(function(){
-        rc.textContent = '❌ Standard Logistics. +Rs.99 convenience fee applied.';
-        applyPayMode(mode);
-      }, 400);
-      return;
-    }
-  }
   applyPayMode(mode);
 }
 
 function applyPayMode(mode){
   payMode=mode;
-  if(mode === 'prepaid') { try { paySounds.prepaid.play(); } catch(e){} }
   document.getElementById('cm_prepaid').classList.toggle('act',mode==='prepaid');
   document.getElementById('cm_cod').classList.toggle('act',mode==='cod');
-  document.getElementById('codForm').classList.toggle('show',mode==='cod');
   var perk = document.getElementById('prepaidPerk'); if(perk) perk.style.display = mode==='prepaid'?'block':'none';
-  var risk = document.getElementById('riskCalc'); if(risk && mode==='prepaid') risk.style.display = 'none';
+  var risk = document.getElementById('riskCalc'); if(risk) risk.style.display = mode==='cod'?'block':'none';
+  var btn = document.getElementById('checkoutBtn'); if(btn) btn.style.display = 'block';
   renderCartTotals();
 }
 
@@ -782,20 +787,43 @@ function renderCartTotals(){
 }
 
 function renderCart(){
-  var badge=document.getElementById('cb');var body=document.getElementById('cby');var footer=document.getElementById('cf');
+  var badge=document.getElementById('cb');
+  var empty=document.getElementById('cartEmpty');
+  var content=document.getElementById('cartContent');
+  var footer=document.getElementById('cf');
+  var itemsWrap=document.getElementById('cartItems');
   var count=cart.reduce(function(a,i){return a+i.q},0);
   badge.textContent=count;badge.classList.toggle('vis',count>0);
-  if(!cart.length){body.innerHTML='<div class="cemp"><i class="fas fa-shopping-bag"></i><p>Your bag is empty</p></div>';footer.style.display='none';return}
+  
+  if(!cart.length){
+    if(empty) empty.classList.remove('hidden');
+    if(content) content.classList.add('hidden');
+    footer.style.display='none';
+    return;
+  }
+  
+  if(empty) empty.classList.add('hidden');
+  if(content) content.classList.remove('hidden');
   footer.style.display='block';
-  /* Show payment mode selector only if NOT magic checkout */
+
+  /* Sequential Visibility Logic */
+  document.getElementById('addressSection').classList.remove('hidden');
+  if (addressConfirmed) {
+    document.getElementById('addressForm').classList.add('hidden');
+    document.getElementById('addressSummary').classList.remove('hidden');
+    document.getElementById('paymentSection').classList.remove('hidden');
+  } else {
+    document.getElementById('addressForm').classList.remove('hidden');
+    document.getElementById('addressSummary').classList.add('hidden');
+    document.getElementById('paymentSection').classList.add('hidden');
+  }
   document.getElementById('cmode').style.display=S.magic?'none':'flex';
-  if(S.magic){document.getElementById('codForm').classList.remove('show')}
   var html='';
   cart.forEach(function(item){
     var p=PM[item.p];if(!p)return;
     html+='<div class="citm"><img class="cimg" src="'+p.i[0]+'" alt="'+p.n+'"><div class="cinf"><div class="cnm">'+p.n+'</div><div class="cmt">Size: '+item.s+'</div><div class="cpr">'+fmt(p.p*item.q)+'</div><div class="cqty"><button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,-1)">&minus;</button><span>'+item.q+'</span><button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,1)">+</button></div><button class="crm" onclick="removeFromCart(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27)">Remove</button></div></div>';
   });
-  body.innerHTML=html;
+  if(itemsWrap) itemsWrap.innerHTML=html;
   renderCartTotals();
 }
 
@@ -886,23 +914,17 @@ function checkout(){
 
   /* Custom dual-mode checkout */
   if(payMode==='prepaid'){doPrepaidCheckout()}
-  else{
-    /* Ensure COD form is visible and make sure user fills it */
-    if(!document.getElementById('codForm').classList.contains('show')){
-      setPayMode('cod');
-      toast('Please fill in your delivery address for COD','err');
-      resetBtn();
-      return;
-    }
-    doCodCheckout()
-  }
+  else{doCodCheckout()}
 }
 
 function doPrepaidCheckout(){
   var t=getCartTotals();
+  var shipName = localStorage.getItem('intru_name') || identifiedName;
+  var shipPhone = localStorage.getItem('intru_phone') || '';
+  
   fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     items:cart.map(function(i){return{productId:i.p,size:i.s,quantity:i.q}}),
-    userEmail:identifiedEmail,userName:identifiedName,
+    userEmail:identifiedEmail,userName:shipName,userPhone:shipPhone,
     paymentMethod:'prepaid'
   })})
   .then(function(r){return r.json()})
@@ -911,7 +933,7 @@ function doPrepaidCheckout(){
     if(!data.razorpayOrderId){toast('Order: '+fmt(data.total)+'. Configure Razorpay.','err');resetBtn();return}
     if(typeof Razorpay==='undefined'){toast('Payment SDK failed. Refresh.','err');resetBtn();return}
     var options={key:S.rk,order_id:data.razorpayOrderId,name:'intru.in',
-      prefill:{email:identifiedEmail,contact:localStorage.getItem('intru_user_phone')||''},
+      prefill:{email:identifiedEmail,contact:shipPhone},
       theme:{color:'#0a0a0a',backdrop_color:'rgba(0,0,0,0.6)'},
       modal:{ondismiss:function(){resetBtn();toast('Payment cancelled','err')}},
       handler:function(response){
@@ -963,9 +985,12 @@ function doCodCheckout(){
 }
 
 function doMagicCheckout(){
+  var shipName = localStorage.getItem('intru_name') || identifiedName;
+  var shipPhone = localStorage.getItem('intru_phone') || '';
+
   fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     items:cart.map(function(i){return{productId:i.p,size:i.s,quantity:i.q}}),
-    userEmail:identifiedEmail,userName:identifiedName,paymentMethod:'magic'
+    userEmail:identifiedEmail,userName:shipName,paymentMethod:'magic'
   })})
   .then(function(r){return r.json()})
   .then(function(data){
@@ -973,7 +998,7 @@ function doMagicCheckout(){
     if(!data.razorpayOrderId){toast('Configure Razorpay keys','err');resetBtn();return}
     if(typeof Razorpay==='undefined'){toast('Payment SDK failed. Refresh.','err');resetBtn();return}
     var options={key:S.rk,one_click_checkout:true,order_id:data.razorpayOrderId,name:'intru.in',show_coupons:false,
-      prefill:{email:identifiedEmail,contact:localStorage.getItem('intru_user_phone')||''},
+      prefill:{email:identifiedEmail,contact:shipPhone},
       theme:{color:'#0a0a0a',backdrop_color:'rgba(0,0,0,0.6)'},
       modal:{ondismiss:function(){resetBtn();toast('Checkout cancelled','err')}},
       handler:function(response){
@@ -1027,6 +1052,42 @@ function showSuccessUI(orderId, type){
   document.body.style.overflow = 'hidden';
 }
 
+var addressConfirmed = false;
+function confirmAddress() {
+  var name=document.getElementById('cod_name').value.trim();
+  var phone=document.getElementById('cod_phone').value.trim();
+  var pincode=document.getElementById('cod_pincode').value.trim();
+  var addr=document.getElementById('cod_addr').value.trim();
+  var city=document.getElementById('cod_city').value.trim();
+  var state=document.getElementById('cod_state').value.trim();
+  if(!name||!phone||!pincode||!addr){toast('Fill all required fields (*)','err');return}
+  if(!/^[0-9]{10}$/.test(phone)){toast('Valid 10-digit phone required','err');return}
+  if(!/^[0-9]{6}$/.test(pincode)){toast('Valid 6-digit pincode required','err');return}
+
+  localStorage.setItem('intru_name', name);
+  localStorage.setItem('intru_phone', phone);
+  localStorage.setItem('intru_pincode', pincode);
+  localStorage.setItem('intru_addr', addr);
+  localStorage.setItem('intru_city', city);
+  localStorage.setItem('intru_state', state);
+
+  document.getElementById('sumName').textContent = name + ' (' + phone + ')';
+  document.getElementById('sumAddr').textContent = addr + ', ' + city + ', ' + state + ' - ' + pincode;
+  
+  addressConfirmed = true;
+  document.getElementById('addressForm').classList.add('hidden');
+  document.getElementById('addressSummary').classList.remove('hidden');
+  document.getElementById('paymentSection').classList.remove('hidden');
+  applyPayMode('prepaid');
+}
+
+function editAddress() {
+  addressConfirmed = false;
+  document.getElementById('addressForm').classList.remove('hidden');
+  document.getElementById('addressSummary').classList.add('hidden');
+  document.getElementById('paymentSection').classList.add('hidden');
+}
+
 function loadSavedAddress(){
   var name = localStorage.getItem('intru_name');
   if(name) {
@@ -1036,6 +1097,8 @@ function loadSavedAddress(){
       var el = document.getElementById('cod_'+f);
       if(el && val) el.value = val;
     });
+    /* If name exists, we can pre-populate the summary but don't auto-confirm unless they click? 
+       Let's stay on Step 1 for the first time in session. */
   }
 }
 

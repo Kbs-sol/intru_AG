@@ -632,15 +632,29 @@ app.post('/api/payment/verify', async (c) => {
       } catch (e) { console.error('Failed to update order:', e); }
     }
 
-    // Send "Drop Secured" email for prepaid
+    // Send emails for prepaid
     const resendKey = getEnv(c.env, 'RESEND_API_KEY');
     if (resendKey && customerEmail) {
+      // 1. Email to customer (Drop Secured)
       try {
         await sendResendEmail(resendKey, customerEmail,
           'Drop Secured! — intru.in',
           emailDropSecured(razorpay_order_id, orderItems, orderTotal)
         );
-      } catch (e) { console.error('Resend email error:', e); }
+      } catch (e) { console.error('Resend customer email error:', e); }
+
+      // 2. Email to manager (Payment Captured Alert)
+      try {
+        const managerEmail = await fetchStoreSetting(sbUrl, sbKey, 'MANAGER_EMAIL') || 'shop@intru.in';
+        const paymentData = {
+          id: razorpay_payment_id,
+          order_id: razorpay_order_id,
+          amount: orderTotal * 100, // in paise for the helper compatibility
+          email: customerEmail,
+          currency: 'INR'
+        };
+        await emailAdminPaymentAlert(resendKey, managerEmail, paymentData);
+      } catch (e) { console.error('Resend manager alert error:', e); }
     }
 
     return c.json({
@@ -744,6 +758,13 @@ app.post('/api/webhooks/razorpay', async (c) => {
         await supabaseFetch(sbUrl, sbKey, `orders?razorpay_order_id=eq.${payment.order_id}`, {
           method: 'PATCH', body: JSON.stringify(updatePayload),
         });
+
+        // NEW: Send manager alert via webhook fallback
+        const resendKey = getEnv(c.env, 'RESEND_API_KEY');
+        if (resendKey) {
+           const managerEmail = await fetchStoreSetting(sbUrl, sbKey, 'MANAGER_EMAIL') || 'shop@intru.in';
+           await emailAdminPaymentAlert(resendKey, managerEmail, payment);
+        }
       }
     }
 
@@ -1063,37 +1084,6 @@ app.put('/api/admin/settings/:key', async (c) => {
   }
   return c.json({ error: 'Supabase not configured' }, 500);
 })
-app.post('/api/webhooks/razorpay', async (c) => {
-  const signature = c.req.header('x-razorpay-signature');
-  const secret = c.env.RAZORPAY_WEBHOOK_SECRET;
-  const body = await c.req.text();
-
-  // 1. Verify Signature
-  if (signature && secret) {
-    const isValid = verifyRazorpaySignature(body, signature, secret);
-    if (!isValid) return c.json({ status: 'invalid_signature' }, 400);
-  }
-
-  const payload = JSON.parse(body);
-  const event = payload.event;
-
-  // 2. Handle Payment Captured
-  if (event === 'payment.captured') {
-    const payment = payload.payload.payment.entity;
-
-    // Update DB (Existing logic)
-    if (payment.order_id) {
-      await updateOrderStatus(c.env, payment.order_id, 'paid', payment.id);
-    }
-
-    // NEW: Send alert to your specific email
-    if (c.env.RESEND_API_KEY) {
-      await emailAdminPaymentAlert(c.env.RESEND_API_KEY, payment);
-    }
-  }
-
-  return c.json({ status: 'ok' });
-});
 // ============ INSTAGRAM FEED API ============
 
 app.get('/api/instagram-feed', async (c) => {
@@ -1348,19 +1338,23 @@ async function updateOrderStatus(env: any, orderId: string, status: string, paym
   }
 }
 
-async function emailAdminPaymentAlert(resendKey: string, payment: any) {
+async function emailAdminPaymentAlert(resendKey: string, managerEmail: string, payment: any) {
   const amount = (payment.amount || 0) / 100;
   const currency = (payment.currency || 'INR').toUpperCase();
   const emailBody = `
-    <div style="font-family:sans-serif;padding:24px;border:1px solid #eee">
-      <h2 style="color:#16a34a">💰 NEW PAYMENT RECEIVED</h2>
-      <p>A payment of <strong>${currency} ${amount.toLocaleString('en-IN')}</strong> has been captured.</p>
-      <p>Method: ${payment.method} | Email: ${payment.email}</p>
-      <p>Order ID: ${payment.order_id}</p>
-      <p style="font-size:12px;color:#999">View in Razorpay Dashboard for details.</p>
+    <div style="font-family:sans-serif;padding:24px;border:1px solid #eee;border-radius:12px;background:#fff">
+      <h2 style="color:#16a34a;margin-top:0">💰 NEW PAYMENT RECEIVED</h2>
+      <p style="font-size:16px">A payment of <strong>${currency} ${amount.toLocaleString('en-IN')}</strong> has been successfully captured.</p>
+      <div style="background:#f9fafb;padding:16px;border-radius:8px;margin:20px 0">
+        <p style="margin:4px 0"><strong>Order ID:</strong> ${payment.order_id || 'N/A'}</p>
+        <p style="margin:4px 0"><strong>Payment ID:</strong> ${payment.id || 'N/A'}</p>
+        <p style="margin:4px 0"><strong>Customer:</strong> ${payment.email}</p>
+        <p style="margin:4px 0"><strong>Method:</strong> ${payment.method || 'Online'}</p>
+      </div>
+      <p style="font-size:12px;color:#999;border-top:1px solid #eee;padding-top:12px;margin-top:20px">This is an automated operational alert for INTRU.IN. Please log in to your dashboard to process the order.</p>
     </div>
   `;
-  await sendResendEmail(resendKey, 'shop@intru.in', `💰 Payment Captured: ${currency} ${amount}`, emailBody);
+  await sendResendEmail(resendKey, managerEmail, `💰 Payment Captured: ${currency} ${amount}`, emailBody);
 }
 
 // ============ 404 ============
