@@ -37,15 +37,21 @@ export function adminPage(opts: {
 .apan{display:none}.apan.act{display:block}
 .otbl-wrap{width:100%;overflow-x:auto;border:1.5px solid var(--g100);border-radius:8px;background:var(--wh)}
 .otbl{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
-.otbl th{text-align:left;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--g400);padding:14px 12px;border-bottom:2px solid var(--g100);background:var(--g50)}
-.otbl td{padding:12px 12px;border-bottom:1px solid var(--g100);vertical-align:top;line-height:1.5}
+.otbl th{text-align:left;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--g500);padding:18px 16px;border-bottom:2px solid var(--g100);background:var(--g50)}
+.otbl td{padding:18px 16px;border-bottom:1px solid var(--g100);vertical-align:top;line-height:1.6}
 .otbl tr:last-child td{border-bottom:none}
-.otbl tr:hover td{background:var(--g50)}
-.otbl tr.cod-row{background:#fffbeb}
-.ostatus{display:inline-block;padding:3px 10px;border-radius:3px;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
-.ost-cod{background:#fef3c7;color:#92400e;border:1px solid #d97706;margin-left:6px}
-.ost-prepaid{background:#dcfce7;color:#166534;border:1px solid #16a34a;margin-left:6px}
-.ost-pending{background:#fef3c7;color:#92400e}.ost-paid{background:#dcfce7;color:#166534}.ost-placed{background:#fef3c7;color:#92400e}.ost-shipped{background:#dbeafe;color:#1e40af}.ost-delivered{background:#dcfce7;color:#166534}.ost-payment_failed{background:#fee2e2;color:#991b1b}.ost-cancelled{background:#fecaca;color:#991b1b}
+.otbl tr:hover td{background:rgba(0,0,0,0.02)}
+.otbl tr.cod-row{background:rgba(254,243,199,0.3)}
+.otbl tr.prepaid-row{background:rgba(220,252,231,0.2)}
+.ostatus{display:inline-block;padding:4px 10px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;border:1px solid transparent}
+.ost-cod{background:#fef3c7;color:#92400e;border-color:#d97706;margin-left:0}
+.ost-prepaid{background:#dcfce7;color:#166534;border-color:#16a34a;margin-left:0}
+.ost-pending{background:rgba(245,158,11,0.1);color:#b45309;border-color:rgba(245,158,11,0.3)}
+.ost-paid{background:rgba(16,185,129,0.1);color:#065f46;border-color:rgba(16,185,129,0.3)}
+.ost-placed{background:rgba(59,130,246,0.1);color:#1e40af;border-color:rgba(59,130,246,0.3)}
+.ost-shipped{background:rgba(99,102,241,0.1);color:#3730a3;border-color:rgba(99,102,241,0.3)}
+.ost-delivered{font-weight:900;background:#065f46;color:var(--wh)}
+.ost-payment_failed,.ost-cancelled{background:rgba(239,68,68,0.1);color:#991b1b;border-color:rgba(239,68,68,0.3)}
 .oselect{padding:4px 8px;border:1px solid var(--g200);border-radius:3px;font-size:11px;font-family:inherit}
 .apcards{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
 .apc{border:1.5px solid var(--g100);border-radius:8px;padding:20px;transition:border-color .2s}.apc:hover{border-color:var(--bk)}
@@ -419,17 +425,19 @@ function loadOrders(){
       var custName=o.customer_name||addr.name||(o.customer_email?o.customer_email.split('@')[0]:'—');
       var custPhone=o.customer_phone||addr.contact||'—';
       var isCod=pm==='cod';
-      h+='<tr class="'+(isCod?'cod-row':'')+'">'
-        +'<td style="font-weight:700;font-size:11px;min-width:100px;display:flex;flex-direction:column;gap:4px">#'+(o.razorpay_order_id||o.id||'').slice(-8).toUpperCase()
-        +(isCod ? '<span class="ostatus ost-cod">COD</span>' : '<span class="ostatus ost-prepaid">⚡ PAID</span>') +'</td>'
-        +'<td style="min-width:180px"><div style="font-size:12px;font-weight:700;color:var(--bk)">'+custName+'</div><div style="font-size:11px;color:var(--g500)">'+(o.customer_email||'')+'</div><div style="font-size:11px;font-weight:600;color:var(--g400);margin-top:2px"><i class="fas fa-phone-alt" style="font-size:9px"></i> '+(o.customer_phone||'')+'</div></td>'
-        +'<td style="font-size:12px;min-width:200px;max-width:250px;white-space:normal;color:var(--g600)">'+items+'</td>'
-        +'<td style="font-weight:800;min-width:110px;color:var(--bk)">Rs.'+(o.total||0).toLocaleString('en-IN')+(o.cod_fee>0?'<br><span style="font-size:9px;color:var(--g500);font-weight:400">incl. Rs.'+o.cod_fee+' COD fee</span>':'')+'</td>'
-        +'<td><span style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:4px 8px;border-radius:4px;border:1px solid '+(isCod?'#d97706':'#16a34a')+';'+(isCod?'background:#fef3c7;color:#92400e':'background:#dcfce7;color:#166534')+'">'+pm+'</span></td>'
+      h+='<tr class="'+(isCod?'cod-row':'prepaid-row')+'">'
+        +'<td style="min-width:110px"><div style="font-weight:800;font-size:12px;letter-spacing:-0.5px;margin-bottom:6px">#'+(o.razorpay_order_id||o.id||'').slice(-8).toUpperCase()+'</div>'
+        +(isCod ? '<span class="ostatus ost-cod">🚚 COD</span>' : '<span class="ostatus ost-prepaid">⚡ PREPAID</span>') +'</td>'
+        +'<td style="min-width:200px"><div style="font-size:14px;font-weight:800;color:var(--bk);letter-spacing:-0.2px">'+custName+'</div>'
+        +'<div style="font-size:11px;color:var(--g600);font-weight:600;margin:4px 0"><i class="fas fa-envelope" style="font-size:9px;width:12px"></i>'+(o.customer_email||'—')+'</div>'
+        +'<div style="font-size:11px;color:var(--g600);font-weight:600"><i class="fas fa-phone" style="font-size:9px;width:12px"></i>'+(o.customer_phone||'—')+'</div>'
+        +'<div style="margin-top:10px;font-size:10px;line-height:1.4;color:var(--g500);background:rgba(0,0,0,0.03);padding:6px;border-radius:4px;border:1px solid rgba(0,0,0,0.03)">'+addrStr+'</div></td>'
+        +'<td style="font-size:12px;min-width:180px;color:var(--bk);font-weight:500">'+items+'</td>'
+        +'<td style="min-width:110px"><div style="font-weight:800;font-size:15px;color:var(--bk)">Rs.'+(o.total||0).toLocaleString('en-IN')+'</div>'+(o.cod_fee>0?'<div style="font-size:9px;color:#92400e;font-weight:700;margin-top:2px">+ Rs.'+o.cod_fee+' COD handle</div>':'')+'</td>'
         +'<td><span class="ostatus ost-'+st+'">'+st+'</span></td>'
-        +'<td style="min-width:140px"><select class="oselect" style="width:100%" onchange="updateOrder(\\x27'+o.id+'\\x27,this.value)">'
-        +'<option value="">Update...</option><option value="paid">Mark Paid</option><option value="processing">Processing</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>'
-        +'<button class="shiprocket-btn" style="width:100%;text-align:center" onclick="copyShiprocket(\\x27'+custName.replace(/'/g,'')+'\\x27,\\x27'+custPhone+'\\x27,\\x27'+addrStr.replace(/'/g,'')+'\\x27)"><i class="fas fa-shipping-fast" style="margin-right:4px"></i>Shiprocket Copy</button>'
+        +'<td style="min-width:150px"><select class="oselect" style="width:100%;margin-bottom:8px" onchange="updateOrder(\\x27'+o.id+'\\x27,this.value)">'
+        +'<option value="">Update Status...</option><option value="paid">Mark Paid</option><option value="processing">Processing</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>'
+        +'<button class="shiprocket-btn" style="width:100%;text-align:center" onclick="copyShiprocket(\\x27'+custName.replace(/'/g,'')+'\\x27,\\x27'+custPhone+'\\x27,\\x27'+addrStr.replace(/'/g,'')+'\\x27)"><i class="fas fa-copy" style="margin-right:4px"></i>Shiprocket Copy</button>'
         +'</td></tr>';
     });
     document.getElementById('otbody').innerHTML=h;

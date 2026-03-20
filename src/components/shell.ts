@@ -859,17 +859,29 @@ function toggleAIChat(){
 
 function formatMsg(txt) {
   if (!txt) return '';
-  /* Convert [PRODUCT:slug] to card */
-  return txt.replace(/\\[PRODUCT:([a-z0-9-]+)\\]/g, function(match, slug) {
-    var p = window.STORE_PRODUCTS ? window.STORE_PRODUCTS.find(function(x) { return x.slug === slug; }) : null;
-    if (!p) return '<a href="/product/' + slug + '" style="color:var(--bk);font-weight:700;text-decoration:underline">View Product: ' + slug + '</a>';
-    return '<a href="/product/' + p.slug + '" style="display:block;background:var(--wh);border:1px solid rgba(0,0,0,.05);border-radius:8px;overflow:hidden;margin-top:8px;text-decoration:none;color:inherit">' +
-           '<div style="aspect-ratio:3/4;overflow:hidden;background:var(--g50)"><img src="' + p.images[0] + '" alt="' + p.name + '" style="width:100%;height:100%;object-fit:cover"></div>' +
-           '<div style="padding:10px">' +
-           '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">' + p.name + '</div>' +
-           '<div style="font-size:12px;font-weight:700;color:var(--bk)">Rs.' + p.price.toLocaleString('en-IN') + '</div>' +
-           '</div></a>';
+  txt = txt.replace(/[*]{2}(.*?)[*]{2}/g, '<b>$1</b>');
+  txt = txt.replace(/_(.*?)_/g, '<i>$1</i>');
+
+  /* Handle %%PRODUCT_CARD:slug%% markers */
+  txt = txt.replace(/%%PRODUCT_CARD:([a-z0-9-]+)%%/g, function(match, slug) {
+    return buildStylistCard(slug);
   });
+  /* Also handle legacy [PRODUCT:slug] format */
+  txt = txt.replace(/\\[PRODUCT:([a-z0-9-]+)\\]/g, function(match, slug) {
+    return buildStylistCard(slug);
+  });
+  return txt;
+}
+function buildStylistCard(slug) {
+  var p = window.STORE_PRODUCTS ? window.STORE_PRODUCTS.find(function(x) { return x.slug === slug; }) : null;
+  if (!p) return '<a href="/product/' + slug + '" style="color:var(--bk);font-weight:700;text-decoration:underline">View Product: ' + slug + '</a>';
+  return '<a href="/product/' + p.slug + '" style="display:block;background:var(--wh);border:1px solid rgba(0,0,0,.05);border-radius:8px;overflow:hidden;margin-top:8px;text-decoration:none;color:inherit">' +
+         '<div style="aspect-ratio:3/4;overflow:hidden;background:var(--g50)"><img src="' + p.images[0] + '" alt="' + p.name + '" style="width:100%;height:100%;object-fit:cover"></div>' +
+         '<div style="padding:10px">' +
+         '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">' + p.name + '</div>' +
+         '<div style="font-size:12px;font-weight:700;color:var(--bk)">Rs.' + p.price.toLocaleString('en-IN') + '</div>' +
+         '<div style="width:100%;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;background:var(--bk);color:var(--wh);padding:8px;text-align:center;border-radius:4px;margin-top:8px">Secure Now</div>' +
+         '</div></a>';
 }
 function renderAIChat(){
   var b=document.getElementById('aiBody');
