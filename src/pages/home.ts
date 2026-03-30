@@ -80,7 +80,7 @@ export function homePage(opts: {
 <section class="hero">
   <div class="hero-wrap">
     <span class="hero-over anim">Minimalist Drop 01 // 2026</span>
-    <h1 class="hero-title anim d1">BUILT FROM SCRATCH WITH A<br>SHARED LOVE FOR MINIMALISM<br>& EVERYDAY STYLE.</h1>
+    <h1 class="hero-title anim d1">FOR SHARED LOVE FOR<br>MINIMALISM &<br>EVERYDAY STYLE.</h1>
     <p class="hero-sub anim d2">Premium fabrics meeting alternative silhouettes. No branding, no noise, just the collective's energy in every thread.</p>
     <div class="hero-cta-box anim d3">
       <a href="#products" class="hero-cta">Explore the Essentials</a>
