@@ -129,8 +129,8 @@ export function adminPage(opts: {
 </div>
 <div class="otbl-wrap">
 <table class="otbl">
-<thead><tr><th>Order ID</th><th>Customer Info</th><th>Items</th><th>Pricing</th><th>Method</th><th>Status</th><th>Actions</th></tr></thead>
-<tbody id="otbody"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--g400)">Loading...</td></tr></tbody>
+<thead><tr><th>Order ID</th><th>Customer Info</th><th>Items</th><th>Pricing</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody id="otbody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--g400)">Loading...</td></tr></tbody>
 </table>
 </div>
 </div>
@@ -455,7 +455,6 @@ function loadOrders(){
         +'<div style="margin-top:10px;font-size:10px;line-height:1.4;color:var(--g500);background:rgba(0,0,0,0.03);padding:6px;border-radius:4px;border:1px solid rgba(0,0,0,0.03)">'+addrStr+'</div></td>'
         +'<td data-label="Items" style="font-size:12px;min-width:180px;color:var(--bk);font-weight:500">'+items+'</td>'
         +'<td data-label="Pricing" style="min-width:110px"><div style="font-weight:800;font-size:15px;color:var(--bk)">Rs.'+(o.total||0).toLocaleString('en-IN')+'</div>'+(o.cod_fee>0?'<div style="font-size:9px;color:#92400e;font-weight:700;margin-top:2px">+ Rs.'+o.cod_fee+' COD handle</div>':'')+'</td>'
-        +'<td data-label="Method" style="display:none"></td>' // Hidden in table as reflected in Order ID column
         +'<td data-label="Status"> <span class="ostatus ost-'+st+'">'+st+'</span></td>'
         +'<td data-label="Actions" style="min-width:150px"><select class="oselect" style="width:100%;margin-bottom:8px" onchange="updateOrder(\\x27'+o.id+'\\x27,this.value)">'
         +'<option value="">Update Status...</option><option value="paid">Mark Paid</option><option value="processing">Processing</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>'
@@ -463,7 +462,7 @@ function loadOrders(){
         +'</td></tr>';
     });
     document.getElementById('otbody').innerHTML=h;
-  }).catch(function(e){document.getElementById('otbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--red)">Error: '+e.message+'</td></tr>'});
+  }).catch(function(e){document.getElementById('otbody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--red)">Error: '+e.message+'</td></tr>'});
 }
 
 /* ====== ANALYTICS [AG] ====== */
