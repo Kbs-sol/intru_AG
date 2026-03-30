@@ -12,9 +12,10 @@
 **Engineering Philosophy:**
 The entire platform is mathematically engineered for two outcomes:
 1. **High Organic Traffic (SEO Dominance)**: Zero-JS server rendering, dynamic sitemaps, semantic OpenGraph tags, and near-perfect Core Web Vitals to ensure the site ranks aggressively on Google.
-2. **High Conversion (Psychological Warfare)**: Every pixel, micro-interaction, and piece of copy is designed using direct-response psychology. This includes FOMO scarcity counters, an immersive AI Salesperson ("INTRU ADVISOR"), Trust Rows to kill friction, and a VIP framing for prepaid orders.
+2. **High Conversion (Brutalist UX)**: Every pixel is engineered for conversion using a "Brutalist Typography" aesthetic. This emphasizes raw brand authority, visual scarcity, and a frictionless "Quick Add" system that reduces clicks-to-checkout.
+3. **Data-Driven Drop Management**: Granular tracking of product views and drop performance to inform inventory decisions and scaling.
 
-*This dual-mandate of High Organic Traffic and High Conversion governs all technical decisions across the stack.*
+*This triple-mandate of SEO, Conversion, and Analytics governs all technical decisions across the stack.*
 
 | Attribute | Value |
 |-----------|-------|
@@ -37,8 +38,8 @@ The entire platform is mathematically engineered for two outcomes:
 webapp/
 ├── src/
 │   ├── index.tsx          # Main Hono app: ALL API routes + page routes
-│   ├── data.ts            # Data layer: types, Supabase helpers (inc. uploadToSupabase [AG]), 
-│   │                      #   Razorpay helpers, email templates, seed data, store config
+│   ├── data.ts            # Data layer: types, Supabase helpers, R2 Upload (AWS SigV4 [AG]), 
+│   │                      #   Razorpay helpers, email templates, seed data, analytics tracking
 │   ├── components/
 │   │   └── shell.ts       # HTML shell: nav, cart drawer, checkout JS, footer,
 │   │                      #   Google auth, identity overlay, payment mode selector
@@ -229,6 +230,14 @@ ALTER TABLE orders ADD CONSTRAINT orders_status_check
 | FOMO_THRESHOLD_LOW | '10' | Stock count to trigger "Low Stock" badge |
 | FOMO_THRESHOLD_CRITICAL | '3' | Stock count to trigger "CRITICAL" badge |
 
+#### `analytics`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | SERIAL PK | |
+| page_path | TEXT | e.g. '/', '/product/slug' |
+| view_count | INTEGER | Incremented on every visit |
+| last_viewed | TIMESTAMPTZ | |
+
 #### Other Tables:
 - **`legal_pages`**: slug (PK), title, content (HTML), updated_at
 - **`size_chart`**: size_label (PK), chest, length, shoulder, sleeve, product_category, sort_order
@@ -289,7 +298,8 @@ ALTER TABLE orders ADD CONSTRAINT orders_status_check
 | POST | `/api/admin/instagram-feed` | Add IG feed item |
 | PATCH | `/api/admin/instagram-feed/:id` | Update IG feed item |
 | DELETE | `/api/admin/instagram-feed/:id` | Delete IG feed item |
-| POST | `/api/admin/upload` | Upload image directly to Supabase Storage [AG] |
+| POST | `/api/admin/upload` | Upload image to Cloudflare R2 (S3-compatible [AG]) |
+| GET | `/api/admin/analytics` | Fetch granular page/product view data |
 
 ### Page Routes:
 
@@ -446,8 +456,9 @@ RESEND_API_KEY=re_xxx
 4. **Size Chart**: Add/edit/delete size measurements (XS-XXL)
 5. **IG Feed**: Toggle feed on/off, manage images with sort order
 6. **Settings**: Toggle Magic Checkout, set manager email, set COD fee
-7. **Image Upload [AG]**: Direct upload to Supabase `Products` bucket with filename sanitization and auto-fill for empty image slots.
+7. **Image Upload [AG]**: Direct upload to **Cloudflare R2** via AWS Signature V4. Returns public URLs from the `intru-products` bucket.
 8. **Maintenance [AG v11]**: Interactive control over Server-Rendered Maintenance UI (Soft/Full/Off).
+9. **Analytics View [AG v15]**: Real-time snapshot of product performance, page views, and total drop engagement.
 
 ---
 
@@ -523,6 +534,45 @@ RESEND_API_KEY=re_xxx
 - **Unified Webhook Architecture**: Consolidated redundant Razorpay webhook handlers into a single robust entry point (`/api/webhooks/razorpay`) in `index.tsx`.
 - **Manager Alert Integration**: Integrated Resend-powered manager notifications for all successful prepaid and magic checkout payments, ensuring parity with the COD alert flow.
 - **Zero-Friction Identity**: Replaced "Identity Overlay" with a more integrated "Secure Your Drop" portal that captures email/name seamlessly.
+
+### Version 15 — Brutalist Modernization & Granular Insights [AG]
+- **Brutalist Typography Hero**: Migrated from lifestyle imagery to a raw, high-impact typographic hero using massive **Archivo Black** text and industrial grain textures.
+- **Quick Add Overlays**: Implemented a "one-click" size selection system on product cards. Hovering reveals interactive size chips; clicking adds to bag and instantly opens the checkout drawer.
+- **Trust Portal Integration**: Added a dedicated site-wide footer section for "Express Ship", "Check Order", and "Secure Pay" to build immediate credibility.
+- **Cloudflare R2 Migration**: Fully migrated product storage from Supabase to **Cloudflare R2**. Implemented custom AWS SigV4 signing in `data.ts` to allow secure uploads without bloated SDKs.
+- **Dual-Layer Analytics**: 
+  - **Global**: Cloudflare Web Analytics beacon for traffic stats.
+  - **Granular**: Custom `analytics` table in Supabase tracks specific views for every product and legal page. Incremented via non-blocking `c.executionCtx.waitUntil` for zero performance impact.
+- **Type Safety Polish**: Resolved extensive linting errors by explicitly typing Hono `Context` and `Next` parameters across the entire API surface.
+
+---
+
+## 18. ASSET STORAGE (Cloudflare R2)
+
+### Architecture:
+We use Cloudflare R2 for all product imagery to ensure global edge performance and escape Supabase storage limits.
+
+### Implementation Details:
+- **Bucket**: `intru-products`
+- **Public URL**: `https://83b25481410c2463525f8e8cbc087bbd.r2.cloudflarestorage.com/intru-products/products/{filename}`
+- **Authentication**: Custom implementation of **AWS Signature V4** using `crypto.subtle` in `src/data.ts`.
+- **Upload Flow**: 
+  1. Admin selects file.
+  2. Frontend sends to `/api/admin/upload`.
+  3. Backend generates SigV4 headers, performs `PUT` to R2, and returns the public URL.
+
+---
+
+## 19. ANALYTICS ENGINE
+
+### Methodology:
+We track both high-level traffic and low-level product interest to identify which drops are heating up.
+
+### Components:
+1. **Cloudflare Beacon**: Injected in `shell.ts`, provides core privacy-first web analytics.
+2. **Custom Tracker**: `incrementView(path)` in `data.ts` uses Supabase UPSERT logic to track page-level views.
+3. **Execution Context**: Uses `c.executionCtx.waitUntil()` in Hono to ensure tracking doesn't slow down the user's page load.
+4. **Dashboard**: The Admin Panel's "Analytics" tab renders this data in a readable table sorted by most-viewed items.
 
 ---
 

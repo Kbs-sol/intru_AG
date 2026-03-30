@@ -32,27 +32,28 @@ export function adminPage(opts: {
 .ahdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px;padding-bottom:20px;border-bottom:1px solid var(--g100)}
 .ahdr h1{font-family:var(--head);font-size:24px;text-transform:uppercase;letter-spacing:-.02em}
 .aout{padding:10px 20px;background:none;border:1.5px solid var(--g200);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;transition:all .2s;border-radius:4px}.aout:hover{background:var(--bk);color:var(--wh);border-color:var(--bk)}
-.atabs{display:flex;gap:0;margin-bottom:32px;border-bottom:2px solid var(--g100);flex-wrap:wrap}
-.atab{padding:14px 20px;background:none;border:none;border-bottom:2px solid transparent;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--g400);margin-bottom:-2px;transition:all .2s}.atab:hover{color:var(--bk)}.atab.act{color:var(--bk);border-bottom-color:var(--bk)}
+.atabs{display:flex;gap:0;margin-bottom:32px;border-bottom:2px solid var(--g100);overflow-x:auto;scrollbar-width:none}.atabs::-webkit-scrollbar{display:none}
+.atab{padding:14px 20px;background:none;border:none;border-bottom:2px solid transparent;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--g400);white-space:nowrap;transition:all .2s}.atab:hover{color:var(--bk)}.atab.act{color:var(--bk);border-bottom-color:var(--bk)}
 .apan{display:none}.apan.act{display:block}
 .otbl-wrap{width:100%;overflow-x:auto;border:1.5px solid var(--g100);border-radius:8px;background:var(--wh)}
 .otbl{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
+@media(max-width:768px){
+  .otbl{min-width:100%}
+  .otbl thead{display:none}
+  .otbl tr{display:block;margin-bottom:16px;border:1.5px solid var(--g100);border-radius:8px;padding:12px;background:var(--wh)}
+  .otbl td{display:block;padding:8px 0;border:none;text-align:left}
+  .otbl td::before{content:attr(data-label);display:block;font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+  .adm{padding:20px 16px 80px}
+  .ahdr{flex-direction:column;gap:12px;align-items:flex-start}
+}
 .otbl th{text-align:left;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--g500);padding:18px 16px;border-bottom:2px solid var(--g100);background:var(--g50)}
 .otbl td{padding:18px 16px;border-bottom:1px solid var(--g100);vertical-align:top;line-height:1.6}
 .otbl tr:last-child td{border-bottom:none}
 .otbl tr:hover td{background:rgba(0,0,0,0.02)}
-.otbl tr.cod-row{background:rgba(254,243,199,0.3)}
-.otbl tr.prepaid-row{background:rgba(220,252,231,0.2)}
-.ostatus{display:inline-block;padding:4px 10px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;border:1px solid transparent}
-.ost-cod{background:#fef3c7;color:#92400e;border-color:#d97706;margin-left:0}
-.ost-prepaid{background:#dcfce7;color:#166534;border-color:#16a34a;margin-left:0}
-.ost-pending{background:rgba(245,158,11,0.1);color:#b45309;border-color:rgba(245,158,11,0.3)}
-.ost-paid{background:rgba(16,185,129,0.1);color:#065f46;border-color:rgba(16,185,129,0.3)}
-.ost-placed{background:rgba(59,130,246,0.1);color:#1e40af;border-color:rgba(59,130,246,0.3)}
-.ost-shipped{background:rgba(99,102,241,0.1);color:#3730a3;border-color:rgba(99,102,241,0.3)}
-.ost-delivered{font-weight:900;background:#065f46;color:var(--wh)}
-.ost-payment_failed,.ost-cancelled{background:rgba(239,68,68,0.1);color:#991b1b;border-color:rgba(239,68,68,0.3)}
-.oselect{padding:4px 8px;border:1px solid var(--g200);border-radius:3px;font-size:11px;font-family:inherit}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+.stat-card{padding:24px;background:var(--wh);border:1.5px solid var(--g100);border-radius:8px}
+.stat-val{font-size:32px;font-family:var(--head);font-weight:900;letter-spacing:-1px}
+.stat-label{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
 .apcards{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
 .apc{border:1.5px solid var(--g100);border-radius:8px;padding:20px;transition:border-color .2s}.apc:hover{border-color:var(--bk)}
 .apc h3{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
@@ -109,6 +110,7 @@ export function adminPage(opts: {
 <div class="ahdr"><h1>Admin &mdash; intru.in</h1><button class="aout" onclick="doLogout()">Sign Out</button></div>
 <div class="atabs">
 <button class="atab act" onclick="showTab(this,'tord')">Orders</button>
+<button class="atab" onclick="showTab(this,'tana')">Analytics</button>
 <button class="atab" onclick="showTab(this,'tprod')">Products</button>
 <button class="atab" onclick="showTab(this,'tleg')">Legal</button>
 <button class="atab" onclick="showTab(this,'tsize')">Size Chart</button>
@@ -129,6 +131,25 @@ export function adminPage(opts: {
 <table class="otbl">
 <thead><tr><th>Order ID</th><th>Customer Info</th><th>Items</th><th>Pricing</th><th>Method</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody id="otbody"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--g400)">Loading...</td></tr></tbody>
+</table>
+</div>
+</div>
+
+<!-- Analytics Tab -->
+<div class="apan" id="tana">
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-val" id="anaTotalViews">...</div><div class="stat-label">Total Views</div></div>
+  <div class="stat-card"><div class="stat-val" id="anaProductViews">...</div><div class="stat-label">Product Views</div></div>
+  <div class="stat-card"><div class="stat-val" id="anaPageViews">...</div><div class="stat-label">Page Views</div></div>
+</div>
+<div class="shdr" style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+  <h2 style="font-family:var(--head);font-size:18px;text-transform:uppercase">Granular Performance</h2>
+  <button class="arefresh" onclick="loadAnalytics()"><i class="fas fa-sync-alt" style="margin-right:4px"></i>Refresh</button>
+</div>
+<div class="otbl-wrap">
+<table class="otbl" style="min-width:600px">
+<thead><tr><th>Resource Target</th><th>Type</th><th>Views</th><th>Last Tracked</th></tr></thead>
+<tbody id="anaTbody"><tr><td colspan="4" style="text-align:center;padding:40px;color:var(--g400)">Loading...</td></tr></tbody>
 </table>
 </div>
 </div>
@@ -391,7 +412,7 @@ if(sessionStorage.getItem('iadm')==='1'){document.addEventListener('DOMContentLo
 
 function showTab(btn,id){document.querySelectorAll('.atab').forEach(function(t){t.classList.remove('act')});document.querySelectorAll('.apan').forEach(function(p){p.classList.remove('act')});btn.classList.add('act');document.getElementById(id).classList.add('act')}
 
-function initAdmin(){getAdminSettings();loadOrders();loadProducts();initLegal();loadSizeChart();loadIgFeed();loadLimits();loadAIConfig()}
+function initAdmin(){getAdminSettings();loadOrders();loadAnalytics();loadProducts();initLegal();loadSizeChart();loadIgFeed();loadLimits();loadAIConfig()}
 function getAdminSettings(){loadSettings()}
 
 /* ====== LIMITS [AG] ====== */
@@ -426,22 +447,45 @@ function loadOrders(){
       var custPhone=o.customer_phone||addr.contact||'—';
       var isCod=pm==='cod';
       h+='<tr class="'+(isCod?'cod-row':'prepaid-row')+'">'
-        +'<td style="min-width:110px"><div style="font-weight:800;font-size:12px;letter-spacing:-0.5px;margin-bottom:6px">#'+(o.razorpay_order_id||o.id||'').slice(-8).toUpperCase()+'</div>'
+        +'<td data-label="Order ID" style="min-width:110px"><div style="font-weight:800;font-size:12px;letter-spacing:-0.5px;margin-bottom:6px">#'+(o.razorpay_order_id||o.id||'').slice(-8).toUpperCase()+'</div>'
         +(isCod ? '<span class="ostatus ost-cod">🚚 COD</span>' : '<span class="ostatus ost-prepaid">⚡ PREPAID</span>') +'</td>'
-        +'<td style="min-width:200px"><div style="font-size:14px;font-weight:800;color:var(--bk);letter-spacing:-0.2px">'+custName+'</div>'
+        +'<td data-label="Customer Info" style="min-width:200px"><div style="font-size:14px;font-weight:800;color:var(--bk);letter-spacing:-0.2px">'+custName+'</div>'
         +'<div style="font-size:11px;color:var(--g600);font-weight:600;margin:4px 0"><i class="fas fa-envelope" style="font-size:9px;width:12px"></i>'+(o.customer_email||'—')+'</div>'
         +'<div style="font-size:11px;color:var(--g600);font-weight:600"><i class="fas fa-phone" style="font-size:9px;width:12px"></i>'+(o.customer_phone||'—')+'</div>'
         +'<div style="margin-top:10px;font-size:10px;line-height:1.4;color:var(--g500);background:rgba(0,0,0,0.03);padding:6px;border-radius:4px;border:1px solid rgba(0,0,0,0.03)">'+addrStr+'</div></td>'
-        +'<td style="font-size:12px;min-width:180px;color:var(--bk);font-weight:500">'+items+'</td>'
-        +'<td style="min-width:110px"><div style="font-weight:800;font-size:15px;color:var(--bk)">Rs.'+(o.total||0).toLocaleString('en-IN')+'</div>'+(o.cod_fee>0?'<div style="font-size:9px;color:#92400e;font-weight:700;margin-top:2px">+ Rs.'+o.cod_fee+' COD handle</div>':'')+'</td>'
-        +'<td><span class="ostatus ost-'+st+'">'+st+'</span></td>'
-        +'<td style="min-width:150px"><select class="oselect" style="width:100%;margin-bottom:8px" onchange="updateOrder(\\x27'+o.id+'\\x27,this.value)">'
+        +'<td data-label="Items" style="font-size:12px;min-width:180px;color:var(--bk);font-weight:500">'+items+'</td>'
+        +'<td data-label="Pricing" style="min-width:110px"><div style="font-weight:800;font-size:15px;color:var(--bk)">Rs.'+(o.total||0).toLocaleString('en-IN')+'</div>'+(o.cod_fee>0?'<div style="font-size:9px;color:#92400e;font-weight:700;margin-top:2px">+ Rs.'+o.cod_fee+' COD handle</div>':'')+'</td>'
+        +'<td data-label="Method" style="display:none"></td>' // Hidden in table as reflected in Order ID column
+        +'<td data-label="Status"> <span class="ostatus ost-'+st+'">'+st+'</span></td>'
+        +'<td data-label="Actions" style="min-width:150px"><select class="oselect" style="width:100%;margin-bottom:8px" onchange="updateOrder(\\x27'+o.id+'\\x27,this.value)">'
         +'<option value="">Update Status...</option><option value="paid">Mark Paid</option><option value="processing">Processing</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>'
         +'<button class="shiprocket-btn" style="width:100%;text-align:center" onclick="copyShiprocket(\\x27'+custName.replace(/'/g,'')+'\\x27,\\x27'+custPhone+'\\x27,\\x27'+addrStr.replace(/'/g,'')+'\\x27)"><i class="fas fa-copy" style="margin-right:4px"></i>Shiprocket Copy</button>'
         +'</td></tr>';
     });
     document.getElementById('otbody').innerHTML=h;
   }).catch(function(e){document.getElementById('otbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--red)">Error: '+e.message+'</td></tr>'});
+}
+
+/* ====== ANALYTICS [AG] ====== */
+function loadAnalytics(){
+  document.getElementById('anaTbody').innerHTML='<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--g400)">Propagating...</td></tr>';
+  fetch('/api/admin/analytics',{headers:{'x-admin-token':sessionStorage.getItem('iadm_t')}}).then(function(r){return r.json()}).then(function(d){
+    var stats=d.analytics||[];
+    var total=0; var prodTotal=0; var pageTotal=0;
+    var h='';
+    stats.forEach(function(s){
+      total+=s.views;
+      if(s.type==='product')prodTotal+=s.views; else pageTotal+=s.views;
+      h+='<tr><td style="font-weight:700;color:var(--bk)">'+s.target+'</td>'
+        +'<td><span class="ostatus" style="background:var(--g100);color:var(--g500)">'+s.type+'</span></td>'
+        +'<td style="font-weight:900;font-size:16px">'+s.views.toLocaleString()+'</td>'
+        +'<td style="font-size:10px;color:var(--g400)">'+new Date(s.updated_at).toLocaleString()+'</td></tr>';
+    });
+    document.getElementById('anaTotalViews').textContent=total.toLocaleString();
+    document.getElementById('anaProductViews').textContent=prodTotal.toLocaleString();
+    document.getElementById('anaPageViews').textContent=pageTotal.toLocaleString();
+    document.getElementById('anaTbody').innerHTML=h||'<tr><td colspan="4" style="text-align:center;padding:40px">No data yet.</td></tr>';
+  }).catch(function(e){document.getElementById('anaTbody').innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--red)">Failed to load.</td></tr>'});
 }
 
 function copyShiprocket(name,phone,addr){

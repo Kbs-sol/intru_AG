@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { Hono, type Context, type Next } from 'hono'
 import { cors } from 'hono/cors'
 import {
   STORE_CONFIG, SEED_PRODUCTS, SEED_LEGAL_PAGES,
@@ -7,7 +7,7 @@ import {
   buildMagicLineItems, hmacSHA256, supabaseFetch,
   fetchProducts, fetchProductBySlug, fetchProductById, fetchLegalPages,
   sendResendEmail, emailDropSecured, emailCodReceived, emailCodManagerAlert,
-  fetchStoreSetting, fetchAllStoreSettings, uploadToSupabase,
+  fetchStoreSetting, fetchAllStoreSettings, uploadToR2, incrementView, fetchAnalytics
 } from './data'
 import { homePage } from './pages/home'
 import { productPage } from './pages/product'
@@ -29,7 +29,7 @@ function getEnv(env: Bindings, key: keyof Env, fallback?: string): string {
 }
 
 // Helper: get common page options
-async function getPageOpts(c: any) {
+async function getPageOpts(c: Context<{ Bindings: Bindings }>) {
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
   const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
@@ -85,7 +85,7 @@ p{font-size:16px;color:#a3a3a3;line-height:1.6;margin-bottom:24px}
 // ============ MAINTENANCE MIDDLEWARE ============
 // Intercepts all page GET requests when MAINTENANCE_MODE='full'
 // API routes and /admin always pass through
-app.use('*', async (c, next) => {
+app.use('*', async (c: Context<{ Bindings: Bindings }>, next: Next) => {
   const path = new URL(c.req.url).pathname;
   const isAPI = path.startsWith('/api/');
   const isAdmin = path === '/admin' || path.startsWith('/admin/');
@@ -107,57 +107,60 @@ app.use('*', async (c, next) => {
 
 // ============ PAGE ROUTES ============
 
-app.get('/maintenance', async (c) => {
+app.get('/maintenance', async (c: Context<{ Bindings: Bindings }>) => {
   const opts = await getPageOpts(c);
   return c.html(maintenancePage(opts));
 })
 
-app.get('/', async (c) => {
+app.get('/', async (c: Context<{ Bindings: Bindings }>) => {
   const opts = await getPageOpts(c);
+  c.executionCtx.waitUntil(incrementView(c.env, '/'));
   return c.html(homePage(opts));
 })
 
-app.get('/product/:slug', async (c) => {
+app.get('/product/:slug', async (c: Context<{ Bindings: Bindings }>) => {
   const slug = c.req.param('slug');
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
   const product = await fetchProductBySlug(sbUrl, sbKey, slug);
   if (!product) return c.html(`<html><head><meta http-equiv="refresh" content="0;url=/"></head></html>`, 404);
   const opts = await getPageOpts(c);
+  c.executionCtx.waitUntil(incrementView(c.env, `/product/${slug}`));
   return c.html(productPage(product, opts));
 })
 
-app.get('/p/:slug', async (c) => {
+app.get('/p/:slug', async (c: Context<{ Bindings: Bindings }>) => {
   const slug = c.req.param('slug');
   const opts = await getPageOpts(c);
   const page = opts.legalPages.find(p => p.slug === slug);
   if (!page) return c.html(`<html><head><meta http-equiv="refresh" content="0;url=/"></head></html>`, 404);
+  c.executionCtx.waitUntil(incrementView(c.env, `/p/${slug}`));
   return c.html(legalPage(page, opts));
 })
 
-app.get('/admin', async (c) => {
+app.get('/admin', async (c: Context<{ Bindings: Bindings }>) => {
   const opts = await getPageOpts(c);
   return c.html(adminPage(opts));
 })
 
-app.get('/collections', async (c) => {
+app.get('/all-collections', async (c: Context<{ Bindings: Bindings }>) => {
   const opts = await getPageOpts(c);
   return c.html(collectionsPage(opts));
 })
 
-app.get('/intrustylist', async (c) => {
+app.get('/stylist', async (c: Context<{ Bindings: Bindings }>) => {
   const opts = await getPageOpts(c);
   return c.html(stylistPage(opts));
 })
 
-app.get('/about', async (c) => {
+app.get('/about', async (c: Context<{ Bindings: Bindings }>) => {
   const opts = await getPageOpts(c);
   return c.html(aboutPage(opts));
 })
 
 // ============ SEO INFRASTRUCTURE ============
 
-app.get('/robots.txt', (c) => {
+app.get('/robots.txt', (c: Context<{ Bindings: Bindings }>) => {
   return c.text(`User-agent: *
 Allow: /
 Disallow: /admin
@@ -167,7 +170,7 @@ Disallow: /auth/
 Sitemap: https://intru.in/sitemap.xml`);
 });
 
-app.get('/sitemap.xml', async (c) => {
+app.get('/sitemap.xml', async (c: Context<{ Bindings: Bindings }>) => {
   const opts = await getPageOpts(c);
   const now = new Date().toISOString().split('T')[0];
   const staticPages = [
@@ -189,7 +192,7 @@ app.get('/sitemap.xml', async (c) => {
 // ============ AUTH: Google OAuth Redirect Callback ============
 // This page receives the id_token from Google OAuth redirect flow,
 // sends it to our backend API, saves user data, then redirects to homepage.
-app.get('/auth/google/callback', (c) => {
+app.get('/auth/google/callback', (c: Context<{ Bindings: Bindings }>) => {
   return c.html(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Signing in — intru.in</title>
@@ -261,13 +264,13 @@ app.get('/auth/google/callback', (c) => {
 })
 
 // Also handle the old /api/auth/google-redirect path as a backward-compatible redirect
-app.get('/api/auth/google-redirect', (c) => {
+app.get('/api/auth/google-redirect', (c: Context<{ Bindings: Bindings }>) => {
   return c.redirect('/auth/google/callback' + (c.req.url.includes('#') ? '' : ''), 302);
 })
 
 // ============ COD ORDER CONFIRMATION PAGE [AG] ============
 
-app.get('/confirm-order/:id', async (c) => {
+app.get('/confirm-order/:id', async (c: Context<{ Bindings: Bindings }>) => {
   const id = c.req.param('id');
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
@@ -305,7 +308,7 @@ app.get('/confirm-order/:id', async (c) => {
 
 // ============ API: Health ============
 
-app.get('/api/health', (c) => {
+app.get('/api/health', (c: Context<{ Bindings: Bindings }>) => {
   return c.json({
     status: 'ok', store: STORE_CONFIG.name, timestamp: new Date().toISOString(),
     services: {
@@ -318,7 +321,7 @@ app.get('/api/health', (c) => {
 
 // ============ API: Products ============
 
-app.get('/api/products', async (c) => {
+app.get('/api/products', async (c: Context<{ Bindings: Bindings }>) => {
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbSvc = getEnv(c.env, 'SUPABASE_SERVICE_KEY');
   const sbAnon = getEnv(c.env, 'SUPABASE_ANON_KEY');
@@ -326,7 +329,7 @@ app.get('/api/products', async (c) => {
   return c.json({ products, source });
 })
 
-app.get('/api/products/:id', async (c) => {
+app.get('/api/products/:id', async (c: Context<{ Bindings: Bindings }>) => {
   const id = c.req.param('id');
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
@@ -337,7 +340,7 @@ app.get('/api/products/:id', async (c) => {
 
 // ============ CHECKOUT: Prepaid (Razorpay Standard or Magic) ============
 
-app.post('/api/checkout', async (c) => {
+app.post('/api/checkout', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const body = await c.req.json();
     const items = body.items;
@@ -433,7 +436,7 @@ app.post('/api/checkout', async (c) => {
 
 // ============ CHECKOUT: COD (custom form) ============
 
-app.post('/api/checkout/cod', async (c) => {
+app.post('/api/checkout/cod', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const body = await c.req.json();
     const items = body.items;
@@ -543,7 +546,7 @@ app.post('/api/checkout/cod', async (c) => {
 
 // ============ SHIPPING INFO API ============
 
-app.post('/api/shipping-info', async (c) => {
+app.post('/api/shipping-info', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const body = await c.req.json();
     const addresses = body.addresses || [];
@@ -564,7 +567,7 @@ app.post('/api/shipping-info', async (c) => {
 
 // ============ PAYMENT VERIFICATION ============
 
-app.post('/api/payment/verify', async (c) => {
+app.post('/api/payment/verify', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const body = await c.req.json();
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
@@ -669,7 +672,7 @@ app.post('/api/payment/verify', async (c) => {
 
 // ============ RAZORPAY WEBHOOK ============
 
-app.post('/api/webhooks/razorpay', async (c) => {
+app.post('/api/webhooks/razorpay', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const rawBody = await c.req.text();
     const webhookSecret = getEnv(c.env, 'RAZORPAY_WEBHOOK_SECRET') || getEnv(c.env, 'RAZORPAY_KEY_SECRET');
@@ -787,7 +790,7 @@ app.post('/api/webhooks/razorpay', async (c) => {
 
 // ============ AUTH: Silent Identity ============
 
-app.post('/api/auth/identify', async (c) => {
+app.post('/api/auth/identify', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const { email } = await c.req.json();
     if (!email || !email.includes('@')) return c.json({ error: 'Valid email required' }, 400);
@@ -825,7 +828,7 @@ app.post('/api/auth/identify', async (c) => {
   }
 })
 
-app.post('/api/auth/google', async (c) => {
+app.post('/api/auth/google', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const body = await c.req.json();
     const { credential } = body;
@@ -854,7 +857,7 @@ app.post('/api/auth/google', async (c) => {
 })
 
 // Google userinfo fallback: when redirect flow returns access_token instead of id_token
-app.post('/api/auth/google-userinfo', async (c) => {
+app.post('/api/auth/google-userinfo', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const body = await c.req.json();
     const { email, name, picture } = body;
@@ -876,7 +879,7 @@ app.post('/api/auth/google-userinfo', async (c) => {
   }
 })
 
-app.post('/api/auth/magic-link', async (c) => {
+app.post('/api/auth/magic-link', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const { email } = await c.req.json();
     if (!email || !email.includes('@')) return c.json({ error: 'Valid email required' }, 400);
@@ -899,7 +902,7 @@ app.post('/api/auth/magic-link', async (c) => {
 })
 
 // ============ ADMIN SECURITY MIDDLEWARE [AG] ============
-app.use('/api/admin/*', async (c, next) => {
+app.use('/api/admin/*', async (c: Context<{ Bindings: Bindings }>, next: Next) => {
   if (c.req.path === '/api/admin/auth') return await next();
   const token = c.req.header('x-admin-token');
   const adminPwd = getEnv(c.env, 'ADMIN_PASSWORD', STORE_CONFIG.adminPassword);
@@ -911,7 +914,7 @@ app.use('/api/admin/*', async (c, next) => {
 
 // ============ ADMIN AUTH ============
 
-app.post('/api/admin/auth', async (c) => {
+app.post('/api/admin/auth', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const body = await c.req.json();
     const adminPwd = getEnv(c.env, 'ADMIN_PASSWORD', STORE_CONFIG.adminPassword);
@@ -920,24 +923,37 @@ app.post('/api/admin/auth', async (c) => {
   } catch { return c.json({ error: 'Auth failed' }, 500); }
 })
 
-app.post('/api/admin/upload', async (c) => {
+app.post('/api/admin/upload', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const body = await c.req.parseBody();
     const file = body['file'] as File;
-    const bucket = (body['bucket'] as string) || 'products';
 
     if (!file) return c.json({ error: 'No file provided' }, 400);
 
-    const url = await uploadToSupabase(c.env, bucket, file);
+    // Sanitize filename: timestamp + alphanumeric only
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_').toLowerCase();
+    const fileName = `${timestamp}_${safeName}`;
+
+    const url = await uploadToR2(c.env, file, fileName);
     return c.json({ success: true, url });
   } catch (e: any) {
     return c.json({ error: e.message || 'Upload failed' }, 500);
   }
 })
 
+app.get('/api/admin/analytics', async (c: Context<{ Bindings: Bindings }>) => {
+  try {
+    const data = await fetchAnalytics(c.env);
+    return c.json({ analytics: data });
+  } catch (e: any) {
+    return c.json({ error: e.message || 'Failed to fetch analytics' }, 500);
+  }
+})
+
 // ============ ADMIN API ============
 
-app.get('/api/admin/orders', async (c) => {
+app.get('/api/admin/orders', async (c: Context<{ Bindings: Bindings }>) => {
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
   if (sbUrl && sbKey) {
@@ -949,7 +965,7 @@ app.get('/api/admin/orders', async (c) => {
   return c.json({ orders: [], source: 'none' });
 })
 
-app.patch('/api/admin/orders/:id', async (c) => {
+app.patch('/api/admin/orders/:id', async (c: Context<{ Bindings: Bindings }>) => {
   const orderId = c.req.param('id');
   const body = await c.req.json();
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
@@ -964,7 +980,7 @@ app.patch('/api/admin/orders/:id', async (c) => {
   return c.json({ error: 'Supabase not configured' }, 500);
 })
 
-app.patch('/api/admin/products/:id', async (c) => {
+app.patch('/api/admin/products/:id', async (c: Context<{ Bindings: Bindings }>) => {
   const productId = c.req.param('id');
   const body = await c.req.json();
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
@@ -979,7 +995,7 @@ app.patch('/api/admin/products/:id', async (c) => {
   return c.json({ error: 'Supabase not configured' }, 500);
 })
 
-app.patch('/api/admin/legal/:slug', async (c) => {
+app.patch('/api/admin/legal/:slug', async (c: Context<{ Bindings: Bindings }>) => {
   const slug = c.req.param('slug');
   const body = await c.req.json();
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
@@ -996,7 +1012,7 @@ app.patch('/api/admin/legal/:slug', async (c) => {
 
 // ============ SIZE CHART API ============
 
-app.get('/api/size-chart', async (c) => {
+app.get('/api/size-chart', async (c: Context<{ Bindings: Bindings }>) => {
   const category = c.req.query('category');
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
@@ -1022,7 +1038,7 @@ app.get('/api/size-chart', async (c) => {
   });
 })
 
-app.put('/api/admin/size-chart/:label', async (c) => {
+app.put('/api/admin/size-chart/:label', async (c: Context<{ Bindings: Bindings }>) => {
   const label = c.req.param('label');
   const body = await c.req.json();
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
@@ -1038,7 +1054,7 @@ app.put('/api/admin/size-chart/:label', async (c) => {
   return c.json({ error: 'Supabase not configured' }, 500);
 })
 
-app.delete('/api/admin/size-chart/:label', async (c) => {
+app.delete('/api/admin/size-chart/:label', async (c: Context<{ Bindings: Bindings }>) => {
   const label = c.req.param('label');
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
@@ -1052,7 +1068,7 @@ app.delete('/api/admin/size-chart/:label', async (c) => {
 
 // ============ STORE SETTINGS API ============
 
-app.get('/api/admin/settings', async (c) => {
+app.get('/api/admin/settings', async (c: Context<{ Bindings: Bindings }>) => {
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
   if (sbUrl && sbKey) {
@@ -1069,7 +1085,7 @@ app.get('/api/admin/settings', async (c) => {
   return c.json({ settings: { USE_MAGIC_CHECKOUT: 'false', MANAGER_EMAIL: 'shop@intru.in', COD_FEE: '99' }, source: 'static' });
 })
 
-app.put('/api/admin/settings/:key', async (c) => {
+app.put('/api/admin/settings/:key', async (c: Context<{ Bindings: Bindings }>) => {
   const key = c.req.param('key');
   const body = await c.req.json();
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
@@ -1086,7 +1102,7 @@ app.put('/api/admin/settings/:key', async (c) => {
 })
 // ============ INSTAGRAM FEED API ============
 
-app.get('/api/instagram-feed', async (c) => {
+app.get('/api/instagram-feed', async (c: Context<{ Bindings: Bindings }>) => {
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
   if (sbUrl && sbKey) {
@@ -1102,7 +1118,7 @@ app.get('/api/instagram-feed', async (c) => {
   return c.json({ feed: [], enabled: true, source: 'static' });
 })
 
-app.post('/api/admin/instagram-feed', async (c) => {
+app.post('/api/admin/instagram-feed', async (c: Context<{ Bindings: Bindings }>) => {
   const body = await c.req.json();
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
@@ -1117,7 +1133,7 @@ app.post('/api/admin/instagram-feed', async (c) => {
   return c.json({ error: 'Supabase not configured' }, 500);
 })
 
-app.patch('/api/admin/instagram-feed/:id', async (c) => {
+app.patch('/api/admin/instagram-feed/:id', async (c: Context<{ Bindings: Bindings }>) => {
   const id = c.req.param('id');
   const body = await c.req.json();
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
@@ -1132,7 +1148,7 @@ app.patch('/api/admin/instagram-feed/:id', async (c) => {
   return c.json({ error: 'Supabase not configured' }, 500);
 })
 
-app.delete('/api/admin/instagram-feed/:id', async (c) => {
+app.delete('/api/admin/instagram-feed/:id', async (c: Context<{ Bindings: Bindings }>) => {
   const id = c.req.param('id');
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
@@ -1146,7 +1162,7 @@ app.delete('/api/admin/instagram-feed/:id', async (c) => {
 
 // ============ SUBSCRIBERS ("Notify Me") ============
 
-app.post('/api/subscribe', async (c) => {
+app.post('/api/subscribe', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const { email } = await c.req.json();
     if (!email || !email.includes('@')) return c.json({ error: 'Valid email required' }, 400);
@@ -1166,7 +1182,7 @@ app.post('/api/subscribe', async (c) => {
 
 // ============ STORE CREDIT ============
 
-app.post('/api/store-credit', async (c) => {
+app.post('/api/store-credit', async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const { email } = await c.req.json();
     if (!email) return c.json({ error: 'Email required' }, 400);
@@ -1186,7 +1202,7 @@ app.post('/api/store-credit', async (c) => {
 
 // ============ AI STYLIST API [AG] ============
 
-app.post('/api/ai/chat', async (c) => {
+app.post('/api/ai/chat', async (c: Context<{ Bindings: Bindings }>) => {
   const { messages } = await c.req.json();
   if (!messages || !messages.length) return c.json({ error: 'No messages' }, 400);
 
@@ -1287,7 +1303,7 @@ app.post('/api/ai/chat', async (c) => {
 
 // ============ ADMIN: LIMITS & USAGE [AG] ============
 
-app.get('/api/admin/limits', async (c) => {
+app.get('/api/admin/limits', async (c: Context<{ Bindings: Bindings }>) => {
   const sbUrl = getEnv(c.env, 'SUPABASE_URL');
   const sbKey = getEnv(c.env, 'SUPABASE_SERVICE_KEY') || getEnv(c.env, 'SUPABASE_ANON_KEY');
 
@@ -1358,7 +1374,7 @@ async function emailAdminPaymentAlert(resendKey: string, managerEmail: string, p
 }
 
 // ============ 404 ============
-app.all('*', (c) => {
+app.all('*', (c: Context<{ Bindings: Bindings }>) => {
   return c.html(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>404 — INTRU.IN</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">

@@ -37,14 +37,12 @@ export function buildHead(title: string, desc: string, opt: { og?: string, url?:
   "url": "https://intru.in",
   "logo": "https://intru.in/logo.png",
   "description": "${STORE_CONFIG.description}",
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": "Hyderabad",
-    "addressRegion": "Telangana",
-    "addressCountry": "IN"
   }
 }
-</script>`;
+</script>
+<!-- Cloudflare Web Analytics -->
+<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "76ec4808383a48e7ba66288f6ea0317e"}'></script>
+<!-- End Cloudflare Web Analytics -->`;
 }
 
 export function shell(
@@ -904,13 +902,18 @@ function sendAIMessage(){
   }).catch(function(){var el=document.getElementById('aiTyping');if(el)el.remove();toast('Network error','err')});
 }
 
-/* ====== BUY NOW (unified: adds to temp cart + opens drawer with payment selection) ====== */
-function buyNow(productId,size){
-  if(!size){toast('Please select a size first','err');return}
-  var p=PM[productId];if(!p){toast('Product not found','err');return}
-  /* Replace cart with single item and open drawer (shows payment selection UI) */
-  cart=[{p:productId,s:size,q:1}];saveCart();openCartDrawer();
+/* ====== QUICK ADD (from home/grid) ====== */
+function quickAddToCart(productId,size){
+  if(!size){toast('Select size','err');return}
+  var p=PM[productId];if(!p){return}
+  /* Check if already in cart */
+  var exists=cart.find(function(i){return i.p===productId && i.s===size});
+  if(exists){exists.q++}else{cart.push({p:productId,s:size,q:1})}
+  saveCart();openCartDrawer();
+  toast('Added '+p.n+' ('+size+')','ok-green');
 }
+
+/* ====== BUY NOW (unified) ====== */
 
 /* ====== CHECKOUT ====== */
 function checkout(){

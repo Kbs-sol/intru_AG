@@ -28,6 +28,8 @@ export interface Env {
   GOOGLE_CLIENT_ID: string;
   ADMIN_PASSWORD: string;
   RESEND_API_KEY: string;
+  R2_ACCESS_KEY_ID: string;
+  R2_SECRET_ACCESS_KEY: string;
 }
 
 // ============ STORE CONFIG (static — never changes at runtime) ============
@@ -704,40 +706,120 @@ export async function fetchAllStoreSettings(sbUrl: string, sbKey: string): Promi
   } catch { return {}; }
 }
 
-// ============ Image Upload helper ============
-
 /**
- * Upload a file directly to Supabase Storage.
+ * Upload a file directly to Cloudflare R2 using S3-compatible API with AWS SigV4.
  * Returns the full Public URL.
  */
-export async function uploadToSupabase(env: Env, bucket: string, file: File): Promise<string> {
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
-    throw new Error('Supabase configuration missing (URL or Service Key)');
+export async function uploadToR2(env: Env, file: File, fileName: string): Promise<string> {
+  if (!env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY) {
+    throw new Error('R2 configuration missing (Access Key or Secret Key)');
   }
 
-  // Sanitize filename: timestamp + alphanumeric only
-  const timestamp = Date.now();
-  const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_').toLowerCase();
-  const fileName = `${timestamp}_${safeName}`;
+  const endpoint = 'https://83b25481410c2463525f8e8cbc087bbd.r2.cloudflarestorage.com/intru-products';
+  const bucket = 'intru-products';
+  const prefix = 'products/';
+  const fullPath = `/${bucket}/${prefix}${fileName}`;
+  const host = '83b25481410c2463525f8e8cbc087bbd.r2.cloudflarestorage.com';
+  const url = `${endpoint}/${prefix}${fileName}`;
 
-  const baseUrl = env.SUPABASE_URL.replace(/\/$/, '');
-  const url = `${baseUrl}/storage/v1/object/${bucket}/${fileName}`;
+  const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const dateStamp = amzDate.slice(0, 8);
+  const region = 'auto';
+  const service = 's3';
+
+  // Canonical Request
+  const canonicalUri = fullPath;
+  const canonicalQueryString = '';
+  const canonicalHeaders = `host:${host}\nx-amz-content-sha256:UNSIGNED-PAYLOAD\nx-amz-date:${amzDate}\n`;
+  const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+  const payloadHash = 'UNSIGNED-PAYLOAD';
+  const canonicalRequest = `PUT\n${canonicalUri}\n${canonicalQueryString}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+
+  // String to Sign
+  const algorithm = 'AWS4-HMAC-SHA256';
+  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+  const hashedCanonicalRequest = await sha256(canonicalRequest);
+  const stringToSign = `${algorithm}\n${amzDate}\n${credentialScope}\n${hashedCanonicalRequest}`;
+
+  // Calculate Signature
+  const kDate = await hmacRaw(env.R2_SECRET_ACCESS_KEY, `AWS4${dateStamp}`);
+  const kRegion = await hmacRaw(kDate, region);
+  const kService = await hmacRaw(kRegion, service);
+  const kSigning = await hmacRaw(kService, 'aws4_request');
+  const signature = await hmacHex(kSigning, stringToSign);
+
+  const authorizationHeader = `${algorithm} Credential=${env.R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
   const res = await fetch(url, {
-    method: 'POST',
+    method: 'PUT',
     headers: {
-      'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
-      'x-upsert': 'true',
-      'Content-Type': file.type,
+      'Authorization': authorizationHeader,
+      'x-amz-date': amzDate,
+      'x-amz-content-sha256': payloadHash,
+      'Content-Type': file.type || 'application/octet-stream',
     },
     body: file,
   });
 
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(`Upload failed: ${errorText}`);
+    throw new Error(`R2 Upload failed: ${errorText}`);
   }
 
-  // Return the public URL
-  return `${baseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
+  return url;
+}
+
+/** Helper for SHA256 hex encoding */
+async function sha256(message: string): Promise<string> {
+  const msgUint8 = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Helper for HMAC with Raw returned key */
+async function hmacRaw(key: string | ArrayBuffer, data: string): Promise<ArrayBuffer> {
+  const encoder = new TextEncoder();
+  const keyData = typeof key === 'string' ? encoder.encode(key) : key;
+  const cryptoKey = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(data));
+}
+
+/** Helper for HMAC with Hex returned signature */
+async function hmacHex(key: ArrayBuffer, data: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(data));
+  return Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Increment view count for a specific path in Supabase.
+ */
+export async function incrementView(env: Env, path: string): Promise<void> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return;
+  try {
+    // Upsert using an RPC or a merge-duplicates logic
+    // Table: page_views (path text PK, views bigint DEFAULT 1, last_viewed_at timestamptz DEFAULT now())
+    // Note: To truly "increment" without an RPC, we'd need to fetch first, or use a clever UPSERT.
+    // In Postgres/Supabase REST, it's easier to use an RPC if available. 
+    // If not, we'll try a basic upsert that just logs the last hit if we can't easily increment.
+    // Better: call a 'increment_view' RPC that takes a 'page_path' argument.
+    await supabaseFetch(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY, 'rpc/increment_view', {
+      method: 'POST',
+      body: JSON.stringify({ page_path: path }),
+    });
+  } catch (e) { console.error('Analytics tracking error:', e); }
+}
+
+/**
+ * Fetch all page view stats from Supabase.
+ */
+export async function fetchAnalytics(env: Env): Promise<any[]> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return [];
+  try {
+    const res = await supabaseFetch(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY, 'page_views?select=*&order=views.desc');
+    if (res.ok) return await res.json();
+  } catch (e) { console.error('Analytics fetch error:', e); }
+  return [];
 }
