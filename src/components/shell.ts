@@ -14,8 +14,10 @@ export function buildHead(title: string, desc: string, opt: { og?: string, url?:
   return `
 <title>${title}</title>
 <meta name="description" content="${desc}">
+<meta name="keywords" content="oversized t shirt in hyderabad, everyday tshirts, minimal style streetwear, limited edition drops, heavyweight tshirts india, simple clothing, mens streetwear hyderabad">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="${canonical}">
+<link rel="icon" type="image/png" href="/favicon.png">
 <meta property="og:type" content="website">
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${desc}">
@@ -35,9 +37,8 @@ export function buildHead(title: string, desc: string, opt: { og?: string, url?:
   "@type": "Organization",
   "name": "intru.in",
   "url": "https://intru.in",
-  "logo": "https://intru.in/logo.png",
-  "description": "${STORE_CONFIG.description}",
-  }
+  "logo": "https://intru.in/favicon.png",
+  "description": "${STORE_CONFIG.description}"
 }
 </script>
 <!-- Cloudflare Web Analytics -->
@@ -84,7 +85,7 @@ ${opt?.schema ? '<script type="application/ld+json">' + opt.schema + '</script>'
 <script src="https://checkout.razorpay.com/v1/magic-checkout.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{--bk:#0C0A09;--wh:#F5F2ED;--g50:#E7E5E4;--g100:#D6D3D1;--g200:#A8A29E;--g300:#78716C;--g400:#57534E;--g500:#44403C;--g600:#292524;--red:#ef4444;--green:#22c55e;--sans:'Space Grotesk',sans-serif;--head:'Archivo Black','Space Grotesk',sans-serif;--ease:cubic-bezier(.16,1,.3,1);--eo:cubic-bezier(0.2, 0, 0, 1)}
+:root{--bk:#0a0a0a;--wh:#fafafa;--g50:#f5f5f5;--g100:#e8e8e8;--g200:#d4d4d4;--g300:#a3a3a3;--g400:#737373;--g500:#525252;--g600:#404040;--red:#e53e3e;--green:#16a34a;--sans:'Space Grotesk',sans-serif;--head:'Archivo Black','Space Grotesk',sans-serif;--ease:cubic-bezier(.25,.46,.45,.94);--eo:cubic-bezier(.16,1,.3,1)}
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
 body{font-family:var(--sans);color:var(--bk);background:var(--wh);line-height:1.6;overflow-x:hidden}
 a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:auto}button{cursor:pointer;font-family:inherit}
@@ -247,24 +248,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
 @media(max-width:768px){.mnt-banner{font-size:9px;padding:12px 40px 12px 16px;text-align:left;justify-content:flex-start}}
 @media(max-width:768px){.nlinks .nl:not(.nls){display:none}.ftri{grid-template-columns:1fr 1fr;gap:32px}.ftrbt{flex-direction:column;gap:16px;text-align:center}}
 @media(max-width:480px){.ftri{grid-template-columns:1fr}}
-
-/* CART UPSELL [AG] */
-.cupsell{background:var(--g50);border:1.5px dashed var(--g200);padding:14px;display:flex;align-items:center;gap:12px;margin:16px 0;border-radius:1px;position:relative}
-.cu-img{width:40px;height:40px;object-fit:cover;background:var(--g100)}
-.cu-inf{flex:1}
-.cu-nm{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
-.cu-pr{font-size:12px;font-weight:700;color:var(--g500)}
-.cu-add{background:var(--bk);color:var(--wh);border:none;padding:6px 12px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:1px}
-/* STICKY ATC MOBILE [AG] */
-#stickyAtc{position:fixed;bottom:0;left:0;right:0;background:var(--wh);border-top:1px solid var(--g100);padding:16px 20px;z-index:200;display:flex;align-items:center;gap:12px;transform:translateY(100%);transition:transform .4s var(--eo);box-shadow:0 -8px 40px rgba(0,0,0,0.1)}
-#stickyAtc.show{transform:translateY(0)}
-.sa-inf{flex:1;min-width:0}
-.sa-nm{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sa-pr{font-size:14px;font-weight:900}
-.sa-btn{background:var(--bk);color:var(--wh);border:none;padding:12px 24px;font-size:11px;font-weight:900;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
-@media(min-width:769px){#stickyAtc{display:none}}
 </style>
-<div id="stickyAtc"><div class="sa-inf"><div class="sa-nm" id="sa_name">Secure Selection</div><div class="sa-pr" id="sa_price"></div></div><button class="sa-btn" onclick="toggleCart()">BAG NOW</button></div>
 </head>
 <body class="${opt?.cls || ''}" ${mcMode === 'soft' ? 'style="overflow:hidden"' : ''}>
 <nav class="nav glass" id="nb"><div class="navi">
@@ -833,20 +817,12 @@ function renderCart(){
     document.getElementById('paymentSection').classList.add('hidden');
   }
   document.getElementById('cmode').style.display=S.magic?'none':'flex';
-  
-  /* Everyday Upsell: Suggest a basic if not in cart [AG] */
-  var hasAccessory = cart.some(function(i){return i.p === 'p-acc' || i.p === 'p-tote'});
-  var upsellHtml = '';
-  if(!hasAccessory) {
-    upsellHtml = '<div class="cupsell"><img src="https://images.unsplash.com/photo-1544816155-12df9643f363?w=100&h=100&fit=crop" class="cu-img"><div class="cu-inf"><div class="cu-nm">Everyday Cotton Tote</div><div class="cu-pr">Rs.499</div></div><button class="cu-add" onclick="quickAddToCart(\\x27p-tote\\x27,\\x27OS\\x27)">ADD</button></div>';
-  }
-
   var html='';
   cart.forEach(function(item){
     var p=PM[item.p];if(!p)return;
     html+='<div class="citm"><img class="cimg" src="'+p.i[0]+'" alt="'+p.n+'"><div class="cinf"><div class="cnm">'+p.n+'</div><div class="cmt">Size: '+item.s+'</div><div class="cpr">'+fmt(p.p*item.q)+'</div><div class="cqty"><button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,-1)">&minus;</button><span>'+item.q+'</span><button class="qb" onclick="updateQty(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27,1)">+</button></div><button class="crm" onclick="removeFromCart(\\x27'+p.id+'\\x27,\\x27'+item.s+'\\x27)">Remove</button></div></div>';
   });
-  if(itemsWrap) itemsWrap.innerHTML=html + upsellHtml;
+  if(itemsWrap) itemsWrap.innerHTML=html;
   renderCartTotals();
 }
 
@@ -1143,19 +1119,6 @@ function loadSavedAddress(){
 }
 
 /* ====== TOAST ====== */
-/* ====== STICKY ATC LOGIC [AG] v15 ====== */
-window.addEventListener('scroll', function(){
-  var atc = document.getElementById('stickyAtc');
-  if(!atc) return;
-  /* Only show on product pages where there's a specific product info */
-  var target = document.getElementById('productInfo'); 
-  if(!target) { atc.classList.remove('show'); return; }
-  
-  var rect = target.getBoundingClientRect();
-  if(rect.bottom < 0) atc.classList.add('show');
-  else atc.classList.remove('show');
-});
-
 function toast(msg,type){
   type=type||'ok';var c=document.getElementById('tc');var t=document.createElement('div');
   t.className='toast toast-'+(type==='err'?'err':type==='ok-green'?'ok-green':'ok');t.textContent=msg;c.appendChild(t);

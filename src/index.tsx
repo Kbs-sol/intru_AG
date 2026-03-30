@@ -148,6 +148,11 @@ app.get('/all-collections', async (c: Context<{ Bindings: Bindings }>) => {
   return c.html(collectionsPage(opts));
 })
 
+app.get('/collections', async (c: Context<{ Bindings: Bindings }>) => {
+  const opts = await getPageOpts(c);
+  return c.html(collectionsPage(opts));
+})
+
 app.get('/stylist', async (c: Context<{ Bindings: Bindings }>) => {
   const opts = await getPageOpts(c);
   return c.html(stylistPage(opts));

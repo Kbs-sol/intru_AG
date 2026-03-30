@@ -10,8 +10,17 @@ export function homePage(opts: {
   maintenanceConfig?: { mode?: string; message?: string; eta?: string };
   storeSettings?: Record<string, string>;
 }): string {
-  const products = opts.products;
+  const rawProducts = opts.products;
+  // Sort products to ensure Doodles and Stripe 18 are front-and-center
+  const prioritySlugs = ['doodles-t-shirt', 'stripe-18-shirt'];
+  const featuredProducts = rawProducts.filter(p => prioritySlugs.includes(p.slug))
+                                    .sort((a, b) => prioritySlugs.indexOf(a.slug) - prioritySlugs.indexOf(b.slug));
+  const otherProducts = rawProducts.filter(p => !prioritySlugs.includes(p.slug));
+  const products = [...featuredProducts, ...otherProducts];
+  
   const legalPages = opts.legalPages;
+  const featuredOne = products[0];
+  const featuredTwo = products[1];
 
   const schema = JSON.stringify({ "@context": "https://schema.org", "@type": "ItemList", "itemListElement": products.map((p, i) => ({ "@type": "ListItem", "position": i + 1, "item": { "@type": "Product", "name": p.name, "url": "https://intru.in/product/" + p.slug, "image": p.images, "offers": { "@type": "Offer", "price": p.price, "priceCurrency": "INR", "availability": "https://schema.org/InStock" } } })) });
 
@@ -19,113 +28,157 @@ export function homePage(opts: {
 <svg style="display:none"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncR type="linear" slope="0.1"/><feFuncG type="linear" slope="0.1"/><feFuncB type="linear" slope="0.1"/></feComponentTransfer><feComposite operator="in" in2="SourceGraphic"/></filter></svg>
 
 <style>
-/* ====== MINIMALISM & EVERYDAY STYLE [AG] v15.1 ====== */
-.hero{min-height:calc(100vh - 72px);display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;background:var(--wh);overflow:hidden;padding:80px 24px;text-align:center;border-bottom:1px solid var(--g100)}
-.hero::after{content:'';position:absolute;inset:0;backdrop-filter:url(#grain);opacity:0.3;pointer-events:none}
+:root { --eo: cubic-bezier(0.8, 0, 0.2, 1); }
+html, body { overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
+/* ====== BENTO HERO [AG] ====== */
+.hero{min-height:calc(100vh - 72px);display:flex;background:var(--bk);overflow:hidden;position:relative}
+.hero::after{content:'';position:absolute;inset:0;backdrop-filter:url(#grain);opacity:0.4;pointer-events:none}
 
-.hero-wrap{position:relative;z-index:10;width:100%;max-width:1200px}
-.hero-over{font-size:10px;font-weight:900;letter-spacing:4px;text-transform:uppercase;color:var(--g500);margin-bottom:24px;display:block}
-.hero-title{font-family:var(--head);font-size:clamp(40px,10vw,110px);line-height:0.9;font-weight:900;letter-spacing:-.05em;text-transform:uppercase;color:var(--bk);margin:0}
-.hero-sub{font-size:16px;font-weight:500;color:var(--g400);margin-top:24px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.4}
+.h-split{display:flex;width:100%;max-width:1440px;margin:0 auto;position:relative;z-index:10;gap:40px}
+.h-l{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px 48px;text-align:left}
+.h-r{flex:1;display:grid;grid-template-columns:repeat(2,1fr);gap:24px;align-items:center;padding:48px 48px 48px 0}
 
-.hero-cta-box{margin-top:48px;display:flex;flex-direction:column;align-items:center;gap:24px}
-.hero-cta{display:inline-flex;align-items:center;padding:18px 40px;background:var(--bk);color:var(--wh);font-size:11px;font-weight:900;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:all .4s var(--eo);border:none}
-.hero-cta:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,0.15)}
+@media(max-width:1024px){
+  .hero{min-height:auto}
+  .h-split{flex-direction:column;gap:0}
+  .h-l{padding:80px 24px 40px}
+  .h-r{padding:24px;border-top:1px solid rgba(255,255,255,0.1)}
+}
+@media(max-width:768px){
+  .h-r{grid-template-columns:1fr;padding:24px}
+  .hf-card:nth-child(2) {display:none} /* Clean mobile UX: Only 1 hero product */
+}
 
-.mq{background:var(--bk);color:var(--wh);padding:10px 0}
-.mqi{font-size:9px;font-weight:900;letter-spacing:2px;text-transform:uppercase;opacity:0.7}
+.h-over{font-size:11px;font-weight:900;letter-spacing:10px;text-transform:uppercase;color:var(--wh);opacity:0.4;margin-bottom:24px;display:block}
+.h-title{font-family:var(--head);font-size:clamp(32px,12vw,120px);line-height:0.85;font-weight:900;letter-spacing:-.065em;text-transform:uppercase;color:var(--wh);margin:0;word-wrap:break-word}
+.h-title span.w-300{font-weight:300;opacity:0.6;letter-spacing:-.02em}
+
+/* FEATURE CARD IN HERO [AG] */
+.hf-card{width:100%;background:var(--wh);color:var(--bk);position:relative;display:flex;flex-direction:column}
+.hf-img{aspect-ratio:4/5;overflow:hidden;background:var(--g100);position:relative}
+.hf-img img{width:100%;height:100%;object-fit:cover;transition:transform 1s var(--eo)}
+.hf-card:hover .hf-img img{transform:scale(1.03)}
+
+/* Hover reveal Quick Add — single line [AG] */
+.hf-sizes-box{position:absolute;inset:0;top:auto;background:rgba(255,255,255,0.96);backdrop-filter:blur(8px);padding:8px 10px;transform:translateY(100%);transition:transform .35s var(--eo);z-index:20;border-top:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;gap:6px}
+.hf-card:hover .hf-sizes-box{transform:translateY(0)}
+
+.hf-body{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;background:var(--wh);position:relative;z-index:30}
+.hf-name{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0}
+.hf-price{font-size:13px;font-weight:900}
+.hf-sizes{display:flex;flex-wrap:nowrap;gap:5px;flex:1}
+.hf-sz{flex:1;min-width:0;padding:6px 4px;border:1px solid var(--g200);text-align:center;font-size:9px;font-weight:900;letter-spacing:.5px;cursor:pointer;transition:all .25s;background:var(--wh);white-space:nowrap}
+.hf-sz:hover{background:var(--bk);color:var(--wh);border-color:var(--bk)}
+
+/* MAIN GRID AND MARQUEE (MINIMALISM) [AG] */
+.mq{background:var(--wh);border-bottom:1px solid var(--g100);padding:16px 0;width:100%;overflow:hidden;position:relative;display:block}
+.mqt{display:flex;white-space:nowrap;width:max-content;animation:scroll-mq 60s linear infinite}
+@keyframes scroll-mq{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.mqi{color:var(--bk);font-size:10px;font-weight:900;letter-spacing:4px;text-transform:uppercase;margin:0 24px}
+.mq-dot{color:var(--g300);margin:0;font-size:14px;line-height:1}
 
 .psec{background:var(--wh);padding:100px 32px}
-.shdr{margin-bottom:60px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--g100);padding-bottom:20px}
-.stitle{font-size:22px;letter-spacing:-0.5px;font-weight:900;text-transform:uppercase}
-.view-all{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--g400)}
+.shdr{border-bottom:1.5px solid var(--bk);margin-bottom:64px;padding-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.stitle{font-family:var(--head);font-size:32px;letter-spacing:-2px;text-transform:uppercase}
 
-.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:40px}
 @media(max-width:1024px){.pgrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:640px){.pgrid{grid-template-columns:1fr}}
 
-.pcard{position:relative;text-decoration:none;color:inherit;transition:all .4s var(--eo)}
-.pcimg{position:relative;aspect-ratio:3.5/4.5;background:var(--g50);overflow:hidden}
-.pcimg img{width:100%;height:100%;object-fit:cover;transition:transform 1.2s var(--eo)}
-.ih{position:absolute;inset:0;opacity:0;transition:opacity .6s var(--eo)}
+.pcard{text-decoration:none;color:inherit;position:relative;display:block}
+.pc-img{aspect-ratio:4/5;background:var(--g50);overflow:hidden;position:relative}
+.pc-img img{width:100%;height:100%;object-fit:cover;transition:transform .6s var(--eo)}
+.pcard:hover .pc-img img{transform:scale(1.02)}
 
-.pcard:hover .pcimg img{transform:scale(1.04)}
-.pcard:hover .ih{opacity:1}
-
-/* QUICK ADD MINIMALIST [AG] */
-.pc-quick{position:absolute;inset:0;top:auto;bottom:0;background:rgba(255,255,255,0.98);padding:24px;transform:translateY(100%);transition:transform .4s var(--eo);z-index:20;display:flex;flex-direction:column;gap:12px}
+.pc-quick{position:absolute;inset:0;top:auto;background:rgba(255,255,255,0.96);backdrop-filter:blur(8px);padding:8px 10px;transform:translateY(100%);transition:transform .35s var(--eo);z-index:20;border-top:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;gap:5px}
 .pcard:hover .pc-quick{transform:translateY(0)}
-.pq-title{font-size:9px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--g400)}
-.pq-sizes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.pq-sz{padding:10px;border:1px solid var(--g100);background:var(--wh);color:var(--bk);font-size:10px;font-weight:700;text-align:center;cursor:pointer;transition:all .2s}.pq-sz:hover{background:var(--bk);color:var(--wh);border-color:var(--bk)}
 
-.pcinfo{padding:20px 4px}
-.pcname{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
-.pcprice{display:flex;align-items:center;gap:10px}
-.pcprice .cur{font-size:15px;font-weight:900}
-.pcprice .cmp{font-size:12px;color:var(--g300);text-decoration:line-through}
+.pcinfo{padding:14px 0 0}
+.pcname{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.pcp-row{display:flex;justify-content:space-between;align-items:center}
+.pcprice{font-size:13px;font-weight:900}
+.pccomp{font-size:11px;color:var(--g400);text-decoration:line-through}
 
-/* DNA SECTION [AG] */
-.dna{background:var(--g50);padding:100px 32px;display:grid;grid-template-columns:repeat(3,1fr);gap:40px;max-width:1200px;margin:0 auto;border:1px solid var(--g100)}
-.dna-it{text-align:left}
-.dna-it i{font-size:20px;color:var(--bk);margin-bottom:20px;display:block}
-.dna-it h4{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
-.dna-it p{font-size:13px;color:var(--g500);line-height:1.6}
-@media(max-width:768px){.dna{grid-template-columns:1fr;padding:60px 24px}}
+/* PURE TYPOGRAPHY BADGES [AG] */
+.t-badge{display:inline-block;padding:2px 0 6px;font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;border-bottom:1.5px solid var(--bk);margin-bottom:12px}
+.t-badge.red{color:var(--red);border-color:var(--red)}
 
-.promo{height:60vh;display:flex;align-items:center;justify-content:center;background:var(--bk);color:var(--wh);text-align:center;position:relative;margin-top:80px}
-.promo-title{font-family:var(--head);font-size:clamp(32px,6vw,80px);font-weight:900;text-transform:uppercase;letter-spacing:-.04em}
+.story{padding:140px 32px;background:var(--wh);max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1.2fr;gap:100px;align-items:end;overflow:hidden}
+.story-h{font-family:var(--head);font-size:clamp(26px,8vw,72px);line-height:0.85;font-weight:900;text-transform:uppercase;letter-spacing:-.05em;margin:0;word-wrap:break-word}
+.story-cnt p{font-size:16px;color:var(--g500);line-height:1.7;margin:0}
+@media(max-width:768px){.story{grid-template-columns:1fr;gap:40px;padding:80px 24px}}
 </style>
 
 <section class="hero">
-  <div class="hero-wrap">
-    <span class="hero-over anim">Minimalist Drop 01 // 2026</span>
-    <h1 class="hero-title anim d1">FOR SHARED LOVE FOR<br>MINIMALISM &<br>EVERYDAY STYLE.</h1>
-    <p class="hero-sub anim d2">Premium fabrics meeting alternative silhouettes. No branding, no noise, just the collective's energy in every thread.</p>
-    <div class="hero-cta-box anim d3">
-      <a href="#products" class="hero-cta">Explore the Essentials</a>
+  <div class="h-split">
+    <div class="h-l">
+      <span class="h-over anim">Limited Dropout.03</span>
+      <h1 class="h-title anim d1">
+        <span class="w-300">MODERN</span><br>
+        MINIMALISM<br>
+        <span class="w-300">EVERY DAY</span>
+      </h1>
+      <div style="margin-top:60px" class="anim d2">
+        <a href="#products" style="font-size:12px;font-weight:900;letter-spacing:4px;text-transform:uppercase;color:var(--wh);border-bottom:1.5px solid var(--wh);padding-bottom:10px">Explore Drop ↓</a>
+      </div>
+    </div>
+    
+    <div class="h-r">
+      ${[featuredOne, featuredTwo].map((p, i) => p ? `
+      <div class="hf-card anim d${i+3}">
+        <a href="/product/${p.slug}" class="hf-img-link" style="display:block;cursor:pointer">
+          <div class="hf-img">
+            <img src="${p.images[0]}" alt="${p.name}">
+            <div class="hf-sizes-box">
+              <div class="hf-sizes">
+                ${(p.sizes || ['S', 'M', 'L', 'XL']).map(sz => `<div class="hf-sz" onclick="event.preventDefault();event.stopPropagation();quickAddToCart('${p.id}','${sz}')">${sz}</div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </a>
+        <a href="/product/${p.slug}" style="text-decoration:none;color:inherit">
+          <div class="hf-body">
+            <h2 class="hf-name">${p.name}</h2>
+            <div class="hf-price">${STORE_CONFIG.currencySymbol}${p.price.toLocaleString('en-IN')}</div>
+          </div>
+        </a>
+      </div>
+      ` : '').join('')}
     </div>
   </div>
 </section>
 
-<div class="mq"><div class="mqt">
-${Array(4).fill('<span class="mqi">Everyday Uniform</span><span class="mqi">/</span><span class="mqi">Premium Cotton</span><span class="mqi">/</span><span class="mqi">Limited Run</span><span class="mqi">/</span><span class="mqi">Fast Shipping</span><span class="mqi">/</span>').join('')}
-</div></div>
+<div class="mq">
+  <div class="mqt">
+    ${Array(20).fill('<span class="mqi">MODERN MINIMALISM</span><span class="mq-dot">•</span><span class="mqi">EVERYDAY ESSENTIALS</span><span class="mq-dot">•</span><span class="mqi" style="color:var(--g500)">PREMIUM HEAVYWEIGHT</span><span class="mq-dot">•</span>').join('')}
+  </div>
+</div>
 
 <section class="psec" id="products">
-  <div class="shdr">
-    <h2 class="stitle anim">The Essentials</h2>
-    <a href="/collections" class="view-all anim d1">View All Drops</a>
-  </div>
+  <div class="shdr"><h2 class="stitle anim">The Drop Catalog</h2><div style="font-size:11px;font-weight:900;letter-spacing:1px;text-transform:uppercase;opacity:0.4">${products.length} Designs</div></div>
   <div class="pgrid">
   ${products.map((p, i) => {
     const sizes = p.sizes || ['S', 'M', 'L', 'XL'];
-    const totalStock = p.stockCount ? Object.values(p.stockCount).reduce((a: number, b: number) => a + b, 0) : 10;
-    
-    let fomoHtml = '';
-    if (totalStock === 0) fomoHtml = `<div class="badge-fomo sold">SOLD OUT</div>`;
-    else if (totalStock <= 5) fomoHtml = `<div class="badge-fomo low">LOW STOCK</div>`;
+    const totalStock = p.stockCount ? Object.values(p.stockCount).reduce((a: number, b: number) => a + b, 0) : 12;
 
     return `
     <div class="pcard anim d${(i % 3) + 1}">
-      <div class="pcimg">
-        <a href="/product/${p.slug}">
-          <img src="${p.images[0]}" alt="${p.name}" loading="${i < 3 ? 'eager' : 'lazy'}">
-          ${p.images[1] ? `<img class="ih" src="${p.images[1]}" alt="${p.name}" loading="lazy">` : ''}
-        </a>
-        <div class="pc-fomo">${fomoHtml}</div>
-        <div class="pc-quick">
-          <div class="pq-title">Quick Select Size</div>
-          <div class="pq-sizes">
-            ${sizes.map(sz => `<div class="pq-sz" onclick="event.preventDefault();quickAddToCart('${p.id}','${sz}')">${sz}</div>`).join('')}
+      <a href="/product/${p.slug}" class="pc_link_img">
+        <div class="pc-img">
+          <img src="${p.images[0]}" alt="${p.name}" loading="${i < 3 ? 'eager' : 'lazy'}" width="400" height="500">
+          <div class="pc-quick">
+            <div class="hf-sizes">
+              ${sizes.map(sz => `<div class="hf-sz" onclick="event.preventDefault();quickAddToCart('${p.id}','${sz}')">${sz}</div>`).join('')}
+            </div>
           </div>
         </div>
-      </div>
+      </a>
       <div class="pcinfo">
-        <h3 class="pcname">${p.name}</h3>
-        <div class="pcprice">
-          <span class="cur">${STORE_CONFIG.currencySymbol}${p.price.toLocaleString('en-IN')}</span>
-          ${p.comparePrice ? `<span class="cmp">${STORE_CONFIG.currencySymbol}${p.comparePrice.toLocaleString('en-IN')}</span>` : ''}
+        ${totalStock <= 5 ? `<span class="t-badge red">Only ${totalStock} Left</span>` : `<span class="t-badge">Limited Batch</span>`}
+        <a href="/product/${p.slug}" style="text-decoration:none;color:inherit"><h3 class="pcname">${p.name}</h3></a>
+        <div class="pcp-row">
+          <div class="pcprice">${STORE_CONFIG.currencySymbol}${p.price.toLocaleString('en-IN')}</div>
+          ${p.comparePrice ? `<div class="pccomp">${STORE_CONFIG.currencySymbol}${p.comparePrice.toLocaleString('en-IN')}</div>` : ''}
         </div>
       </div>
     </div>`;
@@ -133,25 +186,20 @@ ${Array(4).fill('<span class="mqi">Everyday Uniform</span><span class="mqi">/</s
   </div>
 </section>
 
-<section class="dna">
-  <div class="dna-it anim"><i class="fas fa-microchip"></i><h4>Tech Fabric</h4><p>Custom-developed cotton-poly blends designed for breathability and shape retention.</p></div>
-  <div class="dna-it anim d1"><i class="fas fa-scissors"></i><h4>Boxy Fit</h4><p>Meticulously tailored silhouettes that provide comfort without sacrificing style.</p></div>
-  <div class="dna-it anim d2"><i class="fas fa-leaf"></i><h4>Sustainability</h4><p>Ethically sourced materials and zero-plastic packaging for every drop.</p></div>
-</section>
-
-<section class="promo anim">
-  <div class="hero-wrap">
-    <h2 class="promo-title">LESS NOISE.<br>MORE INTRU.</h2>
-    <a href="#newsletter" class="hero-cta" style="margin-top:32px;background:var(--wh);color:var(--bk)">Get Notified</a>
+<section class="story">
+  <h2 class="story-h anim">UNCOMPROMISING<br>STREETWEAR.</h2>
+  <div class="story-cnt anim d1">
+    <p>We destroy the screens after every drop. At <strong>INTRU.IN</strong>, mass production is the enemy. We build for the individual who demands exclusivity over conformity.</p>
+    <p style="margin-top:32px">Heavyweight materials. Industrial finishes. Brutalist design. This is not just clothing; it\\'s a collection of artifacts.</p>
   </div>
 </section>
 
 <section class="nlsec" id="newsletter">
-  <h3>The Newsletter.</h3>
-  <p>Join the inner circle for early access and collection updates.</p>
+  <h3>Secure the next drop.</h3>
+  <p>Our releases sell out within hours. Join the priority list for early access.</p>
   <form class="nlform" onsubmit="event.preventDefault();subscribeEmail(this)">
-    <input class="nlinp" type="email" placeholder="Email" required id="nlEmail">
-    <button class="nlbtn" type="submit" id="nlBtn">Join</button>
+    <input class="nlinp" type="email" placeholder="Email address" required id="nlEmail" style="border-radius:0">
+    <button class="nlbtn" type="submit" id="nlBtn">Get Access</button>
   </form>
 </section>
 
@@ -165,14 +213,14 @@ function subscribeEmail(form){
   fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e})})
   .then(function(r){return r.json()}).then(function(d){
     toast(d.message||d.error||'Thank you!','ok'); form.reset();
-  }).finally(function(){b.disabled=false; b.textContent='Join'});
+  }).finally(function(){b.disabled=false; b.textContent='Get Access'});
 }
 </script>
 `;
 
   return shell(
-    'Streetwear India — INTRU.IN | Minimalism & Everyday Style',
-    'Discover INTRU.IN: Functional minimalism for everyday style. Shop premium streetwear essentials, limited-edition drops, and engineered silhouettes. Free shipping on all prepaid orders.',
+    'STREETWEAR INDIA | INTRU.IN — Limited Drops',
+    'Experience pure exclusivity. INTRU.IN: Brutalist streetwear, industrial heavyweight drops, and zero restocks. Shop the drop collection now.',
     body,
     { url: 'https://intru.in', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: !!opts.useMagicCheckout, maintenanceConfig: opts.maintenanceConfig, storeSettings: opts.storeSettings }
   );
