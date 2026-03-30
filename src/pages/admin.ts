@@ -36,13 +36,19 @@ export function adminPage(opts: {
 .atab{padding:14px 20px;background:none;border:none;border-bottom:2px solid transparent;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--g400);white-space:nowrap;transition:all .2s}.atab:hover{color:var(--bk)}.atab.act{color:var(--bk);border-bottom-color:var(--bk)}
 .apan{display:none}.apan.act{display:block}
 .otbl-wrap{width:100%;overflow-x:auto;border:1.5px solid var(--g100);border-radius:8px;background:var(--wh)}
-.otbl{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
-@media(max-width:768px){
-  .otbl{min-width:100%}
+.otbl{width:100%;border-collapse:collapse;font-size:13px;min-width:860px}
+@media(max-width:900px){
+  .otbl{min-width:860px}
+}
+@media(max-width:600px){
+  .otbl-wrap{border:none;background:transparent;overflow-x:visible}
+  .otbl,.otbl thead,.otbl tbody,.otbl tr,.otbl th,.otbl td{display:block;width:100%}
   .otbl thead{display:none}
-  .otbl tr{display:block;margin-bottom:16px;border:1.5px solid var(--g100);border-radius:8px;padding:12px;background:var(--wh)}
-  .otbl td{display:block;padding:8px 0;border:none;text-align:left}
-  .otbl td::before{content:attr(data-label);display:block;font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+  .otbl tr{margin-bottom:16px;border:1.5px solid var(--g100);border-radius:8px;padding:0;background:var(--wh);overflow:hidden}
+  .otbl td{border-bottom:1px solid var(--g50);padding:10px 14px;text-align:left;vertical-align:top}
+  .otbl td:last-child{border-bottom:none}
+  .otbl td::before{content:attr(data-label);display:inline-block;font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;margin-right:6px;min-width:80px}
+  .otbl tr:hover td{background:transparent}
   .adm{padding:20px 16px 80px}
   .ahdr{flex-direction:column;gap:12px;align-items:flex-start}
 }
