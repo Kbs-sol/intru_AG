@@ -921,6 +921,14 @@ function checkout(){
   if(!cart.length){toast('Your bag is empty','err');return}
   /* Silent Identity: if not identified, show overlay */
   if(!identifiedEmail){pendingCheckout=true;openIdentify();return}
+  
+  if(!S.magic && !addressConfirmed){
+    toast('Please fill and confirm your shipping address first','err');
+    var cby = document.getElementById('cby');
+    if(cby) cby.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
   var btn=document.getElementById('checkoutBtn');
   if(btn){btn.disabled=true;btn.textContent='CREATING ORDER...';}
   orderToastFired=false;
@@ -1080,21 +1088,46 @@ function confirmAddress() {
   if(!/^[0-9]{10}$/.test(phone)){toast('Valid 10-digit phone required','err');return}
   if(!/^[0-9]{6}$/.test(pincode)){toast('Valid 6-digit pincode required','err');return}
 
-  localStorage.setItem('intru_name', name);
-  localStorage.setItem('intru_phone', phone);
-  localStorage.setItem('intru_pincode', pincode);
-  localStorage.setItem('intru_addr', addr);
-  localStorage.setItem('intru_city', city);
-  localStorage.setItem('intru_state', state);
+  var btn = document.getElementById('confirmAddressBtn');
+  var origText = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'VERIFYING...';
 
-  document.getElementById('sumName').textContent = name + ' (' + phone + ')';
-  document.getElementById('sumAddr').textContent = addr + ', ' + city + ', ' + state + ' - ' + pincode;
-  
-  addressConfirmed = true;
-  document.getElementById('addressForm').classList.add('hidden');
-  document.getElementById('addressSummary').classList.remove('hidden');
-  document.getElementById('paymentSection').classList.remove('hidden');
-  applyPayMode('prepaid');
+  fetch('https://api.postalpincode.in/pincode/'+pincode)
+  .then(function(r){return r.json()})
+  .then(function(data){
+    if(data && data[0] && data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice.length > 0) {
+      var po = data[0].PostOffice[0];
+      if(!city) city = po.District || po.Region;
+      if(!state) state = po.State || po.Circle;
+      
+      document.getElementById('cod_city').value = city;
+      document.getElementById('cod_state').value = state;
+
+      localStorage.setItem('intru_name', name);
+      localStorage.setItem('intru_phone', phone);
+      localStorage.setItem('intru_pincode', pincode);
+      localStorage.setItem('intru_addr', addr);
+      localStorage.setItem('intru_city', city);
+      localStorage.setItem('intru_state', state);
+
+      document.getElementById('sumName').textContent = name + ' (' + phone + ')';
+      document.getElementById('sumAddr').textContent = addr + ', ' + city + ', ' + state + ' - ' + pincode;
+      
+      addressConfirmed = true;
+      document.getElementById('addressForm').classList.add('hidden');
+      document.getElementById('addressSummary').classList.remove('hidden');
+      document.getElementById('paymentSection').classList.remove('hidden');
+      applyPayMode('prepaid');
+    } else {
+      toast('Invalid Pincode. Please check again.', 'err');
+    }
+  })
+  .catch(function(){toast('Error verifying pincode', 'err')})
+  .finally(function(){
+    btn.disabled = false;
+    btn.innerHTML = origText;
+  });
 }
 
 function editAddress() {
