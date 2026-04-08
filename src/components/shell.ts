@@ -296,10 +296,14 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%;height:aut
     <div id="addressSection" class="hidden" style="margin-top:24px;border-top:1px solid var(--g100);padding-top:24px">
       <div class="c-step-hdr"><i class="fas fa-map-marker-alt"></i> 1. Shipping Address</div>
       <div class="cod-form show" id="addressForm">
-        <input class="cod-inp" id="cod_name" type="text" placeholder="Full Name *" required>
+        <div class="cod-row">
+          <input class="cod-inp" id="cod_fname" type="text" placeholder="First Name *" required>
+          <input class="cod-inp" id="cod_lname" type="text" placeholder="Last Name *" required>
+        </div>
         <input class="cod-inp" id="cod_phone" type="tel" placeholder="Phone Number *" required pattern="[0-9]{10}">
         <input class="cod-inp" id="cod_pincode" type="text" placeholder="Pincode *" required pattern="[0-9]{6}">
-        <input class="cod-inp" id="cod_addr" type="text" placeholder="Full Address (House, Street, Area) *" required>
+        <input class="cod-inp" id="cod_addr" type="text" placeholder="Address (House No, Building, Street) *" required>
+        <input class="cod-inp" id="cod_addr2" type="text" placeholder="Apartment, suite, etc. (optional)">
         <div class="cod-row">
           <input class="cod-inp" id="cod_city" type="text" placeholder="City">
           <input class="cod-inp" id="cod_state" type="text" placeholder="State">
@@ -977,28 +981,34 @@ function doPrepaidCheckout(){
 }
 
 function doCodCheckout(){
-  var name=document.getElementById('cod_name').value.trim();
+  var fname=document.getElementById('cod_fname').value.trim();
+  var lname=document.getElementById('cod_lname').value.trim();
+  var name=fname + (lname ? ' ' + lname : '');
   var phone=document.getElementById('cod_phone').value.trim();
   var pincode=document.getElementById('cod_pincode').value.trim();
   var addr=document.getElementById('cod_addr').value.trim();
+  var addr2=document.getElementById('cod_addr2').value.trim();
   var city=document.getElementById('cod_city').value.trim();
   var state=document.getElementById('cod_state').value.trim();
-  if(!name||!phone||!pincode||!addr){toast('Fill all address fields for COD','err');resetBtn();return}
+  if(!fname||!lname||!phone||!pincode||!addr){toast('Fill all address fields for COD','err');resetBtn();return}
   if(!/^[0-9]{10}$/.test(phone)){toast('Enter valid 10-digit phone','err');resetBtn();return}
   if(!/^[0-9]{6}$/.test(pincode)){toast('Enter valid 6-digit pincode','err');resetBtn();return}
 
   /* Persistence: Save to local storage [AG] */
+  localStorage.setItem('intru_fname', fname);
+  localStorage.setItem('intru_lname', lname);
   localStorage.setItem('intru_name', name);
   localStorage.setItem('intru_phone', phone);
   localStorage.setItem('intru_pincode', pincode);
   localStorage.setItem('intru_addr', addr);
+  localStorage.setItem('intru_addr2', addr2);
   localStorage.setItem('intru_city', city);
   localStorage.setItem('intru_state', state);
 
   fetch('/api/checkout/cod',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     items:cart.map(function(i){return{productId:i.p,size:i.s,quantity:i.q}}),
     userEmail:identifiedEmail,userName:name,userPhone:phone,
-    address:{name:name,phone:phone,pincode:pincode,line1:addr,city:city,state:state,country:'India'}
+    address:{name:name,phone:phone,pincode:pincode,line1:addr,line2:addr2,city:city,state:state,country:'India'}
   })})
   .then(function(r){return r.json()})
   .then(function(d){
@@ -1078,13 +1088,16 @@ function showSuccessUI(orderId, type){
 
 var addressConfirmed = false;
 function confirmAddress() {
-  var name=document.getElementById('cod_name').value.trim();
+  var fname=document.getElementById('cod_fname').value.trim();
+  var lname=document.getElementById('cod_lname').value.trim();
+  var name=fname + (lname ? ' ' + lname : '');
   var phone=document.getElementById('cod_phone').value.trim();
   var pincode=document.getElementById('cod_pincode').value.trim();
   var addr=document.getElementById('cod_addr').value.trim();
+  var addr2=document.getElementById('cod_addr2').value.trim();
   var city=document.getElementById('cod_city').value.trim();
   var state=document.getElementById('cod_state').value.trim();
-  if(!name||!phone||!pincode||!addr){toast('Fill all required fields (*)','err');return}
+  if(!fname||!lname||!phone||!pincode||!addr){toast('Fill all required fields (*)','err');return}
   if(!/^[0-9]{10}$/.test(phone)){toast('Valid 10-digit phone required','err');return}
   if(!/^[0-9]{6}$/.test(pincode)){toast('Valid 6-digit pincode required','err');return}
 
@@ -1104,15 +1117,18 @@ function confirmAddress() {
       document.getElementById('cod_city').value = city;
       document.getElementById('cod_state').value = state;
 
+      localStorage.setItem('intru_fname', fname);
+      localStorage.setItem('intru_lname', lname);
       localStorage.setItem('intru_name', name);
       localStorage.setItem('intru_phone', phone);
       localStorage.setItem('intru_pincode', pincode);
       localStorage.setItem('intru_addr', addr);
+      localStorage.setItem('intru_addr2', addr2);
       localStorage.setItem('intru_city', city);
       localStorage.setItem('intru_state', state);
 
       document.getElementById('sumName').textContent = name + ' (' + phone + ')';
-      document.getElementById('sumAddr').textContent = addr + ', ' + city + ', ' + state + ' - ' + pincode;
+      document.getElementById('sumAddr').textContent = addr + (addr2 ? ', ' + addr2 : '') + ', ' + city + ', ' + state + ' - ' + pincode;
       
       addressConfirmed = true;
       document.getElementById('addressForm').classList.add('hidden');
@@ -1140,12 +1156,19 @@ function editAddress() {
 function loadSavedAddress(){
   var name = localStorage.getItem('intru_name');
   if(name) {
-    var fields = ['name','phone','pincode','addr','city','state'];
+    var fields = ['phone','pincode','addr','addr2','city','state'];
     fields.forEach(function(f){
       var val = localStorage.getItem('intru_'+f);
       var el = document.getElementById('cod_'+f);
       if(el && val) el.value = val;
     });
+    
+    var fname = localStorage.getItem('intru_fname') || name; // fallback
+    var lname = localStorage.getItem('intru_lname') || '';
+    var fnEl = document.getElementById('cod_fname');
+    var lnEl = document.getElementById('cod_lname');
+    if(fnEl && fname) fnEl.value = fname;
+    if(lnEl && lname) lnEl.value = lname;
     /* If name exists, we can pre-populate the summary but don't auto-confirm unless they click? 
        Let's stay on Step 1 for the first time in session. */
   }
