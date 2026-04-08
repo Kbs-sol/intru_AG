@@ -113,7 +113,7 @@ export function adminPage(opts: {
 </div>
 
 <div class="adsh" id="adsh">
-<div class="ahdr"><h1>Admin &mdash; intru.in</h1><button class="aout" onclick="doLogout()">Sign Out</button></div>
+<div class="ahdr"><h1>Admin &mdash; Intru</h1><button class="aout" onclick="doLogout()">Sign Out</button></div>
 <div class="atabs">
 <button class="atab act" onclick="showTab(this,'tord')">Orders</button>
 <button class="atab" onclick="showTab(this,'tana')">Analytics</button>
@@ -356,7 +356,7 @@ export function adminPage(opts: {
 <div class="sett-card">
   <h4>Stylist Persona</h4>
   <p>Define the AI's personality, tone, and knowledge boundaries.</p>
-  <textarea class="alta" id="aiPrompt" style="min-height:200px" placeholder="You are the official INTRU.IN AI Stylist..."></textarea>
+  <textarea class="alta" id="aiPrompt" style="min-height:200px" placeholder="You are the official Intru AI Stylist..."></textarea>
 </div>
 
 <button class="asave" onclick="saveAIConfig()">Save AI Configuration</button>
@@ -721,8 +721,8 @@ function updateMaintBadge(mode) {
 </script>`;
 
   return shell(
-    'Admin — INTRU.IN',
-    'Admin panel for intru.in store management.',
+    'Admin | Intru',
+    'Admin panel for Intru store management.',
     body,
     { cls: 'admin-page', razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: !!opts.useMagicCheckout }
   );

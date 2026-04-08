@@ -16,7 +16,8 @@ export function productPage(product: Product, opts: {
   
   // Step 7 & 8: Per-size stock gating and FOMO counter logic
   const sizeStock = product.sizeStock || null;
-  const stockCount = product.stockCount !== undefined ? product.stockCount : null;
+  const rawStock = product.stockCount !== undefined ? product.stockCount : null;
+  const stockCount = rawStock ? Object.values(rawStock).reduce((a, b) => a + b, 0) : null;
   const lowRes = parseInt(storeSettings.FOMO_THRESHOLD_LOW || '10');
   const critRes = parseInt(storeSettings.FOMO_THRESHOLD_CRITICAL || '3');
   
@@ -46,7 +47,10 @@ export function productPage(product: Product, opts: {
 
   const disc = product.comparePrice ? Math.round((1 - product.price / product.comparePrice) * 100) : 0;
   const related = products.filter(p => p.id !== product.id).slice(0, 3);
-  const schema = JSON.stringify({ "@context": "https://schema.org", "@type": "Product", "name": product.name, "description": product.description, "image": product.images, "brand": { "@type": "Brand", "name": "intru.in" }, "offers": { "@type": "Offer", "url": "https://intru.in/product/" + product.slug, "priceCurrency": "INR", "price": product.price, "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" }, "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "43" } });
+  const schema = JSON.stringify([
+    { "@context": "https://schema.org", "@type": "Product", "name": product.name, "description": product.description, "image": product.images, "brand": { "@type": "Brand", "name": "Intru" }, "offers": { "@type": "Offer", "url": "https://intru.in/product/" + product.slug, "priceCurrency": "INR", "price": product.price, "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" }, "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "43" } },
+    { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": "What makes Intru the best oversized collection?", "acceptedAnswer": { "@type": "Answer", "text": "Intru offers the best oversized collection in India using premium heavyweight fabrics, industrial brutalist designs, and limited zero-restock drops." } }] }
+  ]);
   const pj = JSON.stringify({ id: product.id, s: product.slug, n: product.name, p: product.price, i: product.images, sz: product.sizes });
 
   const body = `<style>
@@ -351,7 +355,7 @@ function openSizeGuide(){
 function closeSizeGuide(){document.getElementById('sgModal').style.display='none';document.body.style.overflow=''}
 </script>`;
 
-  const seoTitle = product.seoTitle || (product.name + ' — INTRU.IN | ' + STORE_CONFIG.currencySymbol + product.price.toLocaleString('en-IN'));
+  const seoTitle = product.seoTitle || (product.name + ' | Intru - ' + STORE_CONFIG.currencySymbol + product.price.toLocaleString('en-IN'));
   const seoDesc = product.seoDescription || (product.description.substring(0, 155) + '...');
 
   return shell(

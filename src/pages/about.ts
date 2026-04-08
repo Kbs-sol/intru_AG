@@ -16,12 +16,12 @@ export function aboutPage(opts: {
   const schema = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "AboutPage",
-    "name": "About — intru.in",
-    "description": "The story of intru.in — exclusive streetwear India born from two best friends who hated mass-produced fashion. Limited edition, authentic boutique clothing.",
+    "name": "About | Intru",
+    "description": "The story of Intru — exclusive streetwear India born from two best friends who hated mass-produced fashion. Limited edition, authentic boutique clothing.",
     "url": "https://intru.in/about",
     "mainEntity": {
       "@type": "Organization",
-      "name": "intru.in",
+      "name": "Intru",
       "url": "https://intru.in",
       "foundingDate": "2026",
       "foundingLocation": { "@type": "Place", "name": "India" },
@@ -60,11 +60,11 @@ export function aboutPage(opts: {
 <div class="ab-sec anim d3">
 <h2>The Picky Founders</h2>
 <p>We <strong>hated mass-produced clothes</strong> — the same patterns, the same fabrics, the same everything. Every mall, every online store, carbon copies everywhere. We'd spend hours hunting for pieces that felt unique and always came up empty.</p>
-<p>So we made a pact: if nobody's making what we want to wear, <strong>we'll make it ourselves.</strong> Two best friends, one shared frustration, and a bedroom full of fabric swatches — that's how intru.in was born.</p>
+<p>So we made a pact: if nobody's making what we want to wear, <strong>we'll make it ourselves.</strong> Two best friends, one shared frustration, and a bedroom full of fabric swatches — that's how Intru was born.</p>
 </div>
 
 <blockquote class="ab-quote anim">
-"We didn't start intru.in to build a brand. We started it because we were <strong>tired of settling</strong>. Every piece is designed over two months — not because we're slow, but because we refuse to ship anything we wouldn't wear ourselves."
+"We didn't start Intru to build a brand. We started it because we were <strong>tired of settling</strong>. Every piece is designed over two months — not because we're slow, but because we refuse to ship anything we wouldn't wear ourselves."
 </blockquote>
 
 <div class="ab-sec anim">
@@ -75,7 +75,7 @@ export function aboutPage(opts: {
 
 <div class="ab-sec anim">
 <h2>Made With Love, Not Algorithms</h2>
-<p>Every intru.in piece is <strong>designed for two months</strong> before it ever touches fabric. We don't follow trends — we follow our gut. If a design doesn't make us say "I need to wear this right now," it doesn't get made.</p>
+<p>Every Intru piece is <strong>designed for two months</strong> before it ever touches fabric. We don't follow trends — we follow our gut. If a design doesn't make us say "I need to wear this right now," it doesn't get made.</p>
 <p>We source premium cotton, experiment with puff prints and unique techniques, and test every size on real people (starting with ourselves). The result? Clothes that feel like they were made <strong>just for YOU</strong>.</p>
 </div>
 
@@ -106,8 +106,8 @@ export function aboutPage(opts: {
 </div>`;
 
   return shell(
-    'Our Story — INTRU.IN | Premium Indian Streetwear',
-    'The story of INTRU.IN: Two friends, one mission. High-quality, limited-edition streetwear made with love in India.',
+    'Our Story | Intru | Premium Indian Streetwear',
+    'The story of Intru: Two friends, one mission. High-quality, limited-edition streetwear made with love in India.',
     body,
     { url: 'https://intru.in/about', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: !!opts.useMagicCheckout, maintenanceConfig: opts.maintenanceConfig, storeSettings: opts.storeSettings }
   );

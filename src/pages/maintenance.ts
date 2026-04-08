@@ -29,5 +29,5 @@ export function maintenancePage(opts: {
     '</div>',
   ].join('\n');
 
-  return shell('Site Maintenance | intru.in', 'The site is currently down for maintenance.', body, { ...opts, cls: 'pg-main' });
+  return shell('Site Maintenance | Intru', 'The site is currently down for maintenance.', body, { ...opts, useMagicCheckout: !!opts.useMagicCheckout, cls: 'pg-main' });
 }

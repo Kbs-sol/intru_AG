@@ -387,7 +387,7 @@ export function stylistPage(opts: {
 `;
 
   return shell(
-    'AI Stylist — INTRU.IN',
+    'AI Stylist | Intru',
     'Get personalized streetwear recommendations and styling tips from our AI Assistant.',
     body,
     { ...opts, useMagicCheckout: !!opts.useMagicCheckout }

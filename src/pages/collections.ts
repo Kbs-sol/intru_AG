@@ -19,7 +19,7 @@ export function collectionsPage(opts: {
   const schema = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "name": "Collections — intru.in",
+    "name": "Collections | Intru",
     "description": "Shop exclusive streetwear India. Limited edition T-Shirts, Shirts & more. Authentic boutique clothing, never restocked.",
     "url": "https://intru.in/collections",
     "mainEntity": {
@@ -89,7 +89,7 @@ ${products.map((p, i) => {
     const sizes = p.sizes || ['S', 'M', 'L', 'XL'];
     return `<a href="/product/${p.slug}" class="pcard anim d${(i % 4) + 1}" data-cat="${p.category}">
 <div class="pcimg">
-<img src="${p.images[0]}" alt="INTRU.IN ${p.name}" loading="${i < 3 ? 'eager' : 'lazy'}" width="400" height="533">
+<img src="${p.images[0]}" alt="Intru ${p.name}" loading="${i < 3 ? 'eager' : 'lazy'}" width="400" height="533">
 ${p.images[1] ? '<img class="ih" src="' + p.images[1] + '" alt="' + p.name + '" loading="lazy" width="400" height="533" style="width:100%;height:100%;object-fit:cover">' : ''}
 ${d > 0 ? '<span class="pcbadge">Save ' + d + '%</span>' : ''}
 <div class="pcard-actions">
@@ -129,8 +129,8 @@ function filterCat(cat, btn) {
 </script>`;
 
   return shell(
-    'Streetwear Collections — INTRU.IN | Limited Edition Drops',
-    'Browse our exclusive streetwear collections. From oversized tees to limited shirts, find your next favorite piece here. No restocks, ever.',
+    'Streetwear Collections | Intru | Best Oversized Collection',
+    'Browse the best oversized collection by Intru. From oversized tees to streetwear limited shirts, find your next favorite piece here. No restocks, ever.',
     body,
     { url: 'https://intru.in/collections', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: !!opts.useMagicCheckout, maintenanceConfig: opts.maintenanceConfig, storeSettings: opts.storeSettings }
   );

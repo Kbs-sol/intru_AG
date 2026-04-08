@@ -14,7 +14,8 @@ export function buildHead(title: string, desc: string, opt: { og?: string, url?:
   return `
 <title>${title}</title>
 <meta name="description" content="${desc}">
-<meta name="keywords" content="oversized t shirt in hyderabad, everyday tshirts, minimal style streetwear, limited edition drops, heavyweight tshirts india, simple clothing, mens streetwear hyderabad">
+<meta name="keywords" content="best oversized collection, oversized fashion, streetwear fashion india, everyday tshirts, minimal style streetwear, limited edition drops, heavyweight tshirts india, premium fashion, mens fashion">
+<meta name="author" content="Intru">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="${canonical}">
 <link rel="icon" type="image/png" href="/favicon.png">
@@ -25,7 +26,7 @@ export function buildHead(title: string, desc: string, opt: { og?: string, url?:
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:url" content="${url}">
-<meta property="og:site_name" content="intru.in">
+<meta property="og:site_name" content="Intru">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@intru_in">
 <meta name="twitter:title" content="${title}">
@@ -35,7 +36,7 @@ export function buildHead(title: string, desc: string, opt: { og?: string, url?:
 {
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": "intru.in",
+  "name": "Intru",
   "url": "https://intru.in",
   "logo": "https://intru.in/favicon.png",
   "description": "${STORE_CONFIG.description}"

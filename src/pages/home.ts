@@ -189,7 +189,7 @@ html, body { overflow-x: hidden !important; width: 100% !important; max-width: 1
 <section class="story">
   <h2 class="story-h anim">UNCOMPROMISING<br>STREETWEAR.</h2>
   <div class="story-cnt anim d1">
-    <p>We destroy the screens after every drop. At <strong>INTRU.IN</strong>, mass production is the enemy. We build for the individual who demands exclusivity over conformity.</p>
+    <p>We destroy the screens after every drop. At <strong>Intru</strong>, mass production is the enemy. We build the best oversized collection for the individual who demands exclusivity over conformity.</p>
     <p style="margin-top:32px">Heavyweight materials. Industrial finishes. Brutalist design. This is not just clothing; it\\'s a collection of artifacts.</p>
   </div>
 </section>
@@ -219,8 +219,8 @@ function subscribeEmail(form){
 `;
 
   return shell(
-    'STREETWEAR INDIA | INTRU.IN — Limited Drops',
-    'Experience pure exclusivity. INTRU.IN: Brutalist streetwear, industrial heavyweight drops, and zero restocks. Shop the drop collection now.',
+    'Intru | Best Oversized Collection & Urban Streetwear India',
+    'Experience pure exclusivity with Intru. We offer the best oversized collection of brutalist streetwear, industrial heavyweight drops, and zero restocks. Shop the limited drop now.',
     body,
     { url: 'https://intru.in', schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: !!opts.useMagicCheckout, maintenanceConfig: opts.maintenanceConfig, storeSettings: opts.storeSettings }
   );

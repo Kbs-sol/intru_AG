@@ -16,8 +16,8 @@ export function legalPage(page: LegalPage, opts: {
   const schema = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "name": page.title + " — intru.in",
-    "description": page.title + " for intru.in — Premium Indian Streetwear",
+    "name": page.title + " | Intru",
+    "description": page.title + " for Intru — Premium Indian Streetwear",
     "url": "https://intru.in/p/" + page.slug,
     "dateModified": page.updatedAt
   });
@@ -53,8 +53,8 @@ ${legalPages.map(p => '<a href="/p/' + p.slug + '"' + (p.slug === page.slug ? ' 
 </div>`;
 
   return shell(
-    page.title + ' — INTRU.IN',
-    page.title + ' for intru.in — India\'s premium minimalist streetwear brand. Limited drops, no restocks.',
+    page.title + ' | Intru',
+    page.title + ' for Intru — India\'s Premium Oversized Collection and Minimalist Streetwear.',
     body,
     { url: 'https://intru.in/p/' + page.slug, schema, razorpayKeyId: opts.razorpayKeyId, googleClientId: opts.googleClientId, products, legalPages, useMagicCheckout: !!opts.useMagicCheckout, maintenanceConfig: opts.maintenanceConfig, storeSettings: opts.storeSettings }
   );
